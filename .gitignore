@@ -1,0 +1,25 @@
+# Dependencies and build output
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Test artifacts
+playwright-report/
+test-results/
+blob-report/
+
+# Local environment and package-manager state
+.env
+.env.*
+!.env.example
+.pnpm-store/
+
+# Local QA working state
+QA.local.md
+*.qraft.tmp
+
+# Editors and operating systems
+.DS_Store
+.idea/
+.vscode/
