@@ -1,0 +1,62 @@
+:host, *, *::before, *::after { box-sizing: border-box; }
+:host {
+  --qraft-purple: #6d4bd2; --qraft-purple-strong: #5b36b3; --qraft-purple-pale: #f4f1ff; --qraft-purple-hover: #ece7ff;
+  --qraft-focus: #7c5ce7; --qraft-green: #1c9b57; --qraft-amber: #a96408; --qraft-red: #a12b2b;
+  --qraft-ink: #17151c; --qraft-muted: #65616d; --qraft-border: #dcd9e2; --qraft-soft-border: #ebe9ef; --qraft-surface: #ffffff;
+  color: var(--qraft-ink); font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 14px; line-height: 1.45;
+}
+button, input, textarea { color: inherit; font: inherit; }
+button:focus-visible, input:focus-visible, textarea:focus-visible, [tabindex="-1"]:focus-visible { outline: 2px solid var(--qraft-focus); outline-offset: 2px; }
+button:disabled { cursor: not-allowed; opacity: .48; }
+.qraft-tab { position: fixed; z-index: 2147483647; right: 0; top: 50%; transform: translateY(-50%); display: grid; gap: 4px; place-items: center; min-height: 98px; padding: 12px 9px; border: 0; border-radius: 10px 0 0 10px; background: var(--qraft-purple); color: white; box-shadow: 0 8px 24px rgb(36 29 55 / 18%); cursor: pointer; writing-mode: vertical-rl; }
+.qraft-tab span { font-size: 11px; font-weight: 800; letter-spacing: .08em; } .qraft-tab strong { font-size: 13px; } .qraft-tab:hover { background: var(--qraft-purple-strong); }
+.qraft-drawer { position: fixed; inset: 0 0 0 auto; z-index: 2147483647; width: min(380px, 100vw); height: 100dvh; overflow: auto; padding: 0; border: 0; border-left: 1px solid var(--qraft-border); background: var(--qraft-surface); color: var(--qraft-ink); box-shadow: -12px 0 36px rgb(36 29 55 / 14%); }
+.qraft-header { position: sticky; top: 0; z-index: 2; display: grid; grid-template-columns: 24px 1fr 40px; align-items: center; gap: 10px; min-height: 58px; padding: 0 12px 0 18px; border-bottom: 1px solid var(--qraft-border); background: white; }
+.qraft-header h1, .qraft-header h2 { margin: 0; font-size: 16px; line-height: 1; }
+.qraft-icon-button { display: grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: 10px; background: transparent; cursor: pointer; } .qraft-icon-button:hover { background: #f5f4f7; }
+.qraft-content { padding: 18px 20px 28px; } .qraft-progress-row { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 14px; }
+.qraft-progress { overflow: hidden; height: 5px; border-radius: 99px; background: #ebe9ef; } .qraft-progress span { display: block; height: 100%; border-radius: inherit; background: var(--qraft-purple); }
+.qraft-document-title { margin: 22px 0 6px; font-size: 20px; letter-spacing: -.02em; }
+.qraft-section { margin-top: 20px; } .qraft-section h3 { margin: 0; padding: 0 8px 8px; border-bottom: 1px solid var(--qraft-border); color: var(--qraft-muted); font-size: 11px; letter-spacing: .09em; text-transform: uppercase; }
+.qraft-task-list { display: grid; } .qraft-task { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: center; gap: 9px; min-height: 46px; padding: 7px 8px; border: 0; border-bottom: 1px solid var(--qraft-soft-border); background: white; color: var(--qraft-ink); text-align: left; cursor: pointer; }
+.qraft-task:hover, .qraft-task[aria-current="true"] { background: var(--qraft-purple-pale); } .qraft-task-copy { display: grid; min-width: 0; } .qraft-task-copy > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .qraft-task-copy small { color: var(--qraft-amber); font-size: 11px; }
+.qraft-status { display: grid; place-items: center; width: 16px; height: 16px; border: 1.5px solid var(--qraft-purple); border-radius: 50%; color: transparent; } .qraft-status svg { width: 9px; height: 9px; fill: currentColor; } .qraft-status.passed { border-color: var(--qraft-green); background: var(--qraft-green); color: white; }
+.qraft-count { display: grid; place-items: center; min-width: 21px; height: 21px; padding: 0 5px; border-radius: 99px; background: #fff2df; color: #874f00; font-size: 11px; font-weight: 800; }
+.qraft-add, .qraft-secondary, .qraft-primary, .qraft-back { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; border-radius: 10px; cursor: pointer; }
+.qraft-add { margin-top: 8px; padding: 0 8px; border: 0; background: transparent; color: var(--qraft-purple-strong); } .qraft-add:hover { background: var(--qraft-purple-pale); }
+.qraft-secondary { width: 100%; margin-top: 24px; padding: 0 14px; border: 1px solid var(--qraft-border); background: white; color: var(--qraft-ink); } .qraft-secondary:hover { background: #f7f6f8; }
+.qraft-primary { width: 100%; padding: 0 14px; border: 1px solid var(--qraft-purple); background: var(--qraft-purple); color: white; box-shadow: 0 1px 2px rgb(31 20 64 / 14%); } .qraft-primary:hover { background: var(--qraft-purple-strong); }
+.qraft-back { justify-content: flex-start; min-height: 32px; margin: 5px 0 18px; padding: 0 5px; border: 0; background: transparent; color: var(--qraft-muted); } .qraft-back:hover { color: var(--qraft-purple-strong); }
+.qraft-detail h2 { margin: 0; padding-bottom: 16px; border-bottom: 1px solid var(--qraft-border); font-size: 22px; line-height: 1.2; letter-spacing: -.02em; }
+.qraft-task-state { display: flex; align-items: center; gap: 7px; margin: 15px 0 22px; color: var(--qraft-muted); } .qraft-task-state.passed { color: var(--qraft-green); font-weight: 700; }
+.qraft-detail-section { margin-top: 24px; } .qraft-detail-section h3 { display: flex; align-items: center; gap: 7px; margin: 0 0 11px; color: var(--qraft-muted); font-size: 11px; letter-spacing: .09em; text-transform: uppercase; }
+.qraft-empty-copy { margin: 0; color: var(--qraft-muted); font-size: 13px; } .qraft-notes, .qraft-findings { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.qraft-notes li { padding: 10px 12px; border-left: 2px solid var(--qraft-border); background: #faf9fb; }
+.qraft-findings li { display: grid; grid-template-columns: 20px 1fr; gap: 9px; align-items: start; padding: 9px 0; border-bottom: 1px solid var(--qraft-soft-border); }
+.qraft-findings li > button { display: grid; place-items: center; width: 18px; height: 18px; margin-top: 1px; padding: 0; border: 1.5px solid var(--qraft-amber); border-radius: 5px; background: white; color: white; } .qraft-findings li > button[aria-checked="true"] { border-color: var(--qraft-green); background: var(--qraft-green); }
+.qraft-findings li div { display: grid; gap: 3px; } .qraft-findings small { color: var(--qraft-muted); font-size: 11px; } .qraft-inline-actions { display: flex; flex-wrap: wrap; gap: 5px; }
+.qraft-finding-context { gap: 5px !important; margin-top: 6px; padding: 9px 10px; border-left: 2px solid var(--qraft-purple); background: var(--qraft-purple-pale); }
+.qraft-finding-context code, .qraft-context code { overflow-wrap: anywhere; color: #4f4960; font: 11px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; }
+.qraft-finding-context details summary { color: var(--qraft-muted); cursor: pointer; font-size: 11px; }
+.qraft-open-source { display: inline-flex; align-items: center; gap: 5px; width: max-content; min-height: 30px; padding: 0 8px; border: 1px solid #d4c9f4; border-radius: 8px; background: white; color: var(--qraft-purple-strong); cursor: pointer; }
+.qraft-source-error { color: var(--qraft-red); font-size: 11px; }
+.qraft-detail-footer { margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--qraft-border); } .qraft-detail-footer .qraft-secondary { margin-top: 0; } .qraft-help { margin: 8px 2px 0; color: var(--qraft-amber); font-size: 12px; }
+.qraft-complete { display: grid; place-items: center; margin: 0 0 22px; padding: 22px 16px; border: 1px solid #cfe7d8; border-radius: 16px; background: #f5fbf7; text-align: center; } .qraft-complete > span { display: grid; place-items: center; width: 40px; height: 40px; margin-bottom: 9px; border-radius: 50%; background: var(--qraft-green); color: white; } .qraft-complete strong { font-size: 17px; } .qraft-complete p { margin: 3px 0 0; color: var(--qraft-muted); font-size: 12px; }
+.qraft-banner { margin: 14px 0 0; padding: 10px 12px; border: 1px solid var(--qraft-border); border-radius: 10px; background: #faf9fb; font-size: 12px; } .qraft-banner.success { border-color: #b8dec8; background: #f3fbf6; color: #17683b; } .qraft-banner.warning { border-color: #ebd0a9; background: #fff8ec; color: #7a4a08; } .qraft-banner.error { border-color: #e0a4a4; background: #fff4f4; color: #882727; }
+.qraft-loading, .qraft-empty { margin-top: 20px; padding: 24px 18px; border: 1px dashed var(--qraft-border); border-radius: 16px; color: var(--qraft-muted); text-align: center; } .qraft-empty p { margin: 5px 0 0; font-size: 12px; }
+.qraft-orphan { margin-top: 20px; padding: 14px; border: 1px solid #e0a4a4; border-radius: 12px; background: #fff4f4; } .qraft-orphan p { margin: 5px 0 10px; } .qraft-orphan textarea { width: 100%; min-height: 92px; }
+.qraft-form { display: grid; gap: 8px; margin-top: 14px; padding: 14px; border: 1px solid var(--qraft-border); border-radius: 12px; background: #faf9fb; } .qraft-form-heading { display: flex; justify-content: space-between; gap: 12px; } .qraft-form-heading span { color: var(--qraft-muted); font-size: 11px; } .qraft-form label { font-size: 12px; font-weight: 700; }
+.qraft-context { display: grid; gap: 3px; padding: 10px; border: 1px solid #d9cff5; border-radius: 10px; background: var(--qraft-purple-pale); }
+.qraft-context > span { color: var(--qraft-amber); font-size: 11px; }
+.qraft-context > button { width: max-content; margin-top: 4px; color: var(--qraft-purple-strong); }
+.qraft-form input, .qraft-form textarea, .qraft-orphan textarea { width: 100%; padding: 9px 10px; border: 1px solid var(--qraft-border); border-radius: 10px; background: white; font: inherit; resize: vertical; } .qraft-form input { min-height: 40px; } .qraft-form textarea { min-height: 94px; }
+.qraft-form-actions { display: flex; justify-content: flex-end; gap: 8px; } .qraft-form button { min-height: 36px; padding: 0 12px; border: 1px solid var(--qraft-border); border-radius: 9px; background: white; } .qraft-form button.primary { border-color: var(--qraft-purple); background: var(--qraft-purple); color: white; } .qraft-field-error { color: var(--qraft-red); font-size: 12px; }
+.qraft-preview-note { margin: 20px 0 0; color: var(--qraft-muted); font-size: 11px; text-align: center; } .qraft-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.qraft-picker { position: fixed; inset: 0; z-index: 2147483647; pointer-events: none; font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+.qraft-picker-outline { position: fixed; border: 1px solid var(--qraft-purple); background: rgb(109 75 210 / 10%); box-shadow: 0 0 0 2px white, 0 0 0 3px rgb(109 75 210 / 45%); pointer-events: none; }
+.qraft-picker-label { position: fixed; max-width: 180px; overflow: hidden; padding: 3px 7px; border-radius: 6px; background: var(--qraft-purple); color: white; box-shadow: 0 2px 8px rgb(31 20 64 / 22%); font: 700 11px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; text-overflow: ellipsis; white-space: nowrap; pointer-events: none; }
+.qraft-picker-toolbar { position: fixed; left: 50%; bottom: 20px; display: grid; grid-template-columns: 22px 1fr 38px; align-items: center; gap: 9px; min-width: 290px; padding: 8px 8px 8px 13px; transform: translateX(-50%); border: 1px solid #d9cff5; border-radius: 14px; background: white; color: var(--qraft-ink); box-shadow: 0 12px 36px rgb(31 20 64 / 22%); pointer-events: auto; }
+.qraft-picker-toolbar > svg { color: var(--qraft-purple); } .qraft-picker-toolbar span { display: grid; } .qraft-picker-toolbar strong { font-size: 13px; } .qraft-picker-toolbar small { color: var(--qraft-muted); font-size: 10px; }
+.qraft-picker-toolbar button { display: grid; place-items: center; width: 38px; height: 38px; padding: 0; border: 0; border-radius: 9px; background: transparent; cursor: pointer; } .qraft-picker-toolbar button:hover { background: var(--qraft-purple-pale); }
+@media (max-width: 767px) { .qraft-drawer { width: 100vw; border-left: 0; } }
+@media (prefers-reduced-motion: no-preference) { .qraft-drawer { animation: qraft-enter 140ms ease-out; } @keyframes qraft-enter { from { transform: translateX(12px); opacity: .75; } } }

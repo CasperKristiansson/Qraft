@@ -53,8 +53,13 @@ The following primary repositories and published packages were verified for the 
 | [lucide-icons/lucide](https://github.com/lucide-icons/lucide) | `4dc5b7ebaed733642fae0382238d71a147fb5c7d` | `lucide-react@1.41.0` | ISC, with named Feather-derived icons under MIT | Sole icon family; notices must cover actually distributed icons/license files. |
 | [vitest-dev/vitest](https://github.com/vitest-dev/vitest) | `9e1166959e14bd32298d8a0e85352431c769ec7a` | `vitest@5.0.0` | MIT | Development test dependency. |
 | [microsoft/playwright](https://github.com/microsoft/playwright) | `d1dcd6bc0a138ec0fd943df19e07458dc426ee22` | `@playwright/test@1.62.1` | Apache-2.0 | Development browser-test dependency. |
+| [microsoft/TypeScript](https://github.com/microsoft/TypeScript) | `2bd066d87f5bafd315be9f40889d0a60b9e58e0b` | `typescript@7.0.2` | Apache-2.0 | Development compiler and declaration emitter. |
+| [DefinitelyTyped/DefinitelyTyped](https://github.com/DefinitelyTyped/DefinitelyTyped) | Published tarballs locked by `pnpm-lock.yaml` | `@types/node@26.4.1`, `@types/react@19.2.18`, `@types/react-dom@19.2.7` | MIT | Development-only platform and peer type declarations. |
+| [vitejs/vite-plugin-react](https://github.com/vitejs/vite-plugin-react) | `04cac5020e349f452d76c5a4f6d788ad4b38930a` | `@vitejs/plugin-react@6.1.1` | MIT | Public React transform and refresh integration for the deterministic example. |
 
 Package pins were checked against their published registry metadata on the research date. The lockfile created in M1 becomes the exact transitive graph authority.
+
+The TypeScript, DefinitelyTyped, and Vite React plugin pins above close an implementation-plan omission discovered in M1: the required TypeScript typecheck and documented React/Vite example cannot be built from the original dependency table alone. They add build-time tooling only and do not expand Qraft's runtime architecture.
 
 ### Additional structural reference
 

@@ -239,8 +239,10 @@ Package exports:
 ## Technology choices
 
 - TypeScript on Node `24.19.0`, with pnpm `11.25.0` and one exact lockfile.
+- `typescript@7.0.2`, `@types/node@26.4.1`, `@types/react@19.2.18`, and `@types/react-dom@19.2.7` as exact development-only compiler/type pins.
 - `react@19.2.8` and `react-dom@19.2.8` as peer/development dependencies.
 - `vite@8.2.2` as a peer/development dependency for the `./vite` entry and example.
+- `@vitejs/plugin-react@6.1.1` as a development-only example transform/refresh plugin.
 - Exact `react-grab@0.2.0` for picker work.
 - `@radix-ui/react-dialog@1.1.23` for portal/drawer semantics in non-modal mode and `@radix-ui/react-focus-scope@1.1.16` only where the narrow overlay requires trapping. Validate both in the real ShadowRoot; do not allow Radix to change `document.body` overflow.
 - `zod@4.5.4` for runtime validation at untrusted/plugin/command boundaries.

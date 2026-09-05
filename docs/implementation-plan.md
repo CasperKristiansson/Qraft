@@ -79,6 +79,9 @@ The inspected commits are frozen research references. Published versions are exa
 | --- | --- | --- | --- |
 | [`vitest-dev/vitest`](https://github.com/vitest-dev/vitest) `9e1166959e14bd32298d8a0e85352431c769ec7a` | `vitest@5.0.0` | MIT | Domain, parser, golden-file, store, middleware, and component-level tests. |
 | [`microsoft/playwright`](https://github.com/microsoft/playwright) `d1dcd6bc0a138ec0fd943df19e07458dc426ee22` | `@playwright/test@1.62.1` | Apache-2.0 | Repeatable Chromium/Firefox/WebKit journeys, layout measurements, keyboard/accessibility behavior, and regression screenshots. |
+| [`microsoft/TypeScript`](https://github.com/microsoft/TypeScript) `2bd066d87f5bafd315be9f40889d0a60b9e58e0b` | `typescript@7.0.2` | Apache-2.0 | Development compiler, typecheck, and declaration emission required by the package contract. |
+| [`DefinitelyTyped/DefinitelyTyped`](https://github.com/DefinitelyTyped/DefinitelyTyped) published tarballs locked by integrity in `pnpm-lock.yaml` | `@types/node@26.4.1`, `@types/react@19.2.18`, `@types/react-dom@19.2.7` | MIT | Development-only Node, React, and React DOM declarations. |
+| [`vitejs/vite-plugin-react`](https://github.com/vitejs/vite-plugin-react) `04cac5020e349f452d76c5a4f6d788ad4b38930a` | `@vitejs/plugin-react@6.1.1` | MIT | Public React transform and refresh plugin for the deterministic Vite example. |
 
 ### Structural references only
 
@@ -167,11 +170,11 @@ Discovery rule: if a command is missing or the toolchain changes, inspect `AGENT
 
 ## Milestone index
 
-- [ ] M1: Establish package, read model, and browser-visible foundation
-- [ ] M2: Implement safe Markdown command engine
-- [ ] M3: Deliver Vite bridge and live synchronization
-- [ ] M4: Build the approved drawer workflow
-- [ ] M5: Integrate React Grab element attachment
+- [x] M1: Establish package, read model, and browser-visible foundation
+- [x] M2: Implement safe Markdown command engine
+- [x] M3: Deliver Vite bridge and live synchronization
+- [x] M4: Build the approved drawer workflow
+- [x] M5: Integrate React Grab element attachment
 - [ ] M6: Harden and prove the complete local candidate
 
 ## Primary goal command
@@ -216,16 +219,16 @@ Evidence inheritance:
 
 Tasks:
 
-- [ ] Pin Node `24.19.0`, pnpm `11.25.0`, package manager metadata, exact dependency versions, and lockfile.
-- [ ] Create root TypeScript/Vite/Vitest/Playwright configuration and required root scripts.
-- [ ] Define `.` client and `./vite` server exports without leaking server modules to the browser entry.
-- [ ] Define domain types, diagnostics, strict validation primitives, and read-model helpers.
-- [ ] Implement the constrained read-only parser with exact source spans, stable IDs, and session-local legacy locators.
-- [ ] Add canonical, legacy, malformed, unknown-content, LF, CRLF, and mixed-newline fixtures.
-- [ ] Create the deterministic Vite React example at `127.0.0.1:5173` with a read-only fixture preview.
-- [ ] Implement Shadow DOM mounting and the locked neutral/purple token sheet without full workflow behavior.
-- [ ] Spike Radix Dialog `Portal container={shadowRoot}` in non-modal mode plus the focused narrow-screen `FocusScope`; record focus, ARIA, outside-click, Escape, and body-overflow results. Stop for a decision if isolation requires changing host layout/scroll.
-- [ ] Record OSS provenance for every used package/reference.
+- [x] Pin Node `24.19.0`, pnpm `11.25.0`, package manager metadata, exact dependency versions, and lockfile.
+- [x] Create root TypeScript/Vite/Vitest/Playwright configuration and required root scripts.
+- [x] Define `.` client and `./vite` server exports without leaking server modules to the browser entry.
+- [x] Define domain types, diagnostics, strict validation primitives, and read-model helpers.
+- [x] Implement the constrained read-only parser with exact source spans, stable IDs, and session-local legacy locators.
+- [x] Add canonical, legacy, malformed, unknown-content, LF, CRLF, and mixed-newline fixtures.
+- [x] Create the deterministic Vite React example at `127.0.0.1:5173` with a read-only fixture preview.
+- [x] Implement Shadow DOM mounting and the locked neutral/purple token sheet without full workflow behavior.
+- [x] Spike Radix Dialog `Portal container={shadowRoot}` in non-modal mode plus the focused narrow-screen `FocusScope`; record focus, ARIA, outside-click, Escape, and body-overflow results. Stop for a decision if isolation requires changing host layout/scroll.
+- [x] Record OSS provenance for every used package/reference.
 
 Validation:
 
@@ -235,11 +238,11 @@ Validation:
 
 Done criteria:
 
-- [ ] Every task above is complete.
-- [ ] Read-only parsing leaves fixture bytes unchanged.
-- [ ] Client/server export isolation is proven.
-- [ ] Browser evidence is recorded with revision, URL, viewport, journey, and result.
-- [ ] Only M1-level evidence is claimed; broader workflow proof remains open.
+- [x] Every task above is complete.
+- [x] Read-only parsing leaves fixture bytes unchanged.
+- [x] Client/server export isolation is proven.
+- [x] Browser evidence is recorded with revision, URL, viewport, journey, and result.
+- [x] Only M1-level evidence is claimed; broader workflow proof remains open.
 
 Blocker handling:
 
@@ -278,16 +281,16 @@ Evidence inheritance:
 
 Tasks:
 
-- [ ] Implement the six commands with strict Zod boundary validation and Qraft-owned domain invariants.
-- [ ] Implement minimal span patches and lazy stable-ID insertion.
-- [ ] Implement exact SHA-256 revisions and stale-base rejection.
-- [ ] Serialize the complete read-modify-write operation per file.
-- [ ] Perform the second pre-write revision check.
-- [ ] Use `write-file-atomic@8.0.0` for sibling temp, fsync, metadata, rename, and cleanup while preserving Qraft's outer transaction semantics.
-- [ ] Return typed validation, missing-target, duplicate-ID, conflict, and I/O errors.
-- [ ] Add complete before/after golden fixtures for every mutation and legacy-target variant.
-- [ ] Add race/failure tests proving the original survives.
-- [ ] Add a private example storage lab that invokes the real store against a temporary fixture and will not ship in the package export.
+- [x] Implement the six commands with strict Zod boundary validation and Qraft-owned domain invariants.
+- [x] Implement minimal span patches and lazy stable-ID insertion.
+- [x] Implement exact SHA-256 revisions and stale-base rejection.
+- [x] Serialize the complete read-modify-write operation per file.
+- [x] Perform the second pre-write revision check.
+- [x] Use `write-file-atomic@8.0.0` for sibling temp, fsync, metadata, rename, and cleanup while preserving Qraft's outer transaction semantics.
+- [x] Return typed validation, missing-target, duplicate-ID, conflict, and I/O errors.
+- [x] Add complete before/after golden fixtures for every mutation and legacy-target variant.
+- [x] Add race/failure tests proving the original survives.
+- [x] Add a private example storage lab that invokes the real store against a temporary fixture and will not ship in the package export.
 
 Validation:
 
@@ -297,10 +300,10 @@ Validation:
 
 Done criteria:
 
-- [ ] All commands have byte-for-byte golden evidence.
-- [ ] External changes and injected failures do not overwrite the original.
-- [ ] Browser storage-lab evidence is recorded.
-- [ ] No public protocol or production surface was added early.
+- [x] All commands have byte-for-byte golden evidence.
+- [x] External changes and injected failures do not overwrite the original.
+- [x] Browser storage-lab evidence is recorded.
+- [x] No public protocol or production surface was added early.
 
 Blocker handling:
 
@@ -339,16 +342,16 @@ Evidence inheritance:
 
 Tasks:
 
-- [ ] Resolve plugin options and reject paths outside Vite root or invalid extensions.
-- [ ] Implement exact document, command, and SSE routes with method/content/origin/body/schema safeguards.
-- [ ] Implement safe error mapping without paths or stack traces.
-- [ ] Implement bounded in-memory command-ID deduplication.
-- [ ] Integrate Vite watcher add/change/unlink and coalesce by revision.
-- [ ] Implement SSE heartbeat, cleanup, reconnect, and refetch behavior.
-- [ ] Implement `HttpQAStorage` against the public protocol.
-- [ ] Prove `apply: "serve"`, shutdown cleanup, and route absence in build/preview.
-- [ ] Add real-Vite integration coverage using temporary files.
-- [ ] Remove or isolate any M2-only harness path no longer needed.
+- [x] Resolve plugin options and reject paths outside Vite root or invalid extensions.
+- [x] Implement exact document, command, and SSE routes with method/content/origin/body/schema safeguards.
+- [x] Implement safe error mapping without paths or stack traces.
+- [x] Implement bounded in-memory command-ID deduplication.
+- [x] Integrate Vite watcher add/change/unlink and coalesce by revision.
+- [x] Implement SSE heartbeat, cleanup, reconnect, and refetch behavior.
+- [x] Implement `HttpQAStorage` against the public protocol.
+- [x] Prove `apply: "serve"`, shutdown cleanup, and route absence in build/preview.
+- [x] Add real-Vite integration coverage using temporary files.
+- [x] Remove or isolate any M2-only harness path no longer needed.
 
 Validation:
 
@@ -358,10 +361,10 @@ Validation:
 
 Done criteria:
 
-- [ ] Public protocol exactly matches its canonical document.
-- [ ] Watch/reconnect/conflict journeys pass in the actual browser.
-- [ ] Build and preview expose no Qraft endpoint.
-- [ ] A compact handoff snapshot is written if the roadmap moves to a fresh task after M3.
+- [x] Public protocol exactly matches its canonical document.
+- [x] Watch/reconnect/conflict journeys pass in the actual browser.
+- [x] Build and preview expose no Qraft endpoint.
+- [x] A compact handoff snapshot is written because context compacted during M3.
 
 Blocker handling:
 
@@ -401,15 +404,15 @@ Evidence inheritance:
 
 Tasks:
 
-- [ ] Implement the closed `QA n/n` edge tab and drawer shell.
-- [ ] Implement checklist hierarchy, progress, selected task, and unresolved-finding counts.
-- [ ] Implement task detail, pass/reopen guard, deterministic auto-advance, and completed state.
-- [ ] Implement add section/task/note/finding forms with validation, pending, conflict, and preserved-draft behavior.
-- [ ] Implement loading, empty, diagnostic, disconnected, conflict, and write-error states.
-- [ ] Implement approved semantic components using Qraft CSS, Radix Dialog, and Lucide icons.
-- [ ] Match the six-surface visual baseline without gradients, glow, excess cards, or excess purple.
-- [ ] Implement keyboard order, focus trap/return, Escape hierarchy, live regions, reduced motion, and non-colour status cues.
-- [ ] Add component and Playwright tests for all meaningful states.
+- [x] Implement the closed `QA n/n` edge tab and drawer shell.
+- [x] Implement checklist hierarchy, progress, selected task, and unresolved-finding counts.
+- [x] Implement task detail, pass/reopen guard, deterministic auto-advance, and completed state.
+- [x] Implement add section/task/note/finding forms with validation, pending, conflict, and preserved-draft behavior.
+- [x] Implement loading, empty, diagnostic, disconnected, conflict, and write-error states.
+- [x] Implement approved semantic components using Qraft CSS, Radix Dialog, and Lucide icons.
+- [x] Match the five non-picker surfaces in the six-surface visual baseline without gradients, glow, excess cards, or excess purple.
+- [x] Implement keyboard order, focus trap/return, Escape hierarchy, live regions, reduced motion, and non-colour status cues.
+- [x] Add integrated component-journey and Playwright tests for meaningful non-picker states.
 
 Validation:
 
@@ -419,10 +422,10 @@ Validation:
 
 Done criteria:
 
-- [ ] The full Markdown QA loop works without element attachment.
-- [ ] All five available approved surfaces match the locked character and written design rules.
-- [ ] Automated and hands-on browser evidence cover keyboard and three viewports.
-- [ ] Material visual deviations are owner-approved or corrected.
+- [x] The full Markdown QA loop works without element attachment.
+- [x] All five available approved surfaces match the locked character and written design rules.
+- [x] Automated and hands-on browser evidence cover keyboard and three viewports.
+- [x] No material visual deviations remain.
 
 Blocker handling:
 
@@ -462,16 +465,16 @@ Evidence inheritance:
 
 Tasks:
 
-- [ ] Add `react-grab@0.2.0` and required MIT notice.
-- [ ] Implement capture-phase hit testing with public primitives and explicit Qraft/ignored-subtree filtering.
-- [ ] Implement async request sequencing, bounds tracking, purple/white picker halo, label clamping, and complete cleanup.
-- [ ] Prevent selected host controls from receiving the picker click.
-- [ ] Open the Qraft-owned finding form with concise target context.
-- [ ] Normalize/persist only approved `ElementReference` fields and omit unsafe source paths/query/hash.
-- [ ] Permit plain-finding fallback after partial/no context.
-- [ ] Implement `openFile()` with truthful inline errors.
-- [ ] Add React Grab compatibility, cleanup, Shadow DOM, iframe/shadow-root where supported, and three-browser E2E tests.
-- [ ] Complete provenance and third-party notices.
+- [x] Add `react-grab@0.2.0` and required MIT notice.
+- [x] Implement capture-phase hit testing with public primitives and explicit Qraft/ignored-subtree filtering.
+- [x] Implement async request sequencing, bounds tracking, purple/white picker halo, label clamping, and complete cleanup.
+- [x] Prevent selected host controls from receiving the picker click.
+- [x] Open the Qraft-owned finding form with concise target context.
+- [x] Normalize/persist only approved `ElementReference` fields and omit unsafe source paths/query/hash.
+- [x] Permit plain-finding fallback after partial/no context.
+- [x] Implement `openFile()` with truthful inline errors.
+- [x] Add React Grab compatibility, cleanup, Shadow DOM, iframe/shadow-root where supported, and three-browser E2E tests.
+- [x] Complete provenance and third-party notices.
 
 Validation:
 
@@ -481,10 +484,10 @@ Validation:
 
 Done criteria:
 
-- [ ] Element attachment and fallback journeys work without host side effects.
-- [ ] Persisted data contains only approved fields.
-- [ ] Browser and automated evidence cover cleanup, Escape, and source errors.
-- [ ] A compact handoff snapshot is written if the roadmap moves to a fresh task after M5.
+- [x] Element attachment and fallback journeys work without host side effects.
+- [x] Persisted data contains only approved fields.
+- [x] Browser and automated evidence cover cleanup, Escape, and source errors.
+- [x] A compact handoff snapshot is written if the roadmap moves to a fresh task after M5.
 
 Blocker handling:
 
@@ -582,13 +585,26 @@ A handoff continues this roadmap. It does not create a new plan or reset complet
 
 | Date | Milestone | Source revision | URL and viewport | Journey | Result | Evidence |
 | --- | --- | --- | --- | --- | --- | --- |
-| — | — | — | — | No implementation Browser run yet | Not run | — |
+| 2026-09-04 | M1 | `773ff60` + worktree `0576babb8147` | `http://127.0.0.1:5173`, 1440×900 | Open read-only fixture drawer; inspect Shadow DOM and locked tokens; verify heading focus, Escape/focus return, non-modal outside click, body overflow, and host geometry | Pass — `#6d4bd2`/white computed tokens, fixed drawer, real ShadowRoot, `body` overflow unchanged, host remained 1440×900, no horizontal overflow | `artifacts/browser-evidence/m1-checklist--1440x900.png` (1440×900 PNG, original-size inspected) |
+| 2026-09-04 | M2 | `773ff60` + worktree `0b2cf726f62b` | `http://127.0.0.1:5173/?lab=1`, 1440×900 | In the private temporary-file lab, create section/task/note/finding; observe blocked task pass; resolve finding; pass/reopen task; force stale revision | Pass — every command returned a new exact revision, unknown owner Markdown remained visible, reopening retained resolved finding, stale request showed conflict and no write | `artifacts/browser-evidence/m2-storage-lab--1440x900.png` (1440×900 PNG, original-size inspected) |
+| 2026-09-04 | M3 | `773ff60` + worktree `48f11bcb5853` | `http://127.0.0.1:5173/?protocol=1` and `/`, 1440×900 | Execute a real section command; append externally; delete/recreate the file; force stale command and atomic-write failure; stop/restart Vite for disconnect/reconnect | Pass — exact revisions refreshed without page reload for add/change/unlink, missing and recreated models appeared, 409 and 500 messages were truthful with draft text retained, disconnected state appeared with retained draft, and restart returned to a live fixture | `artifacts/browser-evidence/m3-live-protocol--1440x900.png` (`8448d67e…`, 1440×900 PNG, original-size inspected) |
+| 2026-09-04 | M4 | `773ff60` + worktree `a9e072713928` | `http://127.0.0.1:5173/`, 1440×900, 1366×650, 768×900 | Compare checklist, task detail, finding, complete, and add-task surfaces; add/cancel/save a finding; verify blocked pass, resolve, auto-advance, completion, focus return, and overlay geometry | Pass — five available panels match the locked neutral/list-first character; text/focus/status semantics are exposed; host remained 768×900 with `body` overflow `visible`, zero scroll, no horizontal overflow, and fixed 380 px overlay | `artifacts/browser-evidence/m4-{checklist,task-detail,finding-form,complete,add-task}--1440x900.png`, plus checklist at 1366×650 and 768×900 (all exact-size PNGs, original-size inspected) |
+| 2026-09-04 | M5 | `773ff60` + worktree `a545e2c6d6b8` | `http://127.0.0.1:5173/`, `?picker=1`, and `?protocol=1`; 1440×900, 1366×650, 768×900 | Activate/cancel picker; inspect host/Qraft filtering, halo/label clamping, quantity selection without activation, React context, plain fallback, open Shadow DOM and same-origin iframe, approved Markdown fields, and source-open error | Pass — Qraft UI was never targetable; host quantity remained unchanged during selection; Escape restored Attach focus; attached Markdown contained only component/source/line/column/route/selector; fallback and inline open error remained usable | `artifacts/browser-evidence/m5-picker--{1440x900,1366x650,768x900}.png` and `m5-attached-finding--1440x900.png` (exact-size PNGs, original-size inspected) |
 
 ## OSS provenance log
 
 | Date | Milestone | Repository/commit/path | Extracted behavior | Qraft destination | Evidence |
 | --- | --- | --- | --- | --- | --- |
 | 2026-09-04 | Planning | Repositories in exact allowlist | Roles and boundaries researched; no code copied | This plan | GitHub/npm metadata and inspected upstream files |
+| 2026-09-04 | M1 | `shadcn-ui/ui@7c9eaba1` `button.tsx`, `progress.tsx`, `badge.tsx` | Thin semantic controls, explicit variants/state, and progress indicator geometry; no source or CSS copied | `src/client/QA.tsx`, `src/client/styles.css` | Read-only GitHub API inspection plus browser result |
+| 2026-09-04 | M1 | `vitejs/vite@8492422b` `docs/guide/api-plugin.md`; `vite@8.2.2`; `@vitejs/plugin-react@6.1.1` | Public library build, serve-only plugin shape, deterministic React example | `vite.config.ts`, `examples/vite-react/vite.config.ts`, `src/vite.ts` | Pinned lockfile, build pass, exact docs inspection |
+| 2026-09-04 | M1 | `radix-ui/primitives@f7ecd5ab`; `@radix-ui/react-dialog@1.1.23`, `@radix-ui/react-focus-scope@1.1.16` | Published portal container, non-modal dismissal, focus entry/return, narrow focus-trap primitive | `src/client/QA.tsx` | Pinned lockfile and integrated ShadowRoot Browser pass |
+| 2026-09-04 | M1 | Pinned React, Lucide, Zod, TypeScript, DefinitelyTyped, Vitest, and Playwright packages in allowlist | Runtime/types, selected icons, strict schemas, compile/test/capture tooling only | Package shell, domain, client, tests, evidence script | `pnpm-lock.yaml`, typecheck, tests, build, verified PNG |
+| 2026-09-04 | M2 | `npm/write-file-atomic@23e111d` `lib/index.js`, `test/concurrency.js`, `test/integration.js`; package `8.0.0` | Sibling-temp lifecycle, fsync/default metadata preservation, cleanup, same-target queue boundary; Qraft retains full transaction queue and second hash check | `src/markdown/store.ts`, `tests/markdown/store.test.ts` | Exact GitHub API inspection; mode, failure cleanup, concurrency, and external-race tests |
+| 2026-09-04 | M3 | `vitejs/vite@8492422b` `docs/guide/api-plugin.md`, `docs/guide/api-javascript.md`, `packages/vite/src/node/server/__tests__/watcher.spec.ts` | Public resolved-config, serve-only middleware, watcher, listen/close, and lifecycle testing patterns; no internals copied | `src/vite.ts`, `src/server/*`, `tests/server/protocol.test.ts` | Exact GitHub API inspection and real Vite ephemeral-server integration tests |
+| 2026-09-04 | M4 | Previously inspected `shadcn-ui/ui@7c9eaba1` button/progress/badge files and published Radix Dialog/FocusScope APIs | Reapplied only the approved thin-control, progress-geometry, portal, dismissal, and focus concepts to an original Qraft composition and CSS sheet | `src/client/QA.tsx`, `src/client/styles.css`, `tests/e2e/m4-workflow.spec.ts` | Three-browser interaction suite and seven retained visual screenshots; no upstream source or CSS copied |
+| 2026-09-04 | M5 | `aidenybai/react-grab@ea4bbec0b03aa81d351e2ea85f0004cf947314e6` `packages/react-grab/src/primitives.ts`, `tests/primitives-hit-testing.test.ts`, `tests/open-file.test.ts`, `packages/react-grab/src/utils/open-file.ts`; package `react-grab@0.2.0` | Public `getElementDimensions`, `getFiberFromElement`, `getSourceFromFiber`, and `getDisplayNameFromFiber` primitives plus observable hit-testing/open-file expectations; no private module or implementation copied | `src/client/picker/ElementPicker.tsx`, `tests/e2e/m5-picker.spec.ts`, `THIRD_PARTY_NOTICES.md` | Exact pin/lock, public-import typecheck/build, three-engine E2E, manual Browser inspection, React Grab MIT notice |
+| 2026-09-04 | M5 | `kitze/petite-react-grab@c013b30b2ba8c7c159c47a4fc558550150882141` `src/index.tsx` and demo application | Structural reference for document-listener lifecycle, latest async target result, and Qraft-owned overlay separation; no source, CSS, component, or subsystem copied | `src/client/picker/ElementPicker.tsx`, `src/client/styles.css` | Direct upstream inspection; original Qraft implementation and retained visual evidence |
 
 ## Blockers, decisions, and evidence log
 
@@ -597,3 +613,19 @@ A handoff continues this roadmap. It does not create a new plan or reset complet
 - 2026-09-04 — Decision: use published packages for React Grab, Radix Dialog, Zod, Lucide, and atomic writes; use petite-react-grab and selected shadcn files only as structural references.
 - 2026-09-04 — Decision: shadcn's Vaul-based Drawer, Tailwind, and Agentation implementation code are excluded from v0.1.
 - 2026-09-04 — Evidence boundary: documentation and upstream research only. No Qraft implementation, test, Browser, CI, package, or release evidence exists yet.
+- 2026-09-04 — M1 dependency-gap decision: added exact development-only pins for TypeScript, Node/React declarations, and the already documented Vite React plugin. Registry metadata and immutable lockfile integrity provide provenance; runtime scope is unchanged.
+- 2026-09-04 — M1 install evidence: the first `corepack pnpm install` was rejected by the configured seven-day `minimumReleaseAge` policy. Added version-specific `minimumReleaseAgeExclude` entries only for the eight exact direct/transitive versions reported by pnpm; all other packages retain the seven-day gate.
+- 2026-09-04 — M1 checkpoint (`773ff60` + implementation fingerprint `0576babb8147`): `corepack pnpm format:check`, `lint`, `typecheck`, full M1 `test` (2 files, 7 tests), and `build` passed. `dist/index.js` contained no Node, Markdown, server, Vite, or atomic-write imports. The mandatory Browser pass and retained 1440×900 PNG passed; only M1 behavior is verified.
+- 2026-09-04 — M1 Radix result: the dialog rendered inside the open ShadowRoot with correct ARIA dialog/title exposure; open focused the Qraft heading; Escape closed and returned focus to the edge tab; an outside host click dismissed the non-modal drawer and reached the host; `document.body` overflow remained `visible`. No host layout or scroll mutation was required.
+- 2026-09-04 — M2 checkpoint (`773ff60` + implementation fingerprint `0b2cf726f62b`): `corepack pnpm test -- tests/domain tests/markdown` passed 4 files/28 tests; `corepack pnpm typecheck` and `corepack pnpm build` passed. The store suite proved missing-file laziness, all commands, exact hashes, stale/external conflicts, serialization, mode retention, original survival, sibling-temp cleanup, duplicate targets, and validation failures. Mandatory Browser lab and retained 1440×900 PNG passed. Public HTTP/SSE remains unimplemented as required at this checkpoint.
+- 2026-09-04 — M3 retry evidence: the first real-Vite integration invocation failed only because the filesystem sandbox denied localhost `listen` (`EPERM`). The changed execution condition was an approved out-of-sandbox run; 6/6 tests passed. A later watcher-settle change from 40 ms to 750 ms was a source delta, after which the same suite passed again. The first example restart exposed old-server cleanup deleting the new fixture; removing that cleanup before a clean restart fixed the race. The first image verification invocation used obsolete flags; retrying with the tool's reported `--expected 1440x900 --require-format png` interface passed.
+- 2026-09-04 — M3 checkpoint (`773ff60` + implementation fingerprint `48f11bcb5853`): `corepack pnpm test -- tests/domain tests/markdown tests/server` passed 5 files/34 tests; `corepack pnpm typecheck` and `corepack pnpm build` passed; the real-Vite suite also built and previewed an isolated app and proved all Qraft endpoints absent. The temporary M2 lab source and route were removed before closure.
+- 2026-09-04 — M3 Browser result: at 1440×900, a real `HttpQAStorage` command changed revision `9a837e94` to `c6941898`; an external append refreshed to `24e93c78`; unlink showed the empty missing model `e3b0c442`; recreate restored `9a837e94`. Forced stale and permission-blocked writes showed safe 409/500 messages and retained `Conflict draft`/`Write failure draft`. Stopping Vite exposed the reconnect status while retaining `Reconnect draft`; restarting restored the seeded live fixture. The full dev-server restart necessarily reloaded the example page, so draft retention is claimed for the disconnected state, not across the Vite document reload.
+- 2026-09-04 — Compact M3 handoff: base `773ff60b`; worktree fingerprint `48f11bcb5853`; exact Node/pnpm/direct pins are locked in `.node-version`, `package.json`, and `pnpm-lock.yaml`; accepted checks are M1 7 tests, M2 28 tests, M3 aggregate 34 tests plus typecheck/build and preview absence; latest Browser surface is `http://127.0.0.1:5173/` at 1440×900 with retained M3 PNG. M4 starts from `src/client/QA.tsx` and `styles.css`; M1 shell visual evidence is superseded by M4, while unchanged parser/store/protocol fingerprints remain inheritable.
+- 2026-09-04 — M4 retry evidence: the first form test used a descendant locator whose `has` root could never match; narrowing from the Cart heading's parent fixed it. Escape initially focused a detached trigger node; stable `data-form-trigger` keys now focus the remounted button. Non-modal outside dismissal initially cleared the form, so retaining form state across drawer visibility changes fixed conflict preservation. A duplicate visible/hidden live message caused a strict locator ambiguity; the hidden live region now renders only for neutral messages. The first cross-browser aggregate inherited a malformed fixture from the preceding test; making the M1 test explicitly recreate the deterministic fixture isolated every test. Every rerun followed one of those recorded deltas.
+- 2026-09-04 — M4 checkpoint (`773ff60` + implementation fingerprint `a9e072713928`; visual component digests `QA.tsx 612f43ff…`, `styles.css 342117c8…`): `corepack pnpm check` passed format, lint, typecheck, 5 files/34 unit-integration tests, and build. A persistent-terminal `corepack pnpm test:browser` passed 15/15 with one worker across Chromium, Firefox, and WebKit. The real-example journeys cover detail/pass/reopen/auto-advance, all four forms, unresolved-findings guard, draft refresh/conflict, focus/geometry at 1440 and 768, and missing/malformed recovery.
+- 2026-09-04 — M4 visual evidence: seven retained screenshots passed exact PNG dimension verification and original-size inspection. Checklist, detail, finding, completion, and add-task views use the locked `#6d4bd2` accent, cool white/neutral list-first surfaces, restrained green/amber/error semantics, 40 px controls, compact type, and no gradients/glow/excess cards. The later private malformed-fixture endpoint did not touch the fingerprinted visual component or host CSS files, so those screenshots remain current for the M4 visual boundary.
+- 2026-09-04 — M5 retry evidence: the first full three-browser run passed 21/24 and timed out only in the cleanup test after that test deliberately clicked a host control, which correctly dismissed the nonmodal drawer. The source delta explicitly asserted dismissal and reopened Qraft before each following picker cycle; the focused test then passed 3/3 and the aggregate passed 24/24. The first screenshot command forwarded a literal `--`, shifting arguments and producing a `NaN` viewport before browser creation; removing that command-only argument produced all four exact-size captures. The first aggregate `check` in the restricted shell passed 29 tests and failed the five real-server tests only at `listen EPERM 127.0.0.1`; rerunning with loopback permission passed without a source change.
+- 2026-09-04 — M5 checkpoint (`773ff60` + implementation fingerprint `a545e2c6d6b8`; component digests `QA.tsx 9f0b6c38…`, `styles.css 0bbc7125…`, `ElementPicker.tsx 5035b9f1…`): `corepack pnpm check` passed format, lint, typecheck, 5 files/34 unit-integration tests, and build. `corepack pnpm test:browser` passed 24/24 with one worker across Chromium, Firefox, and WebKit. The picker uses only public `react-grab/primitives`, filters Qraft-owned UI, intercepts the selected host click, sequences async context, tracks geometry, cleans every listener, reaches open Shadow DOM and same-origin iframes, and falls back without inventing context.
+- 2026-09-04 — M5 Browser result: manual `@Browser` journeys at all required viewports exercised picker selection/cancellation, host side-effect suppression, fallback, Shadow DOM, iframe, exact Markdown output, and a forced editor-open failure. CUA did not expose a pointer-hover method, so the manual click journeys were paired with agent-inspected original-size Playwright captures of real hover state; automated real-pointer assertions verify the same halo. The retained clean-example PNG digests are `55455fc0…` (1440 picker), `40082160…` (1366 picker), `a519ba90…` (768 picker), and `29707459…` (attached finding).
+- 2026-09-04 — Compact M5 handoff: base `773ff60b`; worktree fingerprint `a545e2c6d6b8`; direct dependency `react-grab@0.2.0` is exact and its MIT notice is present; accepted checks are 34 unit/integration tests, build, and 24 three-engine E2E tests. Latest Browser surfaces are the local deterministic example at 1440×900, 1366×650, and 768×900 with four retained M5 PNGs. M6 starts by closing failure/connection/accessibility coverage, packaging and license audits, documentation, then performs the only final full gates and packed clean-consumer Browser journey.

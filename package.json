@@ -1,0 +1,64 @@
+{
+  "name": "@qraft/qa",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Development-only React QA drawer backed by local Markdown",
+  "type": "module",
+  "packageManager": "pnpm@11.25.0",
+  "engines": {
+    "node": "24.19.0"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./vite": {
+      "types": "./dist/vite.d.ts",
+      "import": "./dist/vite.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "scripts": {
+    "dev": "vite --config examples/vite-react/vite.config.ts --host 127.0.0.1 --port 5173",
+    "build": "vite build --config vite.config.ts && tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node scripts/test.mjs",
+    "test:browser": "playwright test",
+    "evidence:capture": "node scripts/capture-browser-evidence.mjs",
+    "audit:release": "node scripts/audit-release.mjs",
+    "verify:consumer": "node scripts/verify-clean-consumer.mjs",
+    "format:check": "node scripts/format-check.mjs",
+    "lint": "node scripts/lint.mjs",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+  },
+  "peerDependencies": {
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "vite": "8.2.2"
+  },
+  "dependencies": {
+    "@radix-ui/react-dialog": "1.1.23",
+    "@radix-ui/react-focus-scope": "1.1.16",
+    "lucide-react": "1.41.0",
+    "react-grab": "0.2.0",
+    "write-file-atomic": "8.0.0",
+    "zod": "4.5.4"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.62.1",
+    "@types/node": "26.4.1",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.7",
+    "@vitejs/plugin-react": "6.1.1",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "typescript": "7.0.2",
+    "vite": "8.2.2",
+    "vitest": "5.0.0"
+  }
+}
