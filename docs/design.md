@@ -43,7 +43,7 @@ The owner-approved changes in this section supersede the original edge tab, deta
 
 ### Closed tab
 
-Use a tight horizontal group: six-dot grip (three columns/two rows), QA, completed/total. Aim for a 26 px-high tab with 11 px text, rather than a tall vertical tab. Use concave junctions where the tab meets the viewport edge. The grip moves the tab only vertically; pointer capture prevents losing drag outside its bounds. Dragging does not open the drawer. Persist a normalized vertical position, clamp on resize, and tolerate unavailable browser storage. Arrow keys move the focused grip; Home/End reach the limits. The separate QA button opens the drawer and receives focus on close.
+Rotate the compact grip, QA and completed/total group 90 degrees clockwise so it runs vertically down the right edge, as clarified by the owner on 2026-09-05. Keep the tab 26 px wide with 11 px sideways text and a rotated six-dot grip. Use concave junctions where the tab meets the viewport edge. The grip moves the tab only vertically; pointer capture prevents losing drag outside its bounds. Dragging does not open the drawer. Persist a normalized vertical position, clamp using the rendered tab height on resize or count changes, and tolerate unavailable browser storage. Arrow keys move the focused grip; Home/End reach the limits. The separate QA button opens the drawer and receives focus on close.
 
 ### Checklist
 

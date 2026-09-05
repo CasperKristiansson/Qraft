@@ -13,7 +13,7 @@ Qraft is an internal, local development review tool for Vite React apps. A teste
 
 ## Required behavior
 
-- A compact horizontal edge tab contains a six-dot grip, QA, and completed/total count. Dragging moves it vertically along the right edge; the position survives reload and is clamped to the viewport. Keyboard arrows/Home/End provide equivalent repositioning.
+- A compact vertical edge tab contains a six-dot grip, QA, and completed/total count, rotated 90 degrees clockwise. Dragging moves it vertically along the right edge; the position survives reload and is clamped to the viewport. Keyboard arrows/Home/End provide equivalent repositioning.
 - The drawer overlays the host without moving layout or locking body scroll. Checklist progress stays near the top; detail replaces the header identity with a large back button and omits progress.
 - Each task row has separate status and detail controls. Single activation cycles open → completed → skipped → open. A pointer double-click skips directly. Skipped tasks use a strike-through and explicit text.
 - Progress counts completed tasks over all tasks; skipped count is shown separately. Skipped is never counted as passed.

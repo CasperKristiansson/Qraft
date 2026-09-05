@@ -8,14 +8,15 @@
 button, input, textarea { color: inherit; font: inherit; }
 button:focus-visible, input:focus-visible, textarea:focus-visible, [tabindex="-1"]:focus-visible { outline: 2px solid var(--qraft-focus); outline-offset: 2px; }
 button:disabled { cursor: not-allowed; opacity: .48; }
- .qraft-tab { position: fixed; z-index: 2147483647; right: 0; display: flex; align-items: center; height: 26px; padding: 0 5px 0 2px; border-radius: 7px 0 0 7px; background: var(--qraft-purple); color: white; }
+ .qraft-tab { position: fixed; z-index: 2147483647; right: 0; display: flex; align-items: center; writing-mode: vertical-rl; text-orientation: sideways; width: 26px; padding: 2px 0 5px; border-radius: 7px 0 0 7px; background: var(--qraft-purple); color: white; }
 .qraft-tab[hidden] { display: none; }
 .qraft-tab::before, .qraft-tab::after { content: ""; position: absolute; right: 0; width: 7px; height: 7px; pointer-events: none; }
 .qraft-tab::before { bottom: 100%; border-radius: 0 0 7px 0; box-shadow: 0 4px 0 0 var(--qraft-purple); }
 .qraft-tab::after { top: 100%; border-radius: 0 7px 0 0; box-shadow: 0 -4px 0 0 var(--qraft-purple); }
-.qraft-grip, .qraft-tab-open { display: flex; align-items: center; justify-content: center; height: 26px; min-height: 26px; padding: 0 3px; border: 0; background: transparent; color: white; font-size: 11px; cursor: pointer; }
-.qraft-grip { cursor: ns-resize; touch-action: none; width: 20px; }
-.qraft-tab-open { gap: 5px; font-weight: 600; }
+.qraft-grip, .qraft-tab-open { display: flex; align-items: center; justify-content: center; writing-mode: vertical-rl; text-orientation: sideways; width: 26px; min-width: 26px; padding: 3px 0; border: 0; background: transparent; color: white; font-size: 11px; cursor: pointer; }
+.qraft-grip { cursor: ns-resize; touch-action: none; height: 20px; }
+.qraft-grip svg { transform: rotate(90deg); }
+.qraft-tab-open { gap: 5px; font-weight: 600; white-space: nowrap; }
 .qraft-grip:focus-visible, .qraft-tab-open:focus-visible { outline: 2px solid white; outline-offset: -2px; border-radius: 4px; }
 .qraft-drawer { position: fixed; inset: 0 0 0 auto; z-index: 2147483647; width: min(380px, 100vw); height: 100dvh; overflow: auto; padding: 0; border: 0; border-left: 1px solid var(--qraft-border); background: var(--qraft-surface); color: var(--qraft-ink); box-shadow: -3px 0 14px rgb(36 29 55 / 5%); }
 .qraft-header { position: sticky; top: 0; z-index: 2; display: grid; grid-template-columns: 24px 1fr 40px; align-items: center; gap: 10px; min-height: 58px; padding: 0 12px 0 18px; border-bottom: 1px solid var(--qraft-border); background: white; }

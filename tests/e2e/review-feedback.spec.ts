@@ -1,15 +1,15 @@
 import { expect, test } from "@playwright/test";
 import { reset, drawer, open, taskButton } from "./helpers";
 
-test("compact horizontal tab drags and remembers position without opening", async ({ page }) => {
+test("compact vertical tab drags and remembers position without opening", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 }); await reset(page); await drawer(page).getByRole("button", { name: "Close Qraft", exact: true }).click();
   const tab = page.locator(".qraft-tab"); const grip = page.getByRole("button", { name: "Move Qraft tab", exact: true });
-  const box = (await tab.boundingBox())!; expect(box.height).toBe(26); expect(box.width).toBeLessThan(95);
+  const box = (await tab.boundingBox())!; expect(box.width).toBe(26); expect(box.height).toBeGreaterThan(26); expect(box.height).toBeLessThan(95);
   const handle = (await grip.boundingBox())!; await page.mouse.move(handle.x + 8, handle.y + 10); await page.mouse.down(); await page.mouse.move(handle.x + 8, handle.y + 140, { steps: 5 }); await page.mouse.up();
   await expect(drawer(page)).toHaveCount(0); const moved = (await tab.boundingBox())!; expect(moved.y).toBeGreaterThan(box.y + 100);
   await page.reload(); await expect(tab).toBeVisible(); expect((await tab.boundingBox())!.y).toBeCloseTo(moved.y, 0);
-  await grip.focus(); await page.keyboard.press("End"); expect((await tab.boundingBox())!.y).toBeLessThanOrEqual(900 - 26);
-  await page.setViewportSize({ width: 768, height: 650 }); expect((await tab.boundingBox())!.y).toBeLessThanOrEqual(650 - 26);
+  await grip.focus(); await page.keyboard.press("End"); expect((await tab.boundingBox())!.y + (await tab.boundingBox())!.height).toBeLessThanOrEqual(900 - 8);
+  await page.setViewportSize({ width: 768, height: 650 }); expect((await tab.boundingBox())!.y + (await tab.boundingBox())!.height).toBeLessThanOrEqual(650 - 8);
   await page.keyboard.press("Home"); expect((await tab.boundingBox())!.y).toBe(8);
 });
 
