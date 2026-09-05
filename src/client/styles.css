@@ -18,11 +18,16 @@ button:disabled { cursor: not-allowed; opacity: .48; }
 .qraft-grip svg { transform: rotate(90deg); }
 .qraft-tab-open { gap: 5px; font-weight: 600; white-space: nowrap; }
 .qraft-grip:focus-visible, .qraft-tab-open:focus-visible { outline: 2px solid white; outline-offset: -2px; border-radius: 4px; }
-.qraft-drawer { position: fixed; inset: 0 0 0 auto; z-index: 2147483647; width: min(380px, 100vw); height: 100dvh; overflow: auto; padding: 0; border: 0; border-left: 1px solid var(--qraft-border); background: var(--qraft-surface); color: var(--qraft-ink); box-shadow: -3px 0 14px rgb(36 29 55 / 5%); }
-.qraft-header { position: sticky; top: 0; z-index: 2; display: grid; grid-template-columns: 24px 1fr 40px; align-items: center; gap: 10px; min-height: 58px; padding: 0 12px 0 18px; border-bottom: 1px solid var(--qraft-border); background: white; }
+.qraft-drawer { position: fixed; inset: 0 0 0 auto; z-index: 2147483647; display: flex; flex-direction: column; width: min(380px, 100vw); height: 100dvh; overflow: hidden; padding: 0; border: 0; border-left: 1px solid var(--qraft-border); background: var(--qraft-surface); color: var(--qraft-ink); box-shadow: -3px 0 14px rgb(36 29 55 / 5%); }
+.qraft-header { flex-shrink: 0; display: flex; align-items: center; gap: 10px; min-height: 58px; padding: 0 12px 0 18px; border-bottom: 1px solid var(--qraft-border); background: white; }
+.qraft-header > svg { flex-shrink: 0; }
+.qraft-header > .qraft-icon-button { flex-shrink: 0; margin-left: auto; }
 .qraft-header h1, .qraft-header h2 { margin: 0; font-size: 16px; line-height: 1; }
 .qraft-icon-button { display: grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: 10px; background: transparent; cursor: pointer; } .qraft-icon-button:hover { background: #f5f4f7; }
-.qraft-content { padding: 18px 20px 28px; } .qraft-progress-row { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 14px; }
+.qraft-content { flex: 1; min-height: 0; overflow: auto; padding: 18px 20px 20px; } .qraft-progress-row { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 14px; }
+.qraft-footer { flex-shrink: 0; max-height: calc(100dvh - 58px); overflow: auto; padding: 12px 20px 16px; border-top: 1px solid var(--qraft-soft-border); background: white; }
+.qraft-footer > .qraft-secondary, .qraft-footer > .qraft-form { margin-top: 0; }
+.qraft-footer > .qraft-banner { margin: 0 0 10px; }
 .qraft-progress { overflow: hidden; height: 5px; border-radius: 99px; background: #ebe9ef; } .qraft-progress span { display: block; height: 100%; border-radius: inherit; background: var(--qraft-purple); }
 .qraft-document-title { margin: 22px 0 6px; font-size: 20px; letter-spacing: -.02em; }
 .qraft-section { margin-top: 20px; } .qraft-section h3 { margin: 0; padding: 0 8px 8px; border-bottom: 1px solid var(--qraft-border); color: var(--qraft-muted); font-size: 11px; letter-spacing: .09em; text-transform: uppercase; }
@@ -48,7 +53,7 @@ button:disabled { cursor: not-allowed; opacity: .48; }
 .qraft-context > button { width: max-content; margin-top: 4px; color: var(--qraft-purple-strong); }
 .qraft-form input, .qraft-form textarea, .qraft-orphan textarea { width: 100%; padding: 9px 10px; border: 1px solid var(--qraft-border); border-radius: 10px; background: white; font: inherit; resize: vertical; } .qraft-form input { min-height: 40px; } .qraft-form textarea { min-height: 94px; }
 .qraft-form-actions { display: flex; justify-content: flex-end; gap: 8px; } .qraft-form button { min-height: 36px; padding: 0 12px; border: 1px solid var(--qraft-border); border-radius: 9px; background: white; } .qraft-form button.primary { border-color: var(--qraft-purple); background: var(--qraft-purple); color: white; } .qraft-field-error { color: var(--qraft-red); font-size: 12px; }
-.qraft-preview-note { margin: 20px 0 0; color: var(--qraft-muted); font-size: 11px; text-align: center; } .qraft-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.qraft-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 .qraft-picker { position: fixed; inset: 0; z-index: 2147483647; pointer-events: none; font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
 .qraft-picker-outline { position: fixed; border: 1px solid var(--qraft-purple); background: rgb(109 75 210 / 10%); box-shadow: 0 0 0 2px white, 0 0 0 3px rgb(109 75 210 / 45%); pointer-events: none; }
 .qraft-picker-label { position: fixed; max-width: 180px; overflow: hidden; padding: 3px 7px; border-radius: 6px; background: var(--qraft-purple); color: white; box-shadow: 0 2px 8px rgb(31 20 64 / 22%); font: 700 11px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; text-overflow: ellipsis; white-space: nowrap; pointer-events: none; }
@@ -61,7 +66,6 @@ button:disabled { cursor: not-allowed; opacity: .48; }
 
 .qraft-tab[aria-expanded="true"] { visibility: hidden; }
 
-.qraft-header.detail { grid-template-columns: 1fr 40px; }
 .qraft-header-back { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0; border: 0; background: transparent; text-align: left; font-size: 15px; font-weight: 600; cursor: pointer; }
 .qraft-task-row { display: grid; grid-template-columns: 32px 1fr; align-items: center; border-bottom: 1px solid var(--qraft-soft-border); }
 .qraft-task-row > .qraft-status { width: 24px; height: 24px; padding: 3px; background: white; cursor: pointer; }
@@ -101,4 +105,5 @@ button:disabled { cursor: not-allowed; opacity: .48; }
 .qraft-file-chooser input { margin: 7px 0 14px; }
 .qraft-file { display: flex; justify-content: space-between; gap: 8px; width: 100%; min-height: 44px; padding: 8px; border: 0; border-bottom: 1px solid var(--qraft-soft-border); background: white; text-align: left; overflow-wrap: anywhere; cursor: pointer; }
 .qraft-file:hover { background: var(--qraft-purple-pale); }
-.qraft-file-current { display: block; max-width: 100%; margin: 6px auto 0; border: 0; background: transparent; color: var(--qraft-muted); font-size: 11px; overflow-wrap: anywhere; cursor: pointer; }
+.qraft-change-file { min-height: 32px; padding: 0 4px; border: 0; border-radius: 5px; background: transparent; color: var(--qraft-muted); font-size: 11px; cursor: pointer; }
+.qraft-change-file:hover { color: var(--qraft-purple-strong); background: var(--qraft-purple-pale); }

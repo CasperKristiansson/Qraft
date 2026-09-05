@@ -40,9 +40,10 @@ test("notes edit independently and drafts survive navigation, picker cancellatio
   await taskButton(page, "Change quantity").click(); await expect(input).toHaveValue("Unsubmitted second note");
   await d.getByRole("button", { name: "Attach element", exact: true }).click(); await page.keyboard.press("Escape");
   await expect(input).toHaveValue("Unsubmitted second note"); await expect(input).toBeFocused();
+  const refreshed = page.waitForResponse((response) => /\/__qraft\/.*\/document$/u.test(response.url()) && response.request().method() === "GET");
   await page.request.post("/__qraft-example/external-edit");
   const latest = await page.request.get("/__qraft/document").then((r) => r.json());
-  await expect(d.getByText(new RegExp(latest.revision.slice(0, 8), "u"))).toBeVisible();
+  expect((await (await refreshed).json()).revision).toBe(latest.revision);
   await expect(input).toHaveValue("Unsubmitted second note");
   await input.evaluate((element: HTMLTextAreaElement) => element.setSelectionRange(element.value.length, element.value.length)); await input.press("Shift+Enter"); await expect(input).toHaveValue("Unsubmitted second note\n");
 });

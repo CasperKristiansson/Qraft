@@ -38,11 +38,11 @@ test("M6 reduced motion, contrast, live status, focus containment, and narrow la
   await drawer.getByRole("button", { name: "Save" }).click();
   await expect(drawer.getByRole("status")).toContainText("Section saved.");
 
-  await drawer.getByRole("button", { name: "Close Qraft" }).focus();
+  await drawer.getByRole("button", { name: "Change file", exact: true }).focus();
   await page.keyboard.press("Shift+Tab");
-  await expect(drawer.getByRole("button", { name: /Change file/u })).toBeFocused();
+  await expect(drawer.getByRole("button", { name: "Add section" })).toBeFocused();
   await page.keyboard.press("Tab");
-  await expect(drawer.getByRole("button", { name: "Close Qraft" })).toBeFocused();
+  await expect(drawer.getByRole("button", { name: "Change file", exact: true })).toBeFocused();
   expect(await page.evaluate(() => getComputedStyle(document.body).overflow)).toBe("visible");
   const focusIsInsideQraft = await page.evaluate(() => {
     const root = document.querySelector("[data-qraft-root]")?.shadowRoot;
@@ -90,8 +90,11 @@ test("M6 disconnected stream reconnects and refetches while preserving a draft",
   await page.request.post("/__qraft-example/external-edit");
   const response = await page.request.get("/__qraft/document");
   const latest = await response.json();
+  const refreshed = page.waitForResponse(async (response) => /\/__qraft\/.*\/document$/u.test(response.url()) && response.request().method() === "GET" && (await response.json()).revision === latest.revision);
   await page.unroute("**/__qraft/**/events");
   await expect(drawer.getByText(/Disconnected/u)).toHaveCount(0);
   await expect(drawer.getByLabel("Title")).toHaveValue("Reconnect draft");
-  await expect(drawer.getByText(new RegExp(latest.revision.slice(0, 8)))).toBeVisible();
+  await refreshed;
+  await drawer.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(drawer.getByRole("heading", { name: "Reconnect draft", exact: true })).toBeVisible();
 });

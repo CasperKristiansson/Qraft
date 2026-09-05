@@ -47,7 +47,7 @@ Rotate the compact grip, QA and completed/total group 90 degrees clockwise so it
 
 ### Checklist
 
-Keep progress at the top, followed by sections, task rows, Add task and Add section. Display a separate skipped count. The status control and task title are separate buttons. Single status activation cycles open/completed/skipped/open; double-click sets skipped without racing a first-click mutation. A delayed single-click decision must be canceled on unmount. Provide explicit state names and a textual instruction; do not rely only on the double-click gesture. Skipped task titles are struck through. Show total notes per task, never open findings.
+Keep progress at the top, followed by sections, task rows and Add task. Pin Add section to a separate bottom action area; the list fills the remaining space and scrolls independently even with hundreds of tasks. The section form opens in that bottom area, with its errors and controls remaining reachable on short screens. Display a separate skipped count. The status control and task title are separate buttons. Single status activation cycles open/completed/skipped/open; double-click sets skipped without racing a first-click mutation. A delayed single-click decision must be canceled on unmount. Retain explicit accessible state names and control tooltips, but omit the visible status-gesture instructions. Skipped task titles are struck through. Show total notes per task, never open findings. Do not show a local-sync/revision footer.
 
 ### Details and notes
 
@@ -57,7 +57,7 @@ Always show a labeled note textarea with Submit and Attach element. Enter submit
 
 ### File choice and empty state
 
-First use opens a file chooser with project-relative display labels, search, and Refresh files. Remember the selected server-issued ID per project; revalidate it against the catalog on reload. Change file is available in the checklist. File selection affects only that browser's storage instance. Preserve drafts per selected file during the mounted session. No default filename is chosen or created. If no file exists, instruct the tester to ask their coding agent to create a Markdown checklist, then refresh. An explicitly configured missing file can be selected and created by Add section.
+First use opens a file chooser with project-relative display labels, search, and Refresh files. Remember the selected server-issued ID per project; revalidate it against the catalog on reload. Change file appears as a small text button beside Qraft in the checklist header; the selected filename is available in its tooltip. File selection affects only that browser's storage instance. Preserve drafts per selected file during the mounted session. No default filename is chosen or created. If no file exists, instruct the tester to ask their coding agent to create a Markdown checklist, then refresh. An explicitly configured missing file can be selected and created by Add section.
 
 ### Errors and accessibility
 

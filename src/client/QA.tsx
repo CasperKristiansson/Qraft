@@ -148,7 +148,7 @@ export function QA({ storage: providedStorage }: QAProps = {}) {
     } finally { locked.current = false; setPending(false); }
   };
   const status = (task: QATask, value: TaskStatus) => void execute({ type: "setTaskStatus", taskId: task.id, status: value }, `Task ${labels[value].toLowerCase()}.`);
-  const cancelForm = () => { setForm(null); setDraft(""); requestAnimationFrame(() => formTrigger.current?.focus()); };
+  const cancelForm = () => { setForm(null); setDraft(""); requestAnimationFrame(() => ((mount?.getRootNode() as ShadowRoot | undefined)?.getElementById(formTrigger.current?.id ?? "") ?? heading.current)?.focus()); };
   const beginForm = (next: FormState, trigger: HTMLButtonElement) => { formTrigger.current = trigger; setForm(next); setDraft(""); };
   const submitForm = async () => {
     if (!form || !validDraft(draft)) return;
@@ -185,6 +185,7 @@ export function QA({ storage: providedStorage }: QAProps = {}) {
     <input id={`${headingId}-title`} ref={formControl} value={draft} readOnly={pending} maxLength={4_000} onChange={(event) => setDraft(event.target.value)} />
     <div className="qraft-form-actions"><button type="button" onClick={cancelForm} disabled={pending}>Cancel</button><button className="primary" disabled={pending || !validDraft(draft)}>{pending ? "Saving…" : "Save"}</button></div>
   </form>;
+  const feedbackMessage = <p className={feedback.tone === "neutral" ? "qraft-sr-only" : `qraft-banner ${feedback.tone}`} aria-live="polite" role={feedback.tone === "error" ? "alert" : "status"}>{feedback.text}</p>;
   if (!mount) return null;
   return createPortal(picking ? <ElementPicker onCancel={restoreComposer} onSelect={selectPicker} /> : <Dialog.Root open={open} onOpenChange={setOpen} modal={false}>
     <EdgeTab open={open} passed={progress.passed} total={progress.total} />
@@ -202,6 +203,7 @@ export function QA({ storage: providedStorage }: QAProps = {}) {
         onEscapeKeyDown={(event) => { if (form) { event.preventDefault(); cancelForm(); } }}>
         <header className={`qraft-header ${selectedTaskId ? "detail" : ""}`}>
           {selectedTaskId ? <><button className="qraft-header-back" type="button" onClick={back} disabled={pending}><ArrowLeft size={21} /> Back to checklist</button><Dialog.Title className="qraft-sr-only" ref={heading} id={headingId} tabIndex={-1}>Task details</Dialog.Title></> : <><Menu aria-hidden="true" size={19} /><Dialog.Title ref={heading} id={headingId} tabIndex={-1}>Qraft</Dialog.Title></>}
+          {!providedStorage && !selectedTaskId && !showChooser ? <button className="qraft-change-file" disabled={pending} onClick={() => setChoosing(true)} title={`Selected file: ${fileLabel}`}>Change file</button> : null}
           <Dialog.Close className="qraft-icon-button" aria-label="Close Qraft"><X size={19} /></Dialog.Close>
         </header>
         <div className="qraft-content">
@@ -223,7 +225,7 @@ export function QA({ storage: providedStorage }: QAProps = {}) {
           </section> : <>
             {!selectedTaskId ? <div className="qraft-progress-row"><strong>{progress.passed} / {progress.total}</strong><div className="qraft-progress" role="progressbar" aria-valuemin={0} aria-valuemax={progress.total} aria-valuenow={progress.passed} aria-label={`${progress.passed} of ${progress.total} tasks completed`}><span style={{ width: `${progress.total ? progress.passed / progress.total * 100 : 0}%` }} /></div>{progress.skipped ? <small>{progress.skipped} skipped</small> : null}</div> : null}
             {!connected ? <p className="qraft-banner warning" role="status">Disconnected. Qraft is reconnecting automatically.</p> : null}
-            <p className={feedback.tone === "neutral" ? "qraft-sr-only" : `qraft-banner ${feedback.tone}`} aria-live="polite" role={feedback.tone === "error" ? "alert" : "status"}>{feedback.text}</p>
+            {form?.kind !== "section" ? feedbackMessage : null}
             {document?.diagnostics.map((diagnostic) => <p className="qraft-banner warning" key={`${diagnostic.code}-${diagnostic.lines.join("-")}`}>{diagnostic.message} Lines {diagnostic.lines.join(", ")}.</p>)}
             {selected ? <article className="qraft-detail">
               <h2>{selected.task.title}</h2>
@@ -247,15 +249,14 @@ export function QA({ storage: providedStorage }: QAProps = {}) {
               {document?.sections.length === 0 ? <div className="qraft-empty"><strong>No QA tasks yet</strong><p>Add a section below, or ask your coding editor to fill this Markdown file with ## sections and - [ ] tasks.</p></div> : null}
               {document?.sections.map((section, sectionIndex) => <section className="qraft-section" key={section.readOnly ? `${section.id}-${sectionIndex}` : section.id}><h3>{section.title}</h3>
                 <div className="qraft-task-list">{section.tasks.map((task, index) => <TaskRow key={task.readOnly ? `${task.id}-${index}` : task.id} task={task} pending={pending} change={(value) => status(task, value)} select={() => { setSelectedTaskId(task.id); setSourceError(null); }} />)}</div>
-                {form?.kind === "task" && form.sectionId === section.id ? titleForm : <button className="qraft-add" disabled={pending || section.readOnly} onClick={(event) => beginForm({ kind: "task", sectionId: section.id }, event.currentTarget)}><Plus size={15} /> Add task</button>}
+                {form?.kind === "task" && form.sectionId === section.id ? titleForm : <button id={`${headingId}-add-task-${section.id}`} className="qraft-add" disabled={pending || section.readOnly} onClick={(event) => beginForm({ kind: "task", sectionId: section.id }, event.currentTarget)}><Plus size={15} /> Add task</button>}
               </section>)}
-              {document ? form?.kind === "section" ? titleForm : <button className="qraft-secondary" disabled={pending} onClick={(event) => beginForm({ kind: "section" }, event.currentTarget)}><Plus size={16} /> Add section</button> : null}
-              {document && progress.total > 0 ? <p className="qraft-help">Click a status to complete, skip, or reopen. Double-click to skip.</p> : null}
             </div>}
-            <p className="qraft-preview-note">Local Markdown sync · {document?.revision.slice(0, 8) ?? "loading"}</p>
-            {!providedStorage && !selectedTaskId ? <button className="qraft-file-current" disabled={pending} onClick={() => setChoosing(true)} title={fileLabel}>Change file · {fileLabel}</button> : null}
           </>}
         </div>
+        {!showChooser && !selectedTaskId && document ? <footer className="qraft-footer">
+          {form?.kind === "section" ? <>{feedbackMessage}{titleForm}</> : <button id={`${headingId}-add-section`} className="qraft-secondary" disabled={pending} onClick={(event) => beginForm({ kind: "section" }, event.currentTarget)}><Plus size={16} /> Add section</button>}
+        </footer> : null}
       </Dialog.Content>
     </FocusScope></Dialog.Portal>
   </Dialog.Root>, mount);

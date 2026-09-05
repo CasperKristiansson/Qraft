@@ -1,6 +1,33 @@
 import { expect, test } from "@playwright/test";
 import { reset, drawer, open, taskButton } from "./helpers";
 
+test("checklist actions stay reachable with hundreds of tasks at every supported viewport", async ({ page }) => {
+  await page.route("**/__qraft/**/document", async (route) => {
+    const response = await route.fetch(); const document = await response.json();
+    const section = document.sections[0];
+    section.tasks.push(...Array.from({ length: 200 }, (_, index) => ({ ...section.tasks[0], id: `task_${(index + 100).toString(16).padStart(32, "0")}`, title: `Review item ${index + 1}` })));
+    await route.fulfill({ response, json: document });
+  });
+  await reset(page); const d = drawer(page); const content = d.locator(".qraft-content"); const add = d.getByRole("button", { name: "Add section", exact: true });
+  await expect(d.getByText(/Local Markdown sync|Click to complete|Double-click to skip/u)).toHaveCount(0);
+  await expect(d.locator(".qraft-header").getByRole("button", { name: "Change file", exact: true })).toBeVisible();
+  for (const size of [{ width: 1440, height: 900 }, { width: 1366, height: 650 }, { width: 768, height: 900 }, { width: 768, height: 360 }]) {
+    await page.setViewportSize(size);
+    const initial = (await add.boundingBox())!; expect(initial.y + initial.height).toBeLessThanOrEqual(size.height); expect(initial.y).toBeGreaterThan(size.height - 100);
+    expect(await content.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(true);
+    await taskButton(page, "Review item 200").scrollIntoViewIfNeeded();
+    const last = (await taskButton(page, "Review item 200").boundingBox())!;
+    expect(last.y + last.height).toBeLessThanOrEqual((await d.locator(".qraft-footer").boundingBox())!.y);
+    expect((await add.boundingBox())!.y).toBeCloseTo(initial.y, 0);
+    await add.click(); await d.getByLabel("Title").fill("New section");
+    const save = (await d.getByRole("button", { name: "Save", exact: true }).boundingBox())!;
+    expect(save.y).toBeGreaterThanOrEqual(58); expect(save.y + save.height).toBeLessThanOrEqual(size.height);
+    await d.getByRole("button", { name: "Cancel", exact: true }).click(); await expect(add).toBeFocused();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(size.width);
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+  }
+});
+
 test("compact vertical tab drags and remembers position without opening", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 }); await reset(page); await drawer(page).getByRole("button", { name: "Close Qraft", exact: true }).click();
   const tab = page.locator(".qraft-tab"); const grip = page.getByRole("button", { name: "Move Qraft tab", exact: true });
