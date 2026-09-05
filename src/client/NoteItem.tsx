@@ -1,5 +1,5 @@
 import { ExternalLink, Pencil } from "lucide-react";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef } from "react";
 import type { QANote } from "../domain/model";
 import { validDraft } from "./review-state";
 import { ElementContext } from "./ElementContext";
@@ -22,8 +22,8 @@ export function NoteItem({
   error: string | null;
 }) {
   const fieldId = useId();
-  const [editing, setEditing] = useState(draft !== undefined);
-  const [body, setBody] = useState(draft ?? note.body);
+  const editing = draft !== undefined;
+  const body = draft ?? note.body;
   const input = useRef<HTMLTextAreaElement>(null);
   const edit = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -31,7 +31,6 @@ export function NoteItem({
   }, [editing]);
   const cancel = () => {
     onDraft(null);
-    setEditing(false);
     requestAnimationFrame(() => edit.current?.focus());
   };
   const submit = async () => {
@@ -62,7 +61,6 @@ export function NoteItem({
             maxLength={4_000}
             readOnly={pending}
             onChange={(event) => {
-              setBody(event.target.value);
               onDraft(event.target.value);
             }}
           />
@@ -83,9 +81,7 @@ export function NoteItem({
             ref={edit}
             disabled={pending || note.readOnly}
             onClick={() => {
-              setBody(note.body);
               onDraft(note.body);
-              setEditing(true);
             }}
             aria-label={`Edit note: ${note.body}`}
           >
@@ -93,6 +89,12 @@ export function NoteItem({
           </button>
         </>
       )}
+      {note.observation ? (
+        <p className="qraft-note-observation">
+          {note.observation.route} · {note.observation.viewport.width} ×{" "}
+          {note.observation.viewport.height}
+        </p>
+      ) : null}
       {note.element ? (
         <div className="qraft-context">
           <ElementContext element={note.element} />

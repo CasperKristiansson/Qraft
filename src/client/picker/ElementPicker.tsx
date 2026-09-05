@@ -233,7 +233,7 @@ export function ElementPicker({ onCancel, onSelect }: ElementPickerProps) {
         event.stopPropagation();
         navigate(index + (event.key === "ArrowUp" ? 1 : -1));
       }
-      if (event.key === "Enter" && current) {
+      if ((event.key === "Enter" || event.key === " ") && current) {
         event.preventDefault();
         event.stopPropagation();
         void attach(current.element);

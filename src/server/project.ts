@@ -6,7 +6,7 @@ import { MarkdownDocumentStore } from "../markdown/store";
 import { createDocumentHandler, json, safeError } from "./document-handler";
 import { DocumentEventHub } from "./events";
 import { FileCatalog } from "./files";
-import { isAllowedWebOrigin } from "./origin";
+import { isAllowedWebOrigin, parseOrigin } from "./origin";
 
 export interface ProjectOptions {
   root: string;
@@ -19,7 +19,13 @@ export interface ProjectOptions {
 const optionsSchema = z.object({
   root: z.string().min(1),
   file: z.string().min(1).optional(),
-  origin: z.string().url().optional(),
+  origin: z
+    .string()
+    .refine(
+      (value) => parseOrigin(value) !== null,
+      "Use an exact HTTP(S) origin without a path, credentials or query.",
+    )
+    .optional(),
   endpoint: z
     .string()
     .regex(/^\/[A-Za-z0-9/_-]*[A-Za-z0-9_-]$/u)
@@ -32,6 +38,9 @@ type Entry = {
   handle: ReturnType<typeof createDocumentHandler>;
   dispose: () => void;
 };
+
+class ActiveFileLimitError extends Error {}
+const MAX_ACTIVE_FILES = 32;
 
 /** Owns catalog identity and selected-file lifecycles for either host framework. */
 export async function createProject(options: ProjectOptions) {
@@ -51,7 +60,13 @@ export async function createProject(options: ProjectOptions) {
   function mount(prefix: string, path: string): Entry {
     const existing = entries.get(prefix);
     if (existing) return existing;
-    if (entries.size >= 128) throw new Error("Too many selected files.");
+    if (entries.size >= MAX_ACTIVE_FILES) {
+      const idle = Array.from(entries).find(([, entry]) => entry.events.clientCount === 0);
+      if (!idle)
+        throw new ActiveFileLimitError("Close an unused review tab before choosing another file.");
+      idle[1].dispose();
+      entries.delete(idle[0]);
+    }
 
     const store = new MarkdownDocumentStore(path, root);
     const events = new DocumentEventHub();
@@ -64,7 +79,7 @@ export async function createProject(options: ProjectOptions) {
           .read()
           .then((document) => events.publish(document.revision))
           .catch(() => {
-            // The next client read reports the safe file error. Never write on watch failure.
+            events.unavailable();
           });
       }, 100);
       timer.unref();
@@ -94,7 +109,30 @@ export async function createProject(options: ProjectOptions) {
   async function handle(request: Request): Promise<Response | undefined> {
     const path = new URL(request.url).pathname;
     if (path !== `${endpoint}/files` && !path.startsWith(`${endpoint}/files/`)) {
-      return entries.get(endpoint)?.handle(request);
+      if (
+        !file ||
+        !["document", "commands", "events"].some((suffix) => path === `${endpoint}/${suffix}`)
+      )
+        return;
+      if (!isAllowedWebOrigin(request, options.origin))
+        return safeError(
+          403,
+          "origin_not_allowed",
+          "The request origin does not match this development server.",
+          false,
+        );
+      try {
+        return await mount(endpoint, file).handle(request);
+      } catch (error) {
+        if (error instanceof ActiveFileLimitError)
+          return safeError(503, "active_file_limit", error.message, true);
+        return safeError(
+          500,
+          "file_unavailable",
+          "The configured file is unavailable. Check its path and permissions.",
+          true,
+        );
+      }
     }
     if (!isAllowedWebOrigin(request, options.origin)) {
       return safeError(
@@ -138,7 +176,9 @@ export async function createProject(options: ProjectOptions) {
     try {
       await validateFilePath(root, selected);
       return await mount(`${endpoint}/files/${id}`, selected).handle(request);
-    } catch {
+    } catch (error) {
+      if (error instanceof ActiveFileLimitError)
+        return safeError(503, "active_file_limit", error.message, true);
       return safeError(
         500,
         "file_unavailable",

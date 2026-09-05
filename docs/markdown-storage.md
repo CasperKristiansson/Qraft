@@ -41,7 +41,8 @@ Example IDs are shortened for readability. The writer generates a type prefix fo
 - Four-space-indented labeled bullets beneath a note can be `Component`, `Source`, `Route`, `Selector`, or `Context` metadata. `Context` is a single inline-code JSON object with bounded tag/attributes/text/ancestors and optional sourceTrail defined in architecture.
 - Top-level markers `[ ]`, `[x]`, `[X]`, and `[-]` mean open, completed, completed, and skipped. A touched marker uses space, lowercase x, or hyphen.
 - A Qraft ID comment appears on the entity's first line and matches `<!-- qraft:id=... -->`.
-- All unrecognized Markdown is retained but absent from the domain read model.
+- `Observation` is an optional four-space metadata bullet containing inline-code JSON with route pathname and CSS viewport width/height. It belongs to the note independently of an element attachment. Existing notes remain valid without it. Body edits preserve it byte-for-byte.
+- Consecutive two-space-indented non-list text immediately after a task is displayed as read-only instructions. Blank lines within that block are allowed. Headings, fences and child bullets end instruction capture. Unsupported checkbox nesting produces a diagnostic. All other unknown Markdown remains absent from the domain read model and is retained byte-for-byte.
 
 Qraft is not a general Markdown editor. The parser should be line-oriented and return recognized entities plus their exact source spans and diagnostics.
 
@@ -51,7 +52,7 @@ Qraft is not a general Markdown editor. The parser should be line-oriented and r
 - A task owns its recognized two-space children and their four-space metadata until the next top-level task or H2.
 - A note owns consecutive recognized four-space metadata lines until another two-space child, top-level task, or H2.
 - Notes (including legacy findings) outside a task are diagnostics and remain untouched.
-- Top-level tasks before the first H2 are allowed in an implicit untitled section not supported: render them as diagnostics and do not mutate them.
+- Top-level tasks before the first H2 belong to a synthetic section labeled Checklist. Its ID is reserved and never written to the file. Creating a task there does not insert a heading; status/note mutations stabilize only their real target. The synthetic span ends at the next H2.
 
 This strictness avoids inventing ownership when hand-authored indentation is ambiguous.
 
@@ -132,22 +133,16 @@ Mixed newline documents produce a diagnostic. Use the first encountered newline 
 
 For each command:
 
-1. Enter the configured file's in-process promise queue.
-2. Read exact bytes and calculate `readRevision`.
+1. Enter the configured file's in-process promise queue and acquire its exclusive sibling lock.
+2. Read bounded exact UTF-8 bytes and calculate `readRevision`.
 3. Compare `baseRevision` with `readRevision`; on mismatch, return conflict without writing.
-4. Decode UTF-8, parse, resolve the target, and validate command invariants.
-5. Produce a minimal in-memory text patch.
-6. Immediately read/re-hash the target again.
-7. If it differs from `readRevision`, return conflict without writing.
-8. Call the pinned `write-file-atomic` adapter, which creates a unique temporary sibling, flushes/closes it, preserves supported original metadata, renames it over the target, and cleans up failure residue.
-9. Do not treat the dependency's write-only queue as the complete Qraft transaction; the outer queue must cover steps 2–8.
-10. Do not disable fsync.
-11. Calculate/return the new document and publish one revision change.
-12. Verify through failure-injection tests that temporary residue is cleaned and the original remains intact.
+4. Parse, resolve the target, validate invariants and produce a minimal text patch.
+5. Stage and fsync the resulting bytes in a unique sibling file through `write-file-atomic`, preserving the original mode and ownership.
+6. Revalidate the target path and immediately read/re-hash the current target. If it differs from `readRevision`, return conflict without replacing it.
+7. Rename the prepared sibling over the target, then calculate/return the new document and notify listeners. A notification exception cannot undo a confirmed write.
+8. Release only the lock owned by this operation and clean ordinary staging residue, including on failure.
 
-The atomic-write dependency keeps its temp file beside the target; do not replace it with a system-temp implementation because rename atomicity is only reliable within the same filesystem. Never derive a target path from browser input.
-
-No cross-process file lock is required for the internal package. The immediate second revision check protects against normal external-editor races. Document that simultaneous writes in the final check-to-rename window are a known local-only limitation; do not claim stronger locking semantics than implemented.
+The queue and cooperative lock cover the entire transaction, rather than only the dependency's write. Keep staging beside the target so final rename stays on the same filesystem. Never derive a target path from browser input. Failure-injection tests prove external-edit preservation and ordinary cleanup. See the concurrency and recovery contract below for crash leftovers and the remaining arbitrary-editor check-to-rename race.
 
 ## Error behavior
 
@@ -165,3 +160,11 @@ No cross-process file lock is required for the internal package. The immediate s
 ## Required tests
 
 Every mutation needs a full before/after golden fixture. The required test inventory is maintained in [Testing and acceptance](testing-and-acceptance.md); those tests must directly exercise the rules in this document.
+
+## Cooperative writers and bounded documents
+
+Reads and resulting writes are bounded to 2 MiB of valid UTF-8. Oversized or invalid files are rejected without modification. Before reading a mutation's base revision, Qraft acquires an exclusive sibling `<file>.qraft.lock` with mode 0600 and a process ID/random ownership token. Another Qraft process receives a retryable lock error. Qraft releases only its own token after the operation; it never steals a stale or replaced lock.
+
+After a crashed process, run `qraft doctor` from the app directory. Stop all Qraft servers for that project and verify no writer is active before manually removing the identified lock. PID existence is a diagnostic hint, not permission to steal ownership. External editors do not participate in this lock; the second revision check still guards known edits immediately before rename, but arbitrary editor writes in the final check/rename interval cannot be made transactional. Notification failures after a successful rename do not turn a confirmed write into a failure.
+
+Replacement stages fsynced bytes in a unique sibling `.qraft-stage-<uuid>` through the pinned atomic writer, then checks the current path/revision and performs the final rename. File mode and existing ownership are passed to staging; ordinary failures remove staging files. A process crash can leave staging/lock files, which are ignored by Git and never treated as checklists. Stop writers before manually cleaning identified leftovers.

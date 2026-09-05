@@ -47,6 +47,17 @@ export const elementReferenceSchema = z.strictObject({
   context: elementContextSchema.optional(),
 });
 
+export const noteObservationSchema = z.strictObject({
+  route: z
+    .string()
+    .max(2_000)
+    .regex(/^\/[^\r\n\x00]*$/u),
+  viewport: z.strictObject({
+    width: z.number().int().min(1).max(100_000),
+    height: z.number().int().min(1).max(100_000),
+  }),
+});
+
 export const qaCommandSchema = z.discriminatedUnion("type", [
   z.strictObject({ type: z.literal("createSection"), title: text }),
   z.strictObject({ type: z.literal("createTask"), sectionId: id, title: text }),
@@ -56,6 +67,7 @@ export const qaCommandSchema = z.discriminatedUnion("type", [
     taskId: id,
     body: text,
     element: elementReferenceSchema.nullable().optional(),
+    observation: noteObservationSchema.optional(),
   }),
   z.strictObject({ type: z.literal("editNote"), noteId: id, body: text }),
   z.strictObject({

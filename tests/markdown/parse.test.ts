@@ -46,12 +46,16 @@ describe("parseMarkdown", () => {
     expect(parsed.source).toBe(source);
   });
 
-  it("diagnoses orphan and duplicate entities without choosing a duplicate", async () => {
+  it("accepts unsectioned tasks while keeping duplicate entities read-only", async () => {
     const parsed = parseMarkdown(await fixture("malformed.md"));
     expect(parsed.document.diagnostics.map((diagnostic) => diagnostic.code)).toEqual(
-      expect.arrayContaining(["invalid-nesting", "duplicate-id"]),
+      expect.arrayContaining(["duplicate-id"]),
     );
-    expect(parsed.document.sections[0]?.tasks.every((task) => task.readOnly)).toBe(true);
+    expect(parsed.document.sections[0]?.implicit).toBe(true);
+    expect(parsed.document.sections[1]?.tasks.every((task) => task.readOnly)).toBe(true);
+    expect(parseMarkdown("  - Note: Orphan\n").document.diagnostics[0]?.code).toBe(
+      "invalid-nesting",
+    );
   });
 
   it("recognizes LF, CRLF, mixed newlines, final-newline state, and empty revision", async () => {

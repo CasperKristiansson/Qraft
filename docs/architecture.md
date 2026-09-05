@@ -1,294 +1,62 @@
 # Technical architecture
 
-This document owns module boundaries, runtime composition, data types, dependencies, and package structure. Product behavior is defined in [Product requirements](product-requirements.md).
+This document owns module boundaries, runtime composition and package decisions. [Product requirements](product-requirements.md) owns workflow; [design](design.md) owns presentation.
 
-## System shape
+## Modules and dependencies
 
-```text
-Browser                                        Vite development process
-┌────────────────────────────┐                 ┌────────────────────────────┐
-│ <QA />                     │                 │ qraft() plugin             │
-│ ├─ Shadow DOM UI           │                 │ ├─ HTTP/SSE middleware     │
-│ ├─ QAStorage               │◀───────────────▶│ ├─ MarkdownDocumentStore  │
-│ └─ React Grab picker       │                 │ └─ Vite file watcher       │
-└────────────────────────────┘                 └─────────────┬──────────────┘
-                                                           │
-                                                           ▼
-                                                         QA.md
-```
+| Layer                        | Responsibility                                                                                    | Boundary                                                                                       |
+| ---------------------------- | ------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `src/domain`                 | Document types, typed commands, validation, status/progress                                       | No React, HTTP, filesystem or framework imports                                                |
+| `src/markdown`               | Parse recognized spans, preserve bytes, assign lazy IDs, patch, check revisions and replace files | Server-only; no full-document serialization                                                    |
+| `src/server`                 | Catalog, exact routes, request bounds, errors, SSE and file-runtime lifecycle                     | Standard Request/Response; delegate all mutations to the store                                 |
+| `src/client`                 | Shadow DOM UI, review session, forms, QAStorage transport, picker and recovery                    | Render text; no filesystem or Markdown parser imports                                          |
+| `src/vite.ts`                | Compose project service with Vite middleware and existing watcher                                 | `apply: serve`; no build/preview routes                                                        |
+| `src/next.ts`                | App Router Node route factory, polling, hot-reload runtime reuse                                  | Refuse non-development requests before initializing storage                                    |
+| `src/setup` and `src/cli.ts` | Read-only setup/doctor diagnostics                                                                | Inspect bounded files and installed metadata, never execute host config or modify dependencies |
 
-The browser knows domain objects and typed commands. It receives project-relative file labels and opaque file IDs but never parser offsets or filesystem APIs. The server resolves file IDs from its own catalog; it accepts no path from a browser request.
+The browser receives domain documents, project-relative labels and opaque file IDs. It sends typed commands and exact base revisions. It never sends parser offsets, filesystem paths or replacement documents. `QA` depends on the bound [QAStorage interface](../src/client/storage.ts); the default HttpQAStorage owns file-scoped HTTP/SSE. Custom adapters stay in memory and introduce no unused cloud fields.
 
-## Consumer integration
+`QA` composes task/detail views, session recovery and storage orchestration. Review session schema and identity reconciliation are independent from rendering. Only a confirmed local command may map legacy identities using preserved entity order. External edits never authorize guessing where an unsaved note, edit or task title belongs.
 
-```ts
-// vite.config.ts
-import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
-import { qraft } from "@qraft/qa/vite";
-
-export default defineConfig({
-  plugins: [react(), qraft()],
-});
-```
-
-```tsx
-// application root
-import { QA } from "@qraft/qa";
-
-export function App() {
-  return (
-    <>
-      <Application />
-      {import.meta.env.DEV && <QA />}
-    </>
-  );
-}
-```
-
-The file path belongs only to the server plugin. `<QA />` does not accept it.
-
-### Plugin options
-
-```ts
-export interface QraftViteOptions {
-  /** Resolved relative to project root. Optional chooser restriction; no default. */
-  file?: string;
-
-  /** Same-origin endpoint prefix. Default: "/__qraft". */
-  endpoint?: string;
-}
-```
-
-- The configured file must resolve inside the project root.
-- Its extension must be `.md` or `.markdown`.
-- Invalid paths fail Vite startup with a clear message.
-- A missing file is represented as an empty document and is created only by the first mutation.
-- The plugin uses `apply: "serve"` and has no production or preview middleware.
-
-## Layer boundaries
-
-### Domain
-
-Owns data types, command types, validation, invariants, progress, and status semantics. It imports no React, HTTP, Vite, or filesystem APIs.
-
-### Markdown
-
-Owns the constrained parser, source spans, stable IDs, minimal patches, revision checks, serialized command queue, and atomic file replacement. It is server-only. See [Markdown storage](markdown-storage.md).
-
-### Server
-
-Owns HTTP parsing, request limits, origin/method safeguards, response mapping, SSE clients, and watcher-event coalescing. It delegates all checklist rules and mutations.
-
-### Client
-
-Owns the Shadow DOM shell, list/detail state, forms, focus, transport adapter, picker integration, and error presentation. It renders domain values as text.
-
-### Vite adapter
-
-Resolves trusted options and composes the server modules with Vite middleware and its existing watcher. It must not contain checklist business logic.
-
-## Domain model
-
-```ts
-export interface QADocument {
-  title: string;
-  revision: string;
-  sections: QASection[];
-  diagnostics: QADiagnostic[];
-}
-
-export interface QASection {
-  id: string;
-  title: string;
-  tasks: QATask[];
-}
-
-export interface QATask {
-  id: string;
-  title: string;
-  checked: boolean; // compatibility projection: status === "completed"
-  notes: QANote[];
-  status: "open" | "completed" | "skipped";
-}
-
-export interface QANote {
-  id: string;
-  body: string;
-  element: ElementReference | null;
-}
-
-export interface ElementReference {
-  route: string;
-  component: string | null;
-  source: string | null;
-  line: number | null;
-  column: number | null;
-  selector: string | null;
-  context?: {
-    tag: string;
-    attributes: Record<string, string>;
-    text: string;
-    ancestors: string[];
-    sourceTrail?: {
-      component: string | null;
-      source: string;
-      line: number | null;
-      column: number | null;
-    }[];
-  };
-}
-```
-
-`route` is `location.pathname` only. `source` is a repository-relative path normalized to `/`; the server omits it if it resolves outside the project root. The optional context contains tag (80 chars), at most 12 identifying attributes (80-char keys/300-char values), selected visible text (300 chars), and up to 5 ancestor descriptions (300 chars each). The optional sourceTrail holds at most five deduplicated application source locations (component 200 chars, source 2,000 chars, positive nullable line/column). Derive it from the published structured React Grab context, excluding ignore-listed/dependency frames; normalize every path inside the project root on reads and writes and omit invalid/outside paths. Never persist raw stacks, stack arguments, query strings, hashes, DOM/Fiber objects, HTML previews, styles, form values, or unrestricted page content.
-
-`revision` is the SHA-256 hash of the exact file bytes returned by the server.
-
-## Command model
-
-```ts
-export type QACommand =
-  | { type: "createSection"; title: string }
-  | { type: "createTask"; sectionId: string; title: string }
-  | { type: "setTaskChecked"; taskId: string; checked: boolean }
-  | { type: "setTaskStatus"; taskId: string; status: "open" | "completed" | "skipped" }
-  | { type: "addNote"; taskId: string; body: string; element?: ElementReference | null }
-  | { type: "editNote"; noteId: string; body: string };
-
-export interface CommandRequest {
-  commandId: string;
-  baseRevision: string;
-  command: QACommand;
-}
-```
-
-There is no replace-document command. `commandId` lets the transport reject or safely recognize an accidental duplicate during one server lifetime; durable cross-restart deduplication is not required.
-
-Business invariants include:
-
-- duplicate IDs are never valid mutation targets;
-- task statuses and notes are independent; legacy finding markers are never mutated by task actions;
-- entity text is normalized and validated on the server.
-
-## Client storage interface
-
-```ts
-export interface QAStorage {
-  getDocument(signal?: AbortSignal): Promise<QADocument>;
-  execute(command: QACommand, baseRevision: string): Promise<QADocument>;
-  subscribe(onChange: () => void): () => void;
-}
-```
-
-The browser implements only `HttpQAStorage`. `MarkdownDocumentStore` is not an implementation of this browser-facing interface and is never included in the client bundle. Do not add unused cloud adapters or cloud-shaped fields.
-
-## Package and repository layout
-
-Use one package at the repository root:
-
-```text
-Qraft/
-├── docs/
-├── examples/
-│   └── vite-react/
-├── src/
-│   ├── client/
-│   │   ├── QA.tsx
-│   │   ├── drawer/
-│   │   ├── picker/
-│   │   ├── shadow-root.tsx
-│   │   └── http-storage.ts
-│   ├── domain/
-│   │   ├── model.ts
-│   │   ├── commands.ts
-│   │   └── validation.ts
-│   ├── markdown/
-│   │   ├── parse.ts
-│   │   ├── patch.ts
-│   │   ├── ids.ts
-│   │   └── store.ts
-│   ├── server/
-│   │   ├── middleware.ts
-│   │   ├── events.ts
-│   │   └── origin.ts
-│   ├── vite.ts
-│   └── index.ts
-├── tests/
-│   ├── markdown/
-│   ├── server/
-│   └── e2e/
-├── AGENTS.md
-├── THIRD_PARTY_NOTICES.md
-├── package.json
-├── tsconfig.json
-└── vite.config.ts
-```
-
-Package exports:
-
-```json
-{
-  "exports": {
-    ".": "./dist/index.js",
-    "./vite": "./dist/vite.js",
-    "./next": "./dist/next.js"
-  }
-}
-```
-
-## Technology choices
-
-- TypeScript on Node 24 (minimum `24.19.0`), with pnpm `11.25.0` and one exact lockfile.
-- `typescript@7.0.2`, `@types/node@26.4.1`, `@types/react@19.2.18`, and `@types/react-dom@19.2.7` as exact development-only compiler/type pins.
-- `react@19.2.8` and `react-dom@19.2.8` as peer/development dependencies.
-- `vite@8.2.2` as a peer/development dependency for the `./vite` entry and example.
-- `@vitejs/plugin-react@6.1.1` as a development-only example transform/refresh plugin.
-- Exact `react-grab@0.2.0` for picker work.
-- `@radix-ui/react-dialog@1.1.23` for portal/drawer semantics in non-modal mode and `@radix-ui/react-focus-scope@1.1.16` only where the narrow overlay requires trapping. Validate both in the real ShadowRoot; do not allow Radix to change `document.body` overflow.
-- `zod@4.5.4` for runtime validation at untrusted/plugin/command boundaries.
-- `write-file-atomic@8.0.0` for the final atomic write mechanics beneath Qraft's own read-modify-write queue and revision checks.
-- `lucide-react@1.41.0` as the sole icon family.
-- `vitest@5.0.0` for unit and integration tests.
-- `@playwright/test@1.62.1` for repeatable browser tests.
-- Hand-written Shadow DOM CSS.
-- Native HTTP middleware, Server-Sent Events, Web Crypto/Node crypto, and Vite watcher capabilities.
-
-Do not add a state library, CSS framework, full Markdown renderer/serializer, database, WebSocket library, or separate file watcher without concrete evidence that the platform implementation is inadequate.
-
-Dependency provenance and approved roles are owned by [upstream and licensing](upstream-and-licensing.md). Workflow, domain rules, Markdown patches, and protocol remain Qraft-owned.
-
-## Error boundaries
-
-- Domain and Markdown layers return typed errors with safe details such as entity ID and line number.
-- Server maps typed errors to the statuses in [Dev-server protocol](dev-server-protocol.md) and never returns stack traces.
-- Client keeps unsaved text where recovery is possible and never presents an unconfirmed write as successful.
-- A picker or editor-open error cannot mutate the checklist.
-
-## Production boundary
-
-The Vite plugin exists only during `serve`. The consumer is responsible for mounting `<QA />` behind `import.meta.env.DEV`. Tests must separately prove that a production build and preview server expose no Qraft endpoint. Static client code remaining in an unused production chunk is not a filesystem exposure, but the documented integration should allow normal bundler dead-code elimination.
-
-## State and persistence boundaries
-
-- The drawer uses non-modal Radix composition to avoid global scroll changes. At 768–800 px Qraft adds modal semantics, FocusScope, and explicit keyboard wrapping within its ShadowRoot; see the owning design contract.
-- Confirmed mutations invalidate older in-flight UI reads. Background synchronization preserves actionable save/conflict errors and drafts. Legacy task identity is remapped only after Qraft's own successful append/status command, whose preserved order is known.
-- The store normalizes attachment source paths for reads and conflict documents as well as new writes. External Markdown bytes remain unchanged.
-- Candidate and package provenance is recorded by `scripts/source-fingerprint.mjs`, `audit:release`, and `verify:consumer`; these local tools do not publish packages.
-
-## Project file catalog
-
-The default plugin discovers .md/.markdown files inside the project root, excluding hidden directories, node_modules, dist, coverage and artifacts, and never follows symlinks. Discovery is bounded (2,000 files and 10,000 directory entries) and reports truncation. A trusted `file` option restricts discovery to that path. The browser chooses an opaque SHA-256 file ID from GET files and uses file-scoped document/commands/events endpoints. Catalog identity is scoped to the canonical project root. Stores/event hubs are created only for selected files and share the existing per-file transaction queue. Revalidate path containment and symlink absence before reads/writes, including before rename. A missing previously discovered file stays selectable so its UI can recover, but an unknown ID is rejected. No global active file is shared between clients.
-
-`HttpQAStorage` provides catalog loading and creates file-scoped storage instances. The core `QAStorage` interface remains bound to one document, including explicit in-memory/test adapters. Local storage stores only file IDs and tab position, never checklist bodies or notes. Per-file drafts remain in browser memory for the mounted session.
-
-Source opening uses Vite's same-origin editor endpoint directly, with a five-second timeout and redirects rejected. React Grab's `openFile` fallback opens an external website and is excluded from the local-only client workflow. This action never changes Markdown.
-
-## Next.js integration and shared server (2026-09-05)
-
-The owner approved Next.js App Router support alongside Vite. The public `./next` server entry exports `createQraftRoute({ root?, file?, endpoint? })`. Consumers mount its handler in a Node-runtime catch-all route under `/__qraft`. Every request fails closed with 404 unless NODE_ENV is development, before options, files, watchers, or request bodies are accessed. The client entry retains a use-client boundary; consumers mount it only behind a development guard.
-
-Both adapters compose one project service, document command handler, file catalog, store, and event hub. HTTP behavior uses standard Request/Response; Vite bridges Node streams at its adapter boundary. Next.js uses native watchFile polling for selected files, with non-persistent handles and bounded per-project stores. Route factories reuse project runtimes across hot reloads; explicit disposal is available for tests and shutdown. No additional server process, cloud route, database, or replacement Markdown write is introduced.
-
-Next.js source opening is unavailable through the Vite editor endpoint; display the stored source for manual navigation. Element selection and bounded source context still use React Grab. Runtime engine compatibility is Node >=24.19.0 <25, tested against each consumer's installed version. Vite and Next are optional peers: consumers install only their framework.
-
-Prettier 3.6.2 (MIT) is development-only formatting tooling. Format all owned source, tests, scripts and configuration; exclude byte-preservation Markdown fixtures, lockfiles, generated artifacts and local checklists. Semantic boundary lint and strict TypeScript remain separate gates. Prefer named helpers, explicit branches, and smaller components over compressed expressions.
+## Model and command authority
+
+The maintained definitions are [model.ts](../src/domain/model.ts) and [commands.ts](../src/domain/commands.ts), rather than duplicated interfaces in documentation. Revision is SHA-256 of exact file bytes. Commands create sections/tasks, set a task's three-state status, add notes with optional observation/element context, and edit a note body. `setTaskChecked` remains a compatibility command; `checked` projects completed status. There is no replace-document operation.
+
+Task statuses and notes are independent. Duplicate or malformed IDs are read-only mutation targets. Recognized instructions are read-only. Unsectioned top-level checklists use a synthetic section in memory without creating a heading on disk. The grammar and all write semantics belong to [Markdown storage](markdown-storage.md).
+
+## Capture and privacy bounds
+
+New notes record capture pathname and CSS viewport width/height independently of optional element attachments. Exclude query strings and hashes. Capture begins with composition/attachment and survives navigation; body-only edits preserve that context.
+
+An attachment has component/source/line/column and a selector. Source paths are normalized to repository-relative `/` paths on reads, writes and conflicts; omit outside-root and dependency paths. Optional context is bounded to tag (80 characters), the allowlisted identifying attributes (300 characters each), selected visible text (300 characters), five ancestor descriptions (300 characters each), and five deduplicated source locations (component 200, source 2,000, positive nullable line/column). Inspect at most 40 raw React Grab frames before filtering. Never persist raw stacks, arguments, DOM/Fiber objects, full HTML, styles, form values or unrestricted page content.
+
+Use only `react-grab/primitives` for public selection/context APIs. Qraft owns its overlay, held target, asynchronous cancellation and failure fallback. Closed shadow roots and cross-origin frames remain inaccessible. Source opening uses Vite's local endpoint with a five-second timeout and redirects rejected; Next.js retains source for manual navigation. React Grab's external editor fallback is excluded.
+
+## State and lifecycle
+
+- UI/styles mount in Shadow DOM. Nonmodal Radix composition never changes host layout or body scrolling. Design specifies focus containment for an unpinned narrow sheet and nonmodal pinned/compact review.
+- Local storage holds selected file ID, edge position and project pin preference. Versioned session storage holds tab/project/file drafts and view state, bounded to 512,000 characters per file and 20 files per tab. Never evict unsaved work or overwrite malformed saved data silently. Reload/HMR/server restart are recoverable; tab closure is not guaranteed.
+- Confirmed mutations invalidate older in-flight reads. Read recovery clears read errors; synchronization does not hide actionable save/conflict errors. Dirty edits retain the original body and revision for external-change detection.
+- Catalog discovery uses the canonical project root, skips hidden/dependency/output directories and symlinks, and stops at 2,000 files or 10,000 entries. Trusted `file` configuration restricts the chooser; no filename is auto-selected. Revalidate paths before access and replacement.
+- Each project has at most 32 file runtimes; idle eviction disposes watchers and events. Streams, commands and response caches have the bounds in [protocol](dev-server-protocol.md). Next.js reuses up to eight project runtimes across hot reloads and polls selected files every 750 ms with non-persistent watchers.
+- Writes use a per-file process queue, cooperative exclusive sibling lock, bounded UTF-8 reads, staged durable bytes, then the final path/revision check and rename. `write-file-atomic` writes the staging file; Qraft owns final conditional replacement. See Markdown storage for crash recovery and the remaining arbitrary-editor race boundary.
+
+## Package and compatibility
+
+One root package exports `.`, `./vite`, and `./next`, with matching declarations. A types/typesVersions fallback supports the older TypeScript resolver generated by Next.js 15 without requiring a host tsconfig rewrite. The browser entry includes a use-client directive and excludes server code. The `qraft` executable offers `doctor` and `setup`; both are read-only. Internal archives contain built output, README and third-party notices. No public distribution license or registry publication is implied.
+
+Consumer ranges are React/React DOM `^19.2.8` (matching versions), Vite `^7.3.6 || ^8.2.2`, Next.js `^15.5.25 || ^16.3.3`, and Node `^22.23.0 || ^24.19.0`. Vite and Next are optional peers. Development dependencies remain exact pins in [package.json](../package.json) and the lockfile; the repository toolchain uses Node 24.19.0. Range declarations do not mean every patch combination was tested: acceptance records exact current and maintenance profiles. Never upgrade a host application's framework merely to install Qraft.
+
+The Next route endpoint excludes Next's `basePath`; the browser endpoint includes it. Set a monorepo root explicitly when review files live outside the app working directory. A trusted local gateway may configure one exact browser origin; forwarded headers never authorize access. Do not mark the client package as a server external.
+
+## Dependency decisions
+
+Use the existing Radix Dialog/FocusScope, Lucide, Zod, React Grab and write-file-atomic packages for their narrow documented roles. No extra state library, CSS framework, serializer, transport or watcher package is introduced. Prettier formats owned files; boundary lint, strict unused/type checks and behavior tests remain separate checks. [Upstream and licensing](upstream-and-licensing.md) owns provenance and notices.
+
+Setup diagnostics use built-in Node APIs and static hints only. They detect the app workspace, installed versions, conventional integration files and leftover writer locks, and print integration/removal instructions. They do not execute config, select Markdown, remove locks or promise that static inspection proves runtime correctness.
+
+## Verification and errors
+
+Typed server errors expose safe recovery messages rather than stacks or absolute paths. A write whose outcome is uncertain must not be described as leaving the original unchanged. A listener failure after a confirmed rename cannot turn success into a failed save. Picker/editor errors never write the file.
+
+Consumer development guards and independently disabled production adapters must both be tested. Source fingerprints, artifact digests, clean-install/build/production checks and integrated browser evidence follow [testing and acceptance](testing-and-acceptance.md). Passing local checks does not publish, deploy or establish physical-device/network support.

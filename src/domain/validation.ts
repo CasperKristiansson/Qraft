@@ -1,6 +1,6 @@
 export class QraftError extends Error {
   constructor(
-    public readonly code: "validation" | "not-found" | "conflict" | "io",
+    public readonly code: "validation" | "not-found" | "conflict" | "locked" | "io",
     message: string,
     public readonly retryable = false,
   ) {

@@ -44,11 +44,11 @@ test("M6 reduced motion, contrast, live status, focus containment, and narrow la
   await drawer.getByRole("button", { name: "Save" }).click();
   await expect(drawer.getByRole("status")).toContainText("Section saved.");
 
-  await drawer.getByRole("button", { name: "Change file", exact: true }).focus();
+  await drawer.getByRole("button", { name: "Close Qraft", exact: true }).focus();
   await page.keyboard.press("Shift+Tab");
-  await expect(drawer.getByRole("button", { name: "Add section" })).toBeFocused();
+  await expect(drawer.getByRole("button", { name: "Review settings" })).toBeFocused();
   await page.keyboard.press("Tab");
-  await expect(drawer.getByRole("button", { name: "Change file", exact: true })).toBeFocused();
+  await expect(drawer.getByRole("button", { name: "Close Qraft", exact: true })).toBeFocused();
   expect(await page.evaluate(() => getComputedStyle(document.body).overflow)).toBe("visible");
   const focusIsInsideQraft = await page.evaluate(() => {
     const root = document.querySelector("[data-qraft-root]")?.shadowRoot;
@@ -67,7 +67,7 @@ test("M6 filesystem failure is recoverable and preserves the unsaved draft", asy
   await page.getByRole("button", { name: "Fail next write" }).click();
   await page.getByRole("button", { name: /Open Qraft/u }).click();
   await drawer.getByRole("button", { name: "Submit" }).click();
-  await expect(drawer.getByRole("alert")).toContainText("original was left unchanged");
+  await expect(drawer.getByRole("alert")).toContainText("Review the latest file before retrying");
   await expect(drawer.getByLabel("Write a note")).toHaveValue(
     "Keep this draft after a failed write.",
   );
@@ -89,11 +89,13 @@ test("legacy task retains selection after its first note and status change", asy
   await drawer.getByRole("button", { name: "Submit", exact: true }).click();
   await expect(drawer.getByRole("heading", { name: "Legacy task", exact: true })).toBeVisible();
   await expect(drawer.getByLabel("Write a note")).toHaveValue("");
-  await drawer.getByRole("button", { name: "Completed", exact: true }).click();
-  await expect(drawer.getByRole("button", { name: "Completed", exact: true })).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
+  await expect(drawer.locator(".qraft-detail-heading .qraft-status")).toBeEnabled();
+  await drawer
+    .getByRole("button", { name: "Legacy task: Not completed. Change status", exact: true })
+    .press("Enter");
+  await expect(
+    drawer.getByRole("button", { name: "Legacy task: Completed. Change status", exact: true }),
+  ).toBeVisible();
   await expect(drawer.getByRole("heading", { name: "Legacy task", exact: true })).toBeVisible();
 });
 
@@ -120,5 +122,7 @@ test("M6 disconnected stream reconnects and refetches while preserving a draft",
   await expect(drawer.getByLabel("Title")).toHaveValue("Reconnect draft");
   await refreshed;
   await drawer.getByRole("button", { name: "Save", exact: true }).click();
-  await expect(drawer.getByRole("heading", { name: "Reconnect draft", exact: true })).toBeVisible();
+  await expect(
+    drawer.getByRole("heading", { name: "Reconnect draft 0", exact: true }),
+  ).toBeVisible();
 });

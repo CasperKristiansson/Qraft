@@ -1,4 +1,4 @@
-import { elementContextSchema } from "../domain/commands";
+import { elementContextSchema, noteObservationSchema } from "../domain/commands";
 import { createHash } from "node:crypto";
 import type {
   ElementReference,
@@ -137,6 +137,7 @@ export function parseMarkdown(source: string): ParsedMarkdown {
   let taskSpan: SourceSpan | null = null;
   let findingSpan: SourceSpan | null = null;
   let fence: string | null = null;
+  let readingInstructions = false;
 
   const newlineKinds = new Set(lines.map((line) => line.newline).filter(Boolean));
   if (newlineKinds.size > 1) {
@@ -181,6 +182,7 @@ export function parseMarkdown(source: string): ParsedMarkdown {
   for (const line of lines) {
     const fenceMatch = line.content.match(/^ {0,3}(`{3,}|~{3,})/u);
     if (fenceMatch) {
+      readingInstructions = false;
       const marker = fenceMatch[1] ?? "";
       if (!fence) fence = marker;
       else if (
@@ -208,6 +210,7 @@ export function parseMarkdown(source: string): ParsedMarkdown {
 
     const h2 = line.content.match(/^## (.+)$/u);
     if (h2) {
+      readingInstructions = false;
       if (sectionSpan) sectionSpan.end = line.start;
       if (taskSpan) taskSpan.end = line.start;
       if (findingSpan) findingSpan.end = line.start;
@@ -226,16 +229,20 @@ export function parseMarkdown(source: string): ParsedMarkdown {
     const taskMatch = line.content.match(/^- \[([ xX-])\] (.*)$/u);
     if (taskMatch) {
       if (!section) {
-        diagnostics.push({
-          code: "invalid-nesting",
-          message: `Top-level task on line ${line.number} is outside a section.`,
-          lines: [line.number],
-        });
-        task = null;
-        taskSpan = null;
-        finding = null;
-        findingSpan = null;
-        continue;
+        section = { id: "implicit:section", title: "Checklist", tasks: [], implicit: true };
+        sectionSpan = {
+          kind: "section",
+          id: section.id,
+          line: line.number,
+          start: line.start,
+          end: line.end,
+          firstLineStart: line.start,
+          firstLineEnd: line.start,
+          checkboxOffset: null,
+          stable: true,
+        };
+        sections.push(section);
+        spans.set(section.id, sectionSpan);
       }
       if (taskSpan) taskSpan.end = line.start;
       if (findingSpan) findingSpan.end = line.start;
@@ -255,6 +262,7 @@ export function parseMarkdown(source: string): ParsedMarkdown {
       };
       section.tasks.push(task);
       taskSpan = span;
+      readingInstructions = true;
       finding = null;
       findingSpan = null;
       if (sectionSpan) sectionSpan.end = line.end;
@@ -263,6 +271,7 @@ export function parseMarkdown(source: string): ParsedMarkdown {
 
     const findingMatch = line.content.match(/^  - \[([ xX])\] (.*)$/u);
     if (findingMatch) {
+      readingInstructions = false;
       if (!task) {
         diagnostics.push({
           code: "invalid-nesting",
@@ -284,6 +293,7 @@ export function parseMarkdown(source: string): ParsedMarkdown {
 
     const noteMatch = line.content.match(/^  - Note:\s*(.*)$/u);
     if (noteMatch) {
+      readingInstructions = false;
       if (!task) {
         diagnostics.push({
           code: "invalid-nesting",
@@ -307,11 +317,25 @@ export function parseMarkdown(source: string): ParsedMarkdown {
     }
 
     const metadataMatch = line.content.match(
-      /^    - (Component|Source|Route|Selector|Context):\s*(.+)$/u,
+      /^    - (Component|Source|Route|Selector|Context|Observation):\s*(.+)$/u,
     );
     if (metadataMatch && finding) {
       const label = metadataMatch[1] ?? "";
       const value = inlineCode(metadataMatch[2] ?? "");
+      if (label === "Observation") {
+        try {
+          const observation = noteObservationSchema.safeParse(JSON.parse(value));
+          if (observation.success) {
+            finding.observation = {
+              ...observation.data,
+              route: observation.data.route.split(/[?#]/u)[0] ?? "/",
+            };
+          }
+        } catch {
+          // Unrecognized metadata remains on disk without affecting the note.
+        }
+        continue;
+      }
       const element: ElementReference = finding.element ?? {
         route: "",
         component: null,
@@ -339,6 +363,22 @@ export function parseMarkdown(source: string): ParsedMarkdown {
       continue;
     }
 
+    if (/^\s+[-*+] \[[ xX-]\]/u.test(line.content)) {
+      diagnostics.push({
+        code: "invalid-nesting",
+        message: "This nested checkbox is not a review task. Use a top-level - [ ] checkbox.",
+        lines: [line.number],
+      });
+    }
+    if (task && readingInstructions) {
+      if (/^  \S/u.test(line.content) && !/^  (?:[-*+#>`]|\d+[.)] )/u.test(line.content)) {
+        task.instructions = `${task.instructions ?? ""}${line.content.slice(2)}\n`;
+      } else if (line.content.trim() === "") {
+        if (task.instructions) task.instructions += "\n";
+      } else {
+        readingInstructions = false;
+      }
+    }
     if (line.content.startsWith("  - ") && !task) {
       diagnostics.push({
         code: "invalid-nesting",
@@ -372,6 +412,7 @@ export function parseMarkdown(source: string): ParsedMarkdown {
   for (const currentSection of sections) {
     if (duplicateIds.has(currentSection.id)) currentSection.readOnly = true;
     for (const currentTask of currentSection.tasks) {
+      if (currentTask.instructions) currentTask.instructions = currentTask.instructions.trimEnd();
       if (duplicateIds.has(currentTask.id)) currentTask.readOnly = true;
       for (const note of currentTask.notes) if (duplicateIds.has(note.id)) note.readOnly = true;
     }

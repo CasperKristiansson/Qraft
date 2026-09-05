@@ -80,7 +80,7 @@ it("ignores malformed and already-confirmed revision events", async () => {
   vi.stubGlobal("EventSource", FakeEventSource);
   vi.stubGlobal(
     "fetch",
-    vi.fn(async () => new Response(JSON.stringify({ revision: "a".repeat(64), sections: [] }))),
+    vi.fn(async () => Response.json({ revision: "a".repeat(64), sections: [] })),
   );
   const storage = new HttpQAStorage();
   await storage.getDocument();
@@ -109,4 +109,42 @@ it("refetches after the initial connection failed before ever opening", () => {
   FakeEventSource.instances[1]!.open();
   expect(changed).toHaveBeenCalledTimes(1);
   stop();
+});
+
+it("explains an HTML fallback from a misconfigured local route", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(
+      async () =>
+        new Response("<html>App fallback</html>", { headers: { "Content-Type": "text/html" } }),
+    ),
+  );
+  await expect(new HttpQAStorage().getFiles()).rejects.toMatchObject({
+    code: "unexpected_response",
+    message: expect.stringContaining("qraft doctor"),
+  });
+});
+
+it("bounds stalled requests and reports an uncertain outcome before retry", async () => {
+  const timeout = new AbortController();
+  const original = AbortSignal.timeout;
+  AbortSignal.timeout = () => timeout.signal;
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(
+      async (_url, init: RequestInit) =>
+        new Promise((_resolve, reject) => {
+          init.signal!.addEventListener("abort", () => reject(new Error("aborted")), {
+            once: true,
+          });
+        }),
+    ),
+  );
+  try {
+    const operation = new HttpQAStorage().getDocument();
+    timeout.abort();
+    await expect(operation).rejects.toMatchObject({ code: "request_timeout", retryable: true });
+  } finally {
+    AbortSignal.timeout = original;
+  }
 });

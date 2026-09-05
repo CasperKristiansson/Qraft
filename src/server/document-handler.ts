@@ -17,6 +17,7 @@ interface SuccessfulCommand {
   fingerprint: string;
   document: QADocument;
   expires: number;
+  bytes: number;
 }
 
 export function json(status: number, value: unknown, etag?: string): Response {
@@ -72,11 +73,21 @@ export function createDocumentHandler(options: MiddlewareOptions) {
   const documentPath = `${options.endpoint}/document`;
   const commandPath = `${options.endpoint}/commands`;
   const eventsPath = `${options.endpoint}/events`;
+  let cachedBytes = 0;
+
+  const forget = (id: string) => {
+    cachedBytes -= recent.get(id)?.bytes ?? 0;
+    recent.delete(id);
+  };
 
   const prune = () => {
     const time = now();
-    for (const [id, entry] of recent) if (entry.expires <= time) recent.delete(id);
-    while (recent.size > 500) recent.delete(recent.keys().next().value as string);
+    for (const [id, entry] of recent) if (entry.expires <= time) forget(id);
+    while (recent.size > 500 || cachedBytes > 4 * 1024 * 1024) {
+      const id = recent.keys().next().value;
+      if (id === undefined) break;
+      forget(id);
+    }
   };
 
   return async (request: Request): Promise<Response | undefined> => {
@@ -105,7 +116,10 @@ export function createDocumentHandler(options: MiddlewareOptions) {
       try {
         const document = await options.store.read();
         return json(200, document, document.revision);
-      } catch {
+      } catch (error) {
+        if (error instanceof QraftError && error.code === "validation") {
+          return safeError(400, "invalid_document", error.message, false);
+        }
         return safeError(
           500,
           "read_failed",
@@ -113,7 +127,6 @@ export function createDocumentHandler(options: MiddlewareOptions) {
           true,
         );
       }
-      return;
     }
 
     if (path === eventsPath) {
@@ -205,12 +218,24 @@ export function createDocumentHandler(options: MiddlewareOptions) {
         false,
       );
     }
+    if (!active && inFlight.size >= 64) {
+      return safeError(
+        503,
+        "command_limit",
+        "Too many saves are pending. Wait for them to finish and retry.",
+        true,
+      );
+    }
     try {
       const operation =
         active?.operation ?? options.store.execute(parsed.command, parsed.baseRevision);
       if (!active) inFlight.set(parsed.commandId, { fingerprint, operation });
       const document = await operation;
-      recent.set(parsed.commandId, { fingerprint, document, expires: now() + 5 * 60_000 });
+      const bytes = Buffer.byteLength(JSON.stringify(document), "utf8");
+      forget(parsed.commandId);
+      recent.set(parsed.commandId, { fingerprint, document, bytes, expires: now() + 5 * 60_000 });
+      cachedBytes += bytes;
+      prune();
       options.events.publish(document.revision);
       return json(200, document, document.revision);
     } catch (error) {
@@ -224,13 +249,15 @@ export function createDocumentHandler(options: MiddlewareOptions) {
           revision: qraft.document?.revision,
           document: qraft.document,
         });
+      } else if (qraft.code === "locked") {
+        return safeError(409, "write_locked", qraft.message, true);
       } else if (qraft.code === "validation") {
         return safeError(400, "invalid_command", qraft.message, false);
       } else {
         return safeError(
           500,
           "write_failed",
-          "Qraft could not save the QA file. The original was left unchanged.",
+          "Qraft could not confirm the save. Review the latest file before retrying; your draft is retained.",
           true,
         );
       }

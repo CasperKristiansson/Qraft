@@ -33,6 +33,7 @@ export function FileChooser({
       <input
         id={`${id}-search`}
         value={search}
+        maxLength={200}
         onChange={(event) => setSearch(event.target.value)}
       />
       {catalogError ? (

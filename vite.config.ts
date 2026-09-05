@@ -21,6 +21,7 @@ export default defineConfig({
   build: {
     lib: {
       entry: {
+        cli: resolve(import.meta.dirname, "src/cli.ts"),
         index: resolve(import.meta.dirname, "src/index.ts"),
         next: resolve(import.meta.dirname, "src/next.ts"),
         vite: resolve(import.meta.dirname, "src/vite.ts"),
@@ -29,7 +30,14 @@ export default defineConfig({
     },
     rollupOptions: {
       external,
-      output: { banner: (chunk) => (chunk.name === "index" ? '"use client";' : "") },
+      output: {
+        banner: (chunk) =>
+          chunk.name === "index"
+            ? '"use client";'
+            : chunk.name === "cli"
+              ? "#!/usr/bin/env node"
+              : "",
+      },
     },
     sourcemap: true,
     emptyOutDir: true,

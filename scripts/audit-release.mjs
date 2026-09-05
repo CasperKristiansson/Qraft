@@ -13,7 +13,12 @@ const expected = {
     "write-file-atomic": "8.0.0",
     zod: "4.5.4",
   },
-  peerDependencies: { react: "19.2.8", "react-dom": "19.2.8", vite: "8.2.2", next: "16.3.3" },
+  peerDependencies: {
+    react: "^19.2.8",
+    "react-dom": "^19.2.8",
+    vite: "^7.3.6 || ^8.2.2",
+    next: "^15.5.25 || ^16.3.3",
+  },
   devDependencies: {
     "@playwright/test": "1.62.1",
     "@types/node": "26.4.1",
@@ -26,6 +31,7 @@ const expected = {
     typescript: "7.0.2",
     vite: "8.2.2",
     vitest: "5.0.0",
+    next: "16.3.3",
   },
 };
 
@@ -46,6 +52,18 @@ if (
 )
   failures.push("package exports exceed the client, Vite and Next.js entrypoints");
 
+if (JSON.stringify(packageJson.bin) !== JSON.stringify({ qraft: "./dist/cli.js" }))
+  failures.push("unexpected command entry");
+if (!(await readFile("dist/cli.js", "utf8")).startsWith("#!/usr/bin/env node"))
+  failures.push("CLI executable header is missing");
+
+if (
+  packageJson.types !== "./dist/index.d.ts" ||
+  JSON.stringify(packageJson.typesVersions) !==
+    JSON.stringify({ "*": { vite: ["dist/vite.d.ts"], next: ["dist/next.d.ts"] } })
+)
+  failures.push("declaration resolver compatibility changed");
+
 const licenses = {
   react: "MIT",
   "react-dom": "MIT",
@@ -62,12 +80,7 @@ const licenses = {
 const notices = await readFile("THIRD_PARTY_NOTICES.md", "utf8");
 for (const [name, license] of Object.entries(licenses)) {
   const installed = JSON.parse(await readFile(join("node_modules", name, "package.json"), "utf8"));
-  if (
-    installed.version !==
-    (expected.dependencies[name] ??
-      expected.peerDependencies[name] ??
-      expected.devDependencies[name])
-  )
+  if (installed.version !== (expected.dependencies[name] ?? expected.devDependencies[name]))
     failures.push(`${name} installed version differs from its pin`);
   if (installed.license !== license)
     failures.push(`${name} reports ${String(installed.license)}, expected ${license}`);

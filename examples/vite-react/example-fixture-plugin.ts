@@ -64,6 +64,23 @@ export function exampleFixturePlugin(): Plugin {
           response.end("{}");
           return;
         }
+        if (request.url === "/__qraft-example/checklist") {
+          await writeFile(
+            local,
+            "# Keyboard review\n\n- [ ] Check quantity with keyboard\n\n- [ ] Review the menu\n\n## Other checks\n- [ ] Review the footer\n",
+          );
+          response.end("{}");
+          return;
+        }
+        if (request.url === "/__qraft-example/long-review") {
+          const tasks = Array.from(
+            { length: 50 },
+            (_, index) => `- [ ] Check ${String(index + 1).padStart(2, "0")}`,
+          ).join("\n");
+          await writeFile(local, `# Long review\n\n## Interface\n${tasks}\n`);
+          response.end("{}");
+          return;
+        }
         if (request.url === "/__qraft-example/malformed") {
           await copyFile(malformed, local);
           response.end(JSON.stringify({ message: "Malformed fixture loaded." }));

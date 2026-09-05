@@ -19,6 +19,7 @@ artifacts/browser-evidence/
 # Local QA working state
 QA.local.md
 *.qraft.tmp
+*.qraft.lock
 
 # Editors and operating systems
 .DS_Store
@@ -27,3 +28,5 @@ QA.local.md
 
 # Local candidate evidence
 artifacts/release/
+
+*.qraft-stage-*

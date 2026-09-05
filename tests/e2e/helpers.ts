@@ -9,6 +9,7 @@ export async function open(page: Page) {
 }
 export async function reset(page: Page, path = "/") {
   await page.goto(path);
+  await page.evaluate(() => sessionStorage.clear());
   await page.request.post("/__qraft-example/recreate");
   await page.reload();
   await open(page);

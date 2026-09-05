@@ -159,3 +159,12 @@ test("a dynamically inserted scaled iframe binds selection and tracks its own sc
     await target.evaluate((element) => element.ownerDocument.body.dataset.activated),
   ).toBeUndefined();
 });
+
+test("Space attaches a focused control without activating the host", async ({ page }) => {
+  await picker(page);
+  await page.getByRole("button", { name: "+", exact: true }).press("Space");
+  await expect(
+    drawer(page).getByRole("button", { name: "Remove attachment", exact: true }),
+  ).toBeVisible();
+  await expect(page.getByTestId("quantity-value")).toHaveText("2");
+});

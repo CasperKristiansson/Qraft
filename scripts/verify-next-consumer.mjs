@@ -1,3 +1,4 @@
+import { verifyRemoval } from "./verify-removal.mjs";
 import { spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { cp, mkdir, mkdtemp, readFile, readdir, writeFile } from "node:fs/promises";
@@ -5,6 +6,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { sourceFingerprint } from "./source-fingerprint.mjs";
 
+const maintenance = process.argv.includes("--maintenance");
+const profile = maintenance ? "maintenance" : "current";
 const source = await sourceFingerprint();
 const root = await mkdtemp(join(tmpdir(), "qraft-next-consumer-"));
 function run(args, cwd = root) {
@@ -37,7 +40,7 @@ await writeFile(
       packageManager: "pnpm@11.25.0",
       dependencies: {
         "@qraft/qa": `file:${archive}`,
-        next: "16.3.3",
+        next: maintenance ? "15.5.25" : "16.3.3",
         react: "19.2.8",
         "react-dom": "19.2.8",
       },
@@ -54,9 +57,31 @@ await writeFile(
 );
 await writeFile(
   join(root, "pnpm-workspace.yaml"),
-  'packages: ["."]\nautoInstallPeers: false\nminimumReleaseAgeExclude: ["lucide-react@1.41.0", "zod@4.5.4", "@types/react-dom@19.2.7"]\n',
+  `packages: ["."]\nautoInstallPeers: false\nminimumReleaseAgeExclude: ${JSON.stringify([
+    "lucide-react@1.41.0",
+    "zod@4.5.4",
+    "@types/react-dom@19.2.7",
+    ...(maintenance
+      ? [
+          "next@15.5.25",
+          "@next/env@15.5.25",
+          ...[
+            "darwin-arm64",
+            "darwin-x64",
+            "linux-arm64-gnu",
+            "linux-arm64-musl",
+            "linux-x64-gnu",
+            "linux-x64-musl",
+            "win32-arm64-msvc",
+            "win32-x64-msvc",
+          ].map((platform) => `@next/swc-${platform}@15.5.25`),
+        ]
+      : []),
+  ])}\n`,
 );
 run(["install"]);
+run(["exec", "qraft", "doctor"]);
+run(["exec", "qraft", "setup"]);
 const results = [];
 async function exercise(mode, port) {
   const child = spawn(
@@ -156,17 +181,25 @@ async function exercise(mode, port) {
   }
 }
 await exercise("dev", 4194);
-run(["exec", "next", "build", "--webpack"]);
+run(["exec", "next", "build", ...(maintenance ? [] : ["--webpack"])]);
 await exercise("start", 4195);
+const removal = await verifyRemoval(root, "next", run);
 const evidence = {
   root,
+  profile,
+  runtime: process.version,
+  next: maintenance ? "15.5.25" : "16.3.3",
   archive,
   digest: createHash("sha256")
     .update(await readFile(archive))
     .digest("hex"),
   sourceFingerprint: source.fingerprint,
   results,
+  removal,
 };
 await mkdir("artifacts/release", { recursive: true });
-await writeFile("artifacts/release/next-consumer.json", JSON.stringify(evidence, null, 2) + "\n");
+await writeFile(
+  `artifacts/release/next-consumer-${profile}.json`,
+  JSON.stringify(evidence, null, 2) + "\n",
+);
 console.log(JSON.stringify(evidence, null, 2));

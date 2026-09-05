@@ -27,7 +27,7 @@ export class HttpQAStorage implements QAStorage {
   ) {}
 
   async getFiles(signal?: AbortSignal): Promise<QAFileCatalog> {
-    const response = await fetch(`${this.endpoint}/files`, {
+    const response = await this.#request("files", {
       cache: "no-store",
       ...(signal ? { signal } : {}),
     });
@@ -41,7 +41,7 @@ export class HttpQAStorage implements QAStorage {
   }
 
   async getDocument(signal?: AbortSignal): Promise<QADocument> {
-    const response = await fetch(`${this.endpoint}/document`, {
+    const response = await this.#request("document", {
       cache: "no-store",
       ...(signal ? { signal } : {}),
     });
@@ -52,7 +52,7 @@ export class HttpQAStorage implements QAStorage {
   }
 
   async execute(command: QACommand, baseRevision: string): Promise<QADocument> {
-    const response = await fetch(`${this.endpoint}/commands`, {
+    const response = await this.#request("commands", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ commandId: crypto.randomUUID(), baseRevision, command }),
@@ -72,6 +72,10 @@ export class HttpQAStorage implements QAStorage {
     const connect = () => {
       if (stopped) return;
       source = new EventSource(`${this.endpoint}/events`);
+      source.addEventListener("document-unavailable", () => {
+        this.revision = null;
+        onChange();
+      });
       source.addEventListener("document-changed", (event) => {
         try {
           const data = JSON.parse((event as MessageEvent<string>).data) as { revision?: string };
@@ -102,6 +106,34 @@ export class HttpQAStorage implements QAStorage {
       source?.close();
       if (timer) clearTimeout(timer);
     };
+  }
+
+  async #request(path: string, init: RequestInit): Promise<Response> {
+    const deadline = AbortSignal.timeout(15_000);
+    const signal = init.signal ? AbortSignal.any([init.signal, deadline]) : deadline;
+    try {
+      const response = await fetch(`${this.endpoint}/${path}`, {
+        ...init,
+        signal,
+        redirect: "error",
+      });
+      if (response.ok && !response.headers.get("content-type")?.includes("application/json")) {
+        throw new QAStorageError(
+          "The local Qraft route did not return JSON. Run qraft doctor and check the endpoint, base path and development-only proxy configuration.",
+          "unexpected_response",
+          false,
+        );
+      }
+      return response;
+    } catch (error) {
+      if (deadline.aborted)
+        throw new QAStorageError(
+          "The local Qraft request timed out. Check that the development server is running, then review the latest file before retrying.",
+          "request_timeout",
+          true,
+        );
+      throw error;
+    }
   }
 
   async #error(response: Response): Promise<QAStorageError> {

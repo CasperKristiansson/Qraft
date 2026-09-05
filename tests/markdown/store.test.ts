@@ -108,6 +108,7 @@ describe("MarkdownDocumentStore", () => {
       code: "conflict",
     });
     expect(await readFile(file, "utf8")).toBe(external);
+    expect(await readdir(directory)).toEqual(["QA.md"]);
   });
 
   it("serializes concurrent same-revision commands so one succeeds and one conflicts without lost data", async () => {
@@ -126,6 +127,23 @@ describe("MarkdownDocumentStore", () => {
     const source = await readFile(file, "utf8");
     expect(source).toContain("## First");
     expect(source).not.toContain("## Second");
+  });
+
+  it("detects edits made during temp-file writing before final replacement", async () => {
+    const initial = "# QA\n";
+    const external = "# Editor changed this while staging\n";
+    const { file, directory } = await temporaryFile(initial);
+    const store = new MarkdownDocumentStore(file, directory, {
+      atomicWrite: async (target, bytes, options) => {
+        await writeFileAtomic(target, bytes, options);
+        await writeFile(file, external);
+      },
+    });
+    await expect(
+      store.execute({ type: "createSection", title: "Unsaved" }, sha256(initial)),
+    ).rejects.toMatchObject({ code: "conflict" });
+    expect(await readFile(file, "utf8")).toBe(external);
+    expect(await readdir(directory)).toEqual(["QA.md"]);
   });
 
   it("preserves file mode through the pinned atomic adapter", async () => {
@@ -151,7 +169,7 @@ describe("MarkdownDocumentStore", () => {
     ).rejects.toEqual(
       new QraftError(
         "io",
-        "Qraft could not save the QA file. The original was left unchanged.",
+        "Qraft could not confirm the save. Review the latest file before retrying; your draft is retained.",
         true,
       ),
     );

@@ -1,6 +1,6 @@
 # Dev-server protocol
 
-This document owns the same-origin browser-to-Vite interface and its local-development safeguards. The command types are owned by [Architecture](architecture.md), and mutation semantics by [Markdown storage](markdown-storage.md).
+This document owns the same-origin browser-to-development-server interface and its local-development safeguards. The command types are owned by [Architecture](architecture.md), and mutation semantics by [Markdown storage](markdown-storage.md).
 
 ## Transport choice
 
@@ -8,11 +8,11 @@ Qraft uses:
 
 - JSON HTTP for reads and commands;
 - Server-Sent Events for invalidation notifications;
-- the Vite development server's existing file watcher for external edits.
+- the Vite development server's watcher or the Next.js adapter's bounded polling for external edits.
 
-SSE is intentionally used instead of a custom WebSocket protocol or Vite's private HMR client surface. Events carry only a new revision; clients refetch the document.
+SSE is intentionally used instead of a custom WebSocket protocol or Vite's private HMR client surface. Events carry a revision or an unavailable notification; clients refetch the document.
 
-The default endpoint prefix is `/__qraft` and can be changed only through trusted Vite plugin configuration.
+The default endpoint prefix is `/__qraft` and can be changed only through trusted adapter configuration.
 
 ## `GET /__qraft/document`
 
@@ -44,15 +44,16 @@ Unknown object keys may be rejected to catch client/server drift early.
 
 ### Responses
 
-| Status | Meaning                                          | Body                                         |
-| ------ | ------------------------------------------------ | -------------------------------------------- |
-| `200`  | Command applied                                  | New `QADocument`                             |
-| `400`  | Invalid JSON, schema, value, or target structure | Safe error object                            |
-| `404`  | Referenced entity no longer exists               | Safe error object plus current revision      |
-| `409`  | Revision conflict or duplicate-ID ambiguity      | Safe error and latest document when readable |
-| `413`  | Request exceeds 32 KiB                           | Safe error object                            |
-| `415`  | Wrong content type                               | Safe error object                            |
-| `500`  | Filesystem/read/write failure                    | Safe error object without stack              |
+| Status | Meaning                                                  | Body                                         |
+| ------ | -------------------------------------------------------- | -------------------------------------------- |
+| `200`  | Command applied                                          | New `QADocument`                             |
+| `400`  | Invalid JSON, schema, value, or target structure         | Safe error object                            |
+| `404`  | Referenced entity no longer exists                       | Safe error object plus current revision      |
+| `409`  | Revision conflict, writer lock or duplicate-ID ambiguity | Safe error and latest document when readable |
+| `413`  | Request exceeds 32 KiB                                   | Safe error object                            |
+| `415`  | Wrong content type                                       | Safe error object                            |
+| `503`  | Active file, stream or command capacity reached          | Retryable safe error object                  |
+| `500`  | Filesystem/read/write failure                            | Safe error object without stack              |
 
 Error shape:
 
@@ -77,7 +78,7 @@ Returns an SSE stream:
 ```text
 Content-Type: text/event-stream
 Cache-Control: no-cache
-Connection: keep-alive
+X-Accel-Buffering: no
 ```
 
 Document event:
@@ -94,18 +95,20 @@ Rules:
 - An event is an invalidation signal, not the document payload.
 - Coalesce store and watcher notifications with the same revision.
 - Close and remove client resources on connection close or plugin shutdown.
-- The browser refetches only when the event revision differs from its current revision.
+- A `document-unavailable` event clears the client revision and triggers a read so invalid UTF-8, oversized files and permission errors become visible. Restoring the original bytes triggers another read and clears the read error.
+- For healthy invalidations, refetch only when the event revision differs from the current revision.
 - Reconnect with exponential backoff capped at 10 seconds and refetch after reconnect.
 
 ## Request safeguards
 
-Qraft has no authentication because the endpoint exists only inside the local Vite development server. It still applies these safeguards:
+Qraft has no authentication because the endpoint exists only inside the local development server. It still applies these safeguards:
 
 - Register routes only for `vite serve`, never build or preview.
 - Match the exact configured prefix and paths; otherwise call the next middleware.
 - Allow only the documented methods.
 - Do not add CORS headers.
-- Accept a request only when `Origin` is absent or matches the effective request origin.
+- Require a loopback/localhost request URL and Host by default. Reject cross-site Fetch Metadata and mismatched Origin even if forwarded headers suggest otherwise.
+- An explicit trusted adapter origin can allow that exact browser gateway origin and hostname; validate HTTP(S), no path, credentials or query. Missing Origin does not bypass Host validation.
 - Prefer Vite's resolved server origin/host configuration rather than trusting forwarded headers from arbitrary clients.
 - Require JSON content type for commands.
 - Enforce size before fully buffering a command body.
@@ -116,11 +119,12 @@ These are local-development safeguards, not a claim that Qraft is safe to expose
 
 ## Command execution and duplicates
 
-The server executes commands through the Markdown store's per-file queue. It keeps a bounded in-memory map of recently completed `commandId` values for the current process:
+The server executes commands through the Markdown store's per-file queue and cooperative sibling lock. See Markdown storage for lock recovery and the boundary with external editors. It keeps a bounded in-memory map of recently completed `commandId` values for the current process:
 
 - same ID and same request returns the stored successful response;
 - same ID with a different request returns `409`;
-- entries can expire after five minutes or a bounded count;
+- entries expire after five minutes, 500 successes or 4 MiB of cached document payloads;
+- at most 64 unique commands may be pending per selected file;
 - deduplication does not survive server restart and must not be described as durable.
 
 This prevents a browser retry from duplicating an appended task/note without introducing persistent command state.
@@ -136,6 +140,7 @@ This prevents a browser retry from duplicating an appended task/note without int
 - preserves draft input on conflict and displays the latest document;
 - maintains one SSE subscription per mounted Qraft client;
 - aborts reads and closes SSE during unmount;
+- bounds reads and saves to 15 seconds, rejects redirects and explains successful HTML fallbacks as likely endpoint/proxy misconfiguration; timeouts retain drafts and require checking the latest file before retry;
 - never performs an optimistic file-status change that is presented as confirmed.
 
 ## Vite watcher behavior
@@ -170,3 +175,9 @@ Attachment Context may include the bounded optional sourceTrail defined in archi
 Next.js App Router exposes the same protocol through a Node-runtime route handler. It returns 404 outside development before initializing storage. Origin checks use the request URL/Host, never forwarded headers; no CORS headers are added. Native watchFile polling observes selected files every 750 ms, including atomic replacement, deletion and recreation. Watchers are non-persistent and disposed with their runtime. Client abort closes SSE subscriptions. Source opening remains a Vite-only capability; stored source context is available in both frameworks.
 
 Next.js local gateway setups can configure one exact browser `origin` in the route factory. This participates in the hot-reload project identity; forwarded headers never determine the allowed origin. Without this option, compare the browser origin to the request protocol and Host.
+
+## Resource and failure bounds
+
+A document read or resulting write is limited to 2 MiB of UTF-8 bytes. Invalid UTF-8 and oversized reads return `400 invalid_document`; the UI retains drafts. A process owns at most 32 active file runtimes per project. Opening another file evicts an idle runtime and disposes its watcher; if every runtime has live streams, return `503 active_file_limit`. Each runtime accepts at most 32 streams and disconnects slow readers after a bounded output queue. Abort, cancellation and shutdown release timers and clients.
+
+`409 write_locked` means another Qraft process owns the sibling write lock; retry after it finishes. `500 write_failed` means the server could not confirm the save, so the UI asks the user to inspect the latest file before retrying. It must not claim the original is unchanged when a failure may have occurred after rename. Host/Origin checks are browser safeguards, not network authentication: never expose a Qraft-enabled development server to an untrusted network.

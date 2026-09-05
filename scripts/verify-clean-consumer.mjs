@@ -1,3 +1,4 @@
+import { verifyRemoval } from "./verify-removal.mjs";
 import { sourceFingerprint } from "./source-fingerprint.mjs";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -5,6 +6,8 @@ import { mkdtemp, readFile, readdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+const maintenance = process.argv.includes("--maintenance");
+const profile = maintenance ? "maintenance" : "current";
 const repository = process.cwd();
 const source = await sourceFingerprint(repository);
 const consumer = await mkdtemp(join(tmpdir(), "qraft-clean-consumer-"));
@@ -28,6 +31,8 @@ if (!archiveName) throw new Error("pnpm pack did not create a package archive.")
 const archive = join(consumer, archiveName);
 const archiveFiles = run("tar", ["-tzf", archive]).trim().split("\n");
 for (const expected of [
+  "package/dist/cli.js",
+  "package/dist/next.js",
   "package/dist/index.js",
   "package/dist/index.d.ts",
   "package/dist/vite.js",
@@ -57,10 +62,10 @@ const packageJson = {
   },
   dependencies: {
     "@qraft/qa": `file:${archive}`,
-    "@vitejs/plugin-react": "6.1.1",
+    "@vitejs/plugin-react": maintenance ? "5.2.0" : "6.1.1",
     react: "19.2.8",
     "react-dom": "19.2.8",
-    vite: "8.2.2",
+    vite: maintenance ? "7.3.6" : "8.2.2",
   },
 };
 
@@ -69,7 +74,7 @@ const files = {
   "pnpm-workspace.yaml": `packages:
   - "."
 minimumReleaseAge: 10080
-minimumReleaseAgeExclude:
+${maintenance ? 'allowBuilds:\n  "esbuild@0.28.2": true\n' : ""}minimumReleaseAgeExclude:
   - "lucide-react@1.41.0"
   - "zod@4.5.4"
 `,
@@ -169,6 +174,8 @@ run(
   ],
   consumer,
 );
+run("corepack", ["pnpm", "exec", "qraft", "doctor"], consumer);
+run("corepack", ["pnpm", "exec", "qraft", "setup"], consumer);
 run("corepack", ["pnpm", "build"], consumer);
 
 const { preview } = await import(
@@ -208,17 +215,27 @@ try {
 } finally {
   await server.close();
 }
+const removal = await verifyRemoval(consumer, "vite", (args, cwd) =>
+  run("corepack", ["pnpm", ...args], cwd),
+);
 const digest = createHash("sha256")
   .update(await readFile(archive))
   .digest("hex");
 const evidence = {
   consumer,
+  profile,
+  runtime: process.version,
+  versions: packageJson.dependencies,
   archive,
   digest,
   sourceFingerprint: source.fingerprint,
   archiveFiles: archiveFiles.length,
   previewChecks,
+  removal,
 };
 await writeFile(join(consumer, "evidence.json"), JSON.stringify(evidence, null, 2) + "\n");
-await writeFile("artifacts/release/consumer.json", JSON.stringify(evidence, null, 2) + "\n");
+await writeFile(
+  `artifacts/release/consumer-${profile}.json`,
+  JSON.stringify(evidence, null, 2) + "\n",
+);
 process.stdout.write(`${JSON.stringify(evidence)}\n`);

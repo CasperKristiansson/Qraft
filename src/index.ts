@@ -7,6 +7,7 @@ export type {
   QADocument,
   TaskStatus,
   QANote,
+  NoteObservation,
   QASection,
   QATask,
 } from "./domain/model";

@@ -6,7 +6,7 @@ Qraft supports Vite React and Next.js App Router (Node runtime). It has no accou
 
 ## Install an internal build
 
-Qraft is private and has not been published. Build or obtain the approved internal tarball, then install it with its exact tested peers:
+Qraft is private and has not been published. Build or obtain the approved internal tarball, then install it with supported peers:
 
 ```sh
 pnpm add -D ./vendor/qraft-qa-0.2.1.tgz
@@ -14,7 +14,7 @@ pnpm add -D ./vendor/qraft-qa-0.2.1.tgz
 
 For an existing project, check its React, framework and Node versions before installing; do not
 upgrade the application's peers merely to add Qraft. Vite and Next.js are optional peers, so a
-consumer needs only its own framework. Node 24.19.0 or newer within Node 24 is required.
+consumer needs only its own framework. Supported Node lines are 22.23+ and 24.19+. Run `pnpm exec qraft doctor` for read-only diagnostics or `pnpm exec qraft setup` for integration and removal steps.
 
 ### Next.js App Router
 
@@ -88,11 +88,11 @@ The drawer first asks you to choose a Markdown checklist inside the Vite project
 
 ## Review workflow
 
-Drag the small six-dot grip up or down the right edge; its position survives reload. Keyboard arrows and Home/End move it too. Click QA to open the checklist. Change status directly in a task row: not completed → completed → skipped → not completed. Double-click the status to skip. Open the title for explicit status buttons and notes.
+Drag the small six-dot grip up or down the right edge; its position survives reload. Keyboard arrows and Home/End move it too. Click QA to open the checklist. Change status directly in a task row: not completed → completed → skipped → not completed. Double-click the status to skip. Open the title for notes and the same circular status control beside the smaller detail title.
 
 While picking an element, use ↑/↓ or Parent/Child to choose its container, and Enter or click to attach. Parent navigation holds the target until Resume picking. The element trail shows your selection; Guides toggles faint edge lines. The outline follows moving elements and shows their dimensions.
 
-Notes are observations for your coding agent, without their own completion state. The composer is always available: Enter submits, Shift+Enter inserts a line break. Attach an element while retaining your draft, add multiple notes, and edit earlier notes. Task completion never depends on notes and never auto-advances. Skipped tasks remain in the total and are counted separately from completed tasks.
+Notes are observations for your coding agent, without their own completion state. The composer is always available: Enter submits, Shift+Enter inserts a line break. Attach an element while retaining your draft, add multiple notes, and edit earlier notes. Task completion never depends on notes. Ordinary status actions stay put; the separate Complete and next action advances after a confirmed save. Skipped tasks remain in the total and are counted separately from completed tasks.
 
 ## Markdown dialect
 
@@ -113,9 +113,9 @@ Notes are observations for your coding agent, without their own completion state
 - [-] Check an unsupported payment method
 ```
 
-H2 headings define sections. Top-level markers are open `[ ]`, completed `[x]`, and skipped `[-]`. Two-space `Note:` bullets are editable notes. Legacy nested checkbox findings render as notes, with their original markers and bytes preserved. Qraft adds hidden stable IDs only when creating or first mutating an entity. Opening or selecting a file never rewrites it. See [the complete preservation contract](docs/markdown-storage.md).
+H2 headings define optional sections; ordinary unsectioned top-level checklists work too. Indented task instructions appear read-only in details. Top-level markers are open `[ ]`, completed `[x]`, and skipped `[-]`. Two-space `Note:` bullets are editable notes. Legacy nested checkbox findings render as notes, with their original markers and bytes preserved. Qraft adds hidden stable IDs only when creating or first mutating an entity. Opening or selecting a file never rewrites it. See [the complete preservation contract](docs/markdown-storage.md).
 
-If no file exists, ask your coding editor to create a Markdown checklist with sections and tasks, then use Refresh files. Discovery ignores hidden folders, dependency/build/output folders and symlinks. It is bounded to 2,000 files and 10,000 entries; configure a specific file if a large project exceeds that bound. File and tab persistence require browser local storage; otherwise selection works for the current session. Unsaved note drafts survive navigation within the mounted drawer, but are not persisted across page reloads.
+If no file exists, ask your coding editor to create a Markdown checklist with sections and tasks, then use Refresh files. Discovery ignores hidden folders, dependency/build/output folders and symlinks. It is bounded to 2,000 files and 10,000 entries; configure a specific file if a large project exceeds that bound. File and tab persistence require browser local storage; otherwise selection works for the current session. Drafts, selected task, section collapse and scroll survive reload/HMR in tab-isolated session storage. Closing the tab can end that session. Storage failures are visible; settings offer explicit clearing. Pin keeps review open while operating the app, and narrow details collapse to a task strip.
 
 ## Safe local use
 
@@ -127,8 +127,8 @@ If no file exists, ask your coding editor to create a Markdown checklist with se
 
 ## Known limitations
 
-- Tested framework peers are Vite 8.2.2 and Next.js 16.3.3 with React 19.2.8. Review layouts support desktop pointer/keyboard and widths of 768 CSS pixels or wider.
-- The file store has an in-process command queue and a second revision check, but no cross-process lock. A simultaneous external write in the final check-to-rename window remains possible.
+- Supported consumer lines are Vite 7.3.6+/8.2.2+ and Next.js 15.5.25+/16.3.3+, with matching React/React DOM 19.2.8+. Acceptance records the exact tested profiles. Responsive browser review supports widths down to 360 CSS pixels; physical-phone network access is outside the local-only scope.
+- Files are limited to 2 MiB. Qraft serializes its own processes with a sibling lock and checks revisions immediately before final replacement. Arbitrary external editors do not participate in that lock; their final check-to-rename race remains possible. After a crashed writer, `qraft doctor` explains recovery; it never steals locks.
 - Element source context depends on React Grab and source-map availability. Attachments also retain bounded tag, identifying attributes, selected visible text, ancestor context, and up to five relevant component/source locations; no form values, full HTML, styles, or screenshots are captured. Selectors and source locations are best-effort identifiers and may change as the application changes. Plain notes remain available when context is partial or unavailable.
 - Picker traversal supports the main document, open Shadow DOM, and same-origin iframes. Closed shadow roots and cross-origin frames are inaccessible.
 - Editor opening depends on the local Vite/editor integration and can fail; Qraft keeps the stored path visible for manual use.
@@ -147,7 +147,7 @@ corepack pnpm verify:consumer
 corepack pnpm verify:next
 ```
 
-`check` covers formatting, lint, typecheck, unit/integration tests, and the package build. `test:browser` exercises Chromium, Firefox, and WebKit. `audit:release` checks the exact pins, installed transitive licenses, notices, exports, and excluded material. `verify:consumer` packs Qraft, installs that tarball into a clean temporary Vite React app, imports only the two public exports, and builds and checks the production consumer preview. Artifact scripts retain local evidence under ignored `artifacts/release/`. Run `build` before either artifact check. `scripts/source-fingerprint.mjs` records candidate bytes and file modes, excluding generated/local files.
+`check` covers formatting, lint, typecheck, unit/integration tests, and the package build. `test:browser` exercises Chromium, Firefox, and WebKit. `audit:release` checks the exact dependency pins and supported peer ranges, installed transitive licenses, notices, exports, and excluded material. `verify:consumer` packs Qraft, installs that tarball into a clean temporary Vite React app, checks public exports and the setup executable, and builds and checks the production consumer preview. Artifact scripts retain local evidence under ignored `artifacts/release/`. Run `build` before either artifact check. `scripts/source-fingerprint.mjs` records candidate bytes and file modes, excluding generated/local files.
 
 ## Internal distribution and updates
 

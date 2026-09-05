@@ -1,6 +1,6 @@
 import { isAbsolute, relative, resolve } from "node:path";
 import type { QACommand } from "../domain/commands";
-import type { ElementReference, QASection, QATask } from "../domain/model";
+import type { ElementReference, NoteObservation, QASection, QATask } from "../domain/model";
 import { QraftError, normalizeEntityText } from "../domain/validation";
 import { createEntityId, type IdFactory } from "./ids";
 import type { EntityKind, ParsedMarkdown, SourceSpan } from "./parse";
@@ -171,8 +171,13 @@ function noteLine(
   id: string,
   element: ElementReference | null,
   newline: string,
+  observation?: NoteObservation,
 ): string {
   const lines = [`  - Note: ${escapeEntityText(body)}${entityComment(id)}`];
+  if (observation) {
+    const context = { ...observation, route: observation.route.split(/[?#]/u)[0] ?? "/" };
+    lines.push(`    - Observation: ${codeFence(JSON.stringify(context))}`);
+  }
   if (element?.component) lines.push(`    - Component: ${codeFence(element.component)}`);
   if (element?.source) {
     const suffix = element.line
@@ -236,7 +241,11 @@ export function patchMarkdown(
     edits.push({
       start: offset,
       end: offset,
-      text: lineInsertion(parsed, offset, noteLine(command.body, id, element, parsed.newline)),
+      text: lineInsertion(
+        parsed,
+        offset,
+        noteLine(command.body, id, element, parsed.newline, command.observation),
+      ),
     });
   }
 

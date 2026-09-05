@@ -25,18 +25,30 @@ test("checklist actions stay reachable with hundreds of tasks at every supported
     d.getByText(/Local Markdown sync|Click to complete|Double-click to skip/u),
   ).toHaveCount(0);
   await expect(
-    d.locator(".qraft-header").getByRole("button", { name: "Change file", exact: true }),
+    d.locator(".qraft-footer").getByRole("button", { name: "Change file", exact: true }),
   ).toBeVisible();
   for (const size of [
     { width: 1440, height: 900 },
     { width: 1366, height: 650 },
     { width: 768, height: 900 },
     { width: 768, height: 360 },
+    { width: 390, height: 844 },
+    { width: 360, height: 640 },
   ]) {
     await page.setViewportSize(size);
     const initial = (await add.boundingBox())!;
     expect(initial.y + initial.height).toBeLessThanOrEqual(size.height);
-    expect(initial.y).toBeGreaterThan(size.height - 100);
+    const footer = (await d.locator(".qraft-footer").boundingBox())!;
+    const bottomBorder = await d.evaluate((element) =>
+      parseFloat(getComputedStyle(element).borderBottomWidth),
+    );
+    expect(footer.y + footer.height).toBeCloseTo(size.height - bottomBorder, 0);
+    expect(initial.y).toBeGreaterThanOrEqual(footer.y);
+    for (const name of ["Change file", "Keep Qraft open", "Review settings"]) {
+      const action = (await d.getByRole("button", { name, exact: true }).boundingBox())!;
+      expect(action.y).toBeGreaterThan(initial.y);
+      expect(action.y + action.height).toBeLessThanOrEqual(size.height);
+    }
     expect(await content.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(
       true,
     );

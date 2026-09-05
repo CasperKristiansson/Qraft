@@ -53,16 +53,21 @@ try {
   }
   if (state === "add-task")
     await drawer
-      .getByRole("heading", { name: "Cart", exact: true })
+      .getByRole("heading", { name: "Cart 2", exact: true })
       .locator("..")
       .getByRole("button", { name: "Add task", exact: true })
       .click();
   if (state === "complete") {
-    await drawer.getByRole("button", { name: "Completed", exact: true }).click();
-    await expect(drawer.getByRole("button", { name: "Completed", exact: true })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
+    await expect(drawer.locator(".qraft-detail-heading .qraft-status")).toBeEnabled();
+    await drawer
+      .getByRole("button", { name: "Change quantity: Not completed. Change status", exact: true })
+      .press("Enter");
+    await expect(
+      drawer.getByRole("button", {
+        name: "Change quantity: Completed. Change status",
+        exact: true,
+      }),
+    ).toBeVisible();
   }
   if (state !== "picker") await page.mouse.move(10, 10);
   await page.screenshot({ path, fullPage: false, animations: "disabled" });

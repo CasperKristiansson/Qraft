@@ -1,24 +1,27 @@
 import { FileChooser } from "./FileChooser";
 import * as Dialog from "@radix-ui/react-dialog";
 import { FocusScope } from "@radix-ui/react-focus-scope";
-import { ArrowLeft, Menu, Plus, StickyNote, X } from "lucide-react";
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { ArrowLeft, ChevronDown, FolderOpen, Menu, Pin, Plus, Settings, X } from "lucide-react";
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { QACommand } from "../domain/commands";
-import type { QADocument, QANote, QATask, TaskStatus } from "../domain/model";
+import type { QANote, QATask, TaskStatus } from "../domain/model";
 import { getProgress } from "../domain/model";
-import { HttpQAStorage, QAStorageError } from "./http-storage";
+import { HttpQAStorage } from "./http-storage";
 import type { QAFileCatalog, QAStorage } from "./storage";
 import { ElementPicker, type PickerSelection } from "./picker/ElementPicker";
 import { EdgeTab } from "./EdgeTab";
 import { useShadowMount } from "./use-shadow-mount";
-import { TaskRow } from "./TaskRow";
-import { NoteItem } from "./NoteItem";
-import { NoteComposer, type NoteDraft } from "./NoteComposer";
+import { ChecklistView } from "./ChecklistView";
+import { TaskDetail } from "./TaskDetail";
+import { type NoteDraft } from "./NoteComposer";
 import { labels, validDraft } from "./review-state";
+import { useDocument } from "./use-document";
+import { useReviewSession } from "./use-review-session";
+import { isRecoverableForm, isRecoverableTarget, reconcileSession } from "./review-session";
+import { ReviewNavigation, ReviewRecovery, CompactReview } from "./ReviewTools";
 
 type FormState = { kind: "section" } | { kind: "task"; sectionId: string };
-type Feedback = { tone: "neutral" | "warning" | "error"; text: string };
 const emptyDraft: NoteDraft = { body: "", element: null };
 
 export interface QAProps {
@@ -35,71 +38,133 @@ export function QA({
   const mount = useShadowMount();
   const [open, setOpen] = useState(false);
   const [narrow, setNarrow] = useState(false);
-  const [document, setDocument] = useState<QADocument | null>(null);
   const [connected, setConnected] = useState(true);
-  const [feedback, setFeedback] = useState<Feedback>({
-    tone: "neutral",
-    text: "Loading checklist…",
-  });
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
-  const [form, setForm] = useState<FormState | null>(null);
-  const [draft, setDraft] = useState("");
-  const [notes, setNotes] = useState<Record<string, NoteDraft>>({});
-  const [edits, setEdits] = useState<Record<string, Record<string, string>>>({});
-  const [pending, setPending] = useState(false);
-  const [picking, setPicking] = useState(false);
-  const [sourceError, setSourceError] = useState<{ noteId: string; text: string } | null>(null);
   const [catalog, setCatalog] = useState<QAFileCatalog | null>(null);
   const [fileId, setFileId] = useState<string | null>(null);
+  const sessionKey =
+    !providedStorage && catalog && fileId ? `qraft:review:v1:${catalog.projectId}:${fileId}` : null;
+  const {
+    session,
+    updateSession,
+    warning: sessionWarning,
+    clearSession,
+  } = useReviewSession(sessionKey, providedStorage);
+  const { selectedTaskId, form, titleDraft: draft, notes, edits } = session;
+  const setSelectedTaskId = (value: string | null) =>
+    updateSession((current) => ({ ...current, selectedTaskId: value }));
+  const setForm = (value: FormState | null) =>
+    updateSession((current) => ({ ...current, form: value }));
+  const setDraft = (value: string) =>
+    updateSession((current) => ({ ...current, titleDraft: value }));
+  const setNotes = (apply: (notes: Record<string, NoteDraft>) => Record<string, NoteDraft>) =>
+    updateSession((current) => ({ ...current, notes: apply(current.notes) }));
+  const [pinned, setPinned] = useState(false);
+  const [compact, setCompact] = useState(false);
+  const [hidden, setHidden] = useState(false);
+  const [settings, setSettings] = useState(false);
+  const [clearing, setClearing] = useState(false);
+  const [preferenceWarning, setPreferenceWarning] = useState("");
+  const [picking, setPicking] = useState(false);
+  const [sourceError, setSourceError] = useState<{ noteId: string; text: string } | null>(null);
   const [choosing, setChoosing] = useState(false);
   const [search, setSearch] = useState("");
   const [catalogError, setCatalogError] = useState("");
   const [catalogVersion, setCatalogVersion] = useState(0);
   const headingId = useId();
   const heading = useRef<HTMLHeadingElement>(null);
+  const navigationFocus = useRef(false);
   const formControl = useRef<HTMLInputElement>(null);
   const composer = useRef<HTMLTextAreaElement>(null);
-  const refreshSequence = useRef(0);
-  const locked = useRef(false);
+  const content = useRef<HTMLDivElement>(null);
   const formTrigger = useRef<HTMLButtonElement | null>(null);
   const defaultStorage = useMemo(() => new HttpQAStorage(endpoint, setConnected), [endpoint]);
   const storage = useMemo(
     () => providedStorage ?? (fileId ? defaultStorage.forFile(fileId) : null),
     [providedStorage, defaultStorage, fileId],
   );
+  const { document, pending, feedback, execute } = useDocument(
+    storage,
+    (before, after, command) =>
+      updateSession((current) => reconcileSession(current, before, after, command)),
+    setConnected,
+  );
   const progress = document ? getProgress(document) : { passed: 0, total: 0, skipped: 0 };
+  const tasks = document?.sections.flatMap((section) => section.tasks) ?? [];
   const selected = document?.sections
     .flatMap((section) => section.tasks.map((task) => ({ section, task })))
     .find(({ task }) => task.id === selectedTaskId);
-  const noteKey = `${fileId ?? "bound"}:${selectedTaskId ?? ""}`;
+  const selectedIndex = tasks.findIndex((task) => task.id === selectedTaskId);
+  const noteKey = selectedTaskId ?? "";
   const noteDraft = notes[noteKey] ?? emptyDraft;
   const editDrafts = edits[noteKey] ?? {};
   const editDraft = (id: string, body: string | null) =>
-    setEdits((current) => {
-      const next = { ...(current[noteKey] ?? {}) };
+    updateSession((current) => {
+      const next = { ...(current.edits[noteKey] ?? {}) };
       if (body === null) delete next[id];
-      else next[id] = body;
-      return { ...current, [noteKey]: next };
+      else
+        next[id] = {
+          body,
+          originalBody:
+            next[id]?.originalBody ??
+            selected?.task.notes.find((note) => note.id === id)?.body ??
+            "",
+          revision: next[id]?.revision ?? document?.revision ?? "",
+        };
+      return { ...current, edits: { ...current.edits, [noteKey]: next } };
     });
-  const orphanEdits = Object.entries(editDrafts).filter(
-    ([id]) => !selected?.task.notes.some((note) => note.id === id),
-  );
-  const preservedEdits = orphanEdits.map(([id, body]) => (
-    <div className="qraft-orphan" key={id} role="alert">
-      <strong>The note being edited no longer exists.</strong>
-      <textarea aria-label="Preserved edit draft" readOnly value={body} />
-      <button className="qraft-add" onClick={() => editDraft(id, null)}>
-        Discard edit draft
-      </button>
-    </div>
-  ));
   const fileLabel = catalog?.files.find((file) => file.id === fileId)?.label ?? "Markdown";
   const showChooser = !providedStorage && (!fileId || choosing);
+  const modal = narrow && !pinned;
+  const draftBlocked = Boolean(
+    document &&
+      (noteDraft.body || noteDraft.element) &&
+      !isRecoverableTarget(noteKey, noteDraft.revision, document),
+  );
   const updateNote = (patch: Partial<NoteDraft>) =>
     setNotes((current) => ({
       ...current,
-      [noteKey]: { ...(current[noteKey] ?? emptyDraft), ...patch },
+      [noteKey]: {
+        ...(current[noteKey] ?? emptyDraft),
+        observation: (current[noteKey]?.body || current[noteKey]?.element
+          ? current[noteKey]?.observation
+          : undefined) ?? {
+          route: location.pathname,
+          viewport: { width: window.innerWidth, height: window.innerHeight },
+        },
+        revision: current[noteKey]?.revision ?? document?.revision,
+        ...patch,
+      },
     }));
+
+  useEffect(() => {
+    if (!catalog) return;
+    try {
+      setPinned(localStorage.getItem(`qraft:pinned:${catalog.projectId}`) === "true");
+    } catch {
+      setPreferenceWarning(
+        "Pin preference will last for this page only because browser storage is unavailable.",
+      );
+    }
+  }, [catalog?.projectId]);
+
+  useLayoutEffect(() => {
+    if (!navigationFocus.current) return;
+    navigationFocus.current = false;
+    if (selectedTaskId && content.current) content.current.scrollTop = 0;
+    heading.current?.focus();
+  });
+
+  useLayoutEffect(() => {
+    if (!selectedTaskId && !showChooser && document && content.current)
+      content.current.scrollTop = session.scroll;
+  }, [selectedTaskId, showChooser, document === null]);
+
+  useEffect(() => {
+    if (compact && document && !selected) {
+      setCompact(false);
+      setOpen(true);
+    }
+  }, [compact, document, selected]);
 
   useEffect(() => {
     if (providedStorage) return;
@@ -140,83 +205,9 @@ export function QA({
   }, []);
 
   useEffect(() => {
-    const controller = new AbortController();
-    setDocument(null);
-    setSelectedTaskId(null);
-    setConnected(true);
-    setFeedback({ tone: "neutral", text: "Loading checklist…" });
-    if (!storage) return () => controller.abort();
-    const refresh = async () => {
-      const sequence = ++refreshSequence.current;
-      try {
-        const next = await storage.getDocument(controller.signal);
-        if (controller.signal.aborted || sequence !== refreshSequence.current) return;
-        setDocument(next);
-        setFeedback((current) =>
-          current.text === "Loading checklist…"
-            ? { tone: "neutral", text: "Checklist loaded." }
-            : current,
-        );
-      } catch (error) {
-        if (!controller.signal.aborted && sequence === refreshSequence.current)
-          setFeedback({
-            tone: "error",
-            text: error instanceof Error ? error.message : "Could not load the checklist.",
-          });
-      }
-    };
-    void refresh();
-    const unsubscribe = storage.subscribe(() => void refresh());
-    return () => {
-      controller.abort();
-      refreshSequence.current += 1;
-      unsubscribe();
-    };
-  }, [storage]);
-  useEffect(() => {
     if (form) formControl.current?.focus();
   }, [form]);
 
-  const execute = async (command: QACommand, success: string): Promise<QADocument | null> => {
-    if (!document || !storage || locked.current) return null;
-    locked.current = true;
-    refreshSequence.current += 1;
-    setPending(true);
-    try {
-      const next = await storage.execute(command, document.revision);
-      refreshSequence.current += 1;
-      if (selectedTaskId?.startsWith("legacy:")) {
-        const index = document.sections
-          .flatMap((section) => section.tasks)
-          .findIndex((task) => task.id === selectedTaskId);
-        const stable = next.sections.flatMap((section) => section.tasks)[index]?.id;
-        if (stable) {
-          setSelectedTaskId(stable);
-          setNotes((current) => ({
-            ...current,
-            [`${fileId ?? "bound"}:${stable}`]: current[noteKey] ?? emptyDraft,
-          }));
-        }
-      }
-      setDocument(next);
-      setFeedback({ tone: "neutral", text: success });
-      return next;
-    } catch (error) {
-      if (error instanceof QAStorageError && error.document) setDocument(error.document);
-      setFeedback({
-        tone:
-          error instanceof QAStorageError && error.code === "revision_conflict"
-            ? "warning"
-            : "error",
-        text:
-          error instanceof Error ? error.message : "The change was not saved. Review and retry.",
-      });
-      return null;
-    } finally {
-      locked.current = false;
-      setPending(false);
-    }
-  };
   const status = (task: QATask, value: TaskStatus) =>
     void execute(
       { type: "setTaskStatus", taskId: task.id, status: value },
@@ -235,11 +226,17 @@ export function QA({
   };
   const beginForm = (next: FormState, trigger: HTMLButtonElement) => {
     formTrigger.current = trigger;
-    setForm(next);
+    updateSession((current) => ({
+      ...current,
+      form:
+        next.kind === "task"
+          ? { ...next, ...(document ? { revision: document.revision } : {}) }
+          : next,
+    }));
     setDraft("");
   };
   const submitForm = async () => {
-    if (!form || !validDraft(draft)) return;
+    if (!form || !document || !isRecoverableForm(session, document) || !validDraft(draft)) return;
     const command: QACommand =
       form.kind === "section"
         ? { type: "createSection", title: draft }
@@ -248,7 +245,7 @@ export function QA({
       cancelForm();
   };
   const submitNote = async () => {
-    if (!selected || !validDraft(noteDraft.body)) return;
+    if (!selected || draftBlocked || !validDraft(noteDraft.body)) return;
     const index =
       document?.sections
         .flatMap((section) => section.tasks)
@@ -259,6 +256,7 @@ export function QA({
         taskId: selected.task.id,
         body: noteDraft.body,
         element: noteDraft.element,
+        ...(noteDraft.observation ? { observation: noteDraft.observation } : {}),
       },
       "Note saved.",
     );
@@ -268,13 +266,14 @@ export function QA({
       setNotes((current) => ({
         ...current,
         [noteKey]: emptyDraft,
-        [`${fileId ?? "bound"}:${stable}`]: emptyDraft,
+        [stable]: emptyDraft,
       }));
       requestAnimationFrame(() => composer.current?.focus());
     }
   };
   const restoreComposer = () => {
     setPicking(false);
+    setCompact(false);
     setOpen(true);
     requestAnimationFrame(() => composer.current?.focus());
   };
@@ -303,11 +302,50 @@ export function QA({
     }
   };
   const back = () => {
+    navigationFocus.current = true;
     setSelectedTaskId(null);
     setForm(null);
     setDraft("");
-    requestAnimationFrame(() => heading.current?.focus());
   };
+  const navigate = (id: string | undefined) => {
+    if (!id || pending) return;
+    navigationFocus.current = true;
+    setSelectedTaskId(id);
+    setSourceError(null);
+  };
+  const completeAndNext = async () => {
+    if (!selected) return;
+    const next = await execute(
+      { type: "setTaskStatus", taskId: selected.task.id, status: "completed" },
+      "Task completed.",
+    );
+    const target = next?.sections.flatMap((section) => section.tasks)[selectedIndex + 1];
+    if (target) navigate(target.id);
+  };
+  const togglePin = () => {
+    const next = !pinned;
+    setPinned(next);
+    if (catalog) {
+      try {
+        localStorage.setItem(`qraft:pinned:${catalog.projectId}`, String(next));
+      } catch {
+        setPreferenceWarning(
+          "Pin preference will last for this page only because browser storage is unavailable.",
+        );
+      }
+    }
+  };
+  const navigation = selected ? (
+    <ReviewNavigation
+      index={selectedIndex}
+      total={tasks.length}
+      pending={pending}
+      readOnly={Boolean(selected.task.readOnly)}
+      previous={() => navigate(tasks[selectedIndex - 1]?.id)}
+      next={() => navigate(tasks[selectedIndex + 1]?.id)}
+      complete={() => void completeAndNext()}
+    />
+  ) : null;
   const titleForm = (
     <form
       className="qraft-form"
@@ -337,7 +375,14 @@ export function QA({
         <button type="button" onClick={cancelForm} disabled={pending}>
           Cancel
         </button>
-        <button className="primary" disabled={pending || !validDraft(draft)}>
+        <button
+          className="primary"
+          disabled={
+            pending ||
+            !validDraft(draft) ||
+            Boolean(document && !isRecoverableForm(session, document))
+          }
+        >
           {pending ? "Saving…" : "Save"}
         </button>
       </div>
@@ -352,24 +397,60 @@ export function QA({
       {feedback.text}
     </p>
   );
-  if (!mount) return null;
+  if (!mount || hidden) return null;
   return createPortal(
     picking ? (
       <ElementPicker onCancel={restoreComposer} onSelect={selectPicker} />
     ) : (
-      <Dialog.Root open={open} onOpenChange={setOpen} modal={false}>
-        <EdgeTab open={open} passed={progress.passed} total={progress.total} />
+      <Dialog.Root
+        open={open && !compact}
+        onOpenChange={(value) => {
+          setOpen(value);
+          if (value) setCompact(false);
+        }}
+        modal={false}
+      >
+        <EdgeTab open={open || compact} passed={progress.passed} total={progress.total} />
+        {compact && selected ? (
+          <CompactReview
+            task={selected.task}
+            index={selectedIndex}
+            total={tasks.length}
+            pending={pending}
+            expand={() => {
+              setCompact(false);
+              setOpen(true);
+            }}
+            close={() => setCompact(false)}
+            next={() => navigate(tasks[selectedIndex + 1]?.id)}
+            complete={() => status(selected.task, "completed")}
+          />
+        ) : null}
         <Dialog.Portal container={mount}>
-          <FocusScope asChild trapped={narrow} loop={narrow}>
+          <FocusScope asChild trapped={modal} loop={modal}>
             <Dialog.Content
               className="qraft-drawer"
               aria-labelledby={headingId}
-              aria-modal={narrow || undefined}
+              aria-modal={modal || undefined}
               onInteractOutside={(event) => {
-                if (narrow) event.preventDefault();
+                if (narrow || pinned) event.preventDefault();
               }}
               onKeyDown={(event) => {
-                if (!narrow || event.key !== "Tab") return;
+                const typing =
+                  event.target instanceof HTMLElement &&
+                  event.target.closest("input, textarea, select, [contenteditable='true']");
+                if (
+                  selected &&
+                  !typing &&
+                  event.altKey &&
+                  !event.ctrlKey &&
+                  !event.metaKey &&
+                  (event.key === "ArrowLeft" || event.key === "ArrowRight")
+                ) {
+                  event.preventDefault();
+                  navigate(tasks[selectedIndex + (event.key === "ArrowLeft" ? -1 : 1)]?.id);
+                }
+                if (!modal || event.key !== "Tab") return;
                 const controls = Array.from(
                   event.currentTarget.querySelectorAll<HTMLElement>(
                     "button:not(:disabled), input:not(:disabled), textarea:not(:disabled), summary, [tabindex='0']",
@@ -423,21 +504,95 @@ export function QA({
                     </Dialog.Title>
                   </>
                 )}
-                {!providedStorage && !selectedTaskId && !showChooser ? (
+                {narrow && selected ? (
                   <button
-                    className="qraft-change-file"
-                    disabled={pending}
-                    onClick={() => setChoosing(true)}
-                    title={`Selected file: ${fileLabel}`}
+                    className="qraft-icon-button"
+                    aria-label="Collapse to task strip"
+                    onClick={() => {
+                      setCompact(true);
+                      setOpen(false);
+                    }}
                   >
-                    Change file
+                    <ChevronDown size={18} />
                   </button>
+                ) : null}
+                {!selectedTaskId && !showChooser ? (
+                  <div className="qraft-progress-row">
+                    <strong>
+                      {progress.passed} / {progress.total}
+                    </strong>
+                    <div
+                      className="qraft-progress"
+                      role="progressbar"
+                      aria-valuemin={0}
+                      aria-valuemax={progress.total}
+                      aria-valuenow={progress.passed}
+                      aria-label={`${progress.passed} of ${progress.total} tasks completed`}
+                    >
+                      <span
+                        style={{
+                          width: `${progress.total ? (progress.passed / progress.total) * 100 : 0}%`,
+                        }}
+                      />
+                    </div>
+                    {progress.skipped ? <small>{progress.skipped} skipped</small> : null}
+                  </div>
                 ) : null}
                 <Dialog.Close className="qraft-icon-button" aria-label="Close Qraft">
                   <X size={19} />
                 </Dialog.Close>
               </header>
-              <div className="qraft-content">
+              <div
+                className={`qraft-content ${!selectedTaskId && !showChooser && !settings ? "checklist" : ""}`}
+                ref={content}
+                onScroll={() => {
+                  if (!selectedTaskId && !showChooser && content.current) {
+                    const scroll = content.current.scrollTop;
+                    if (scroll !== session.scroll)
+                      updateSession((current) => ({ ...current, scroll }));
+                  }
+                }}
+              >
+                {sessionWarning || preferenceWarning ? (
+                  <p className="qraft-banner warning" role="status">
+                    {sessionWarning || preferenceWarning}
+                  </p>
+                ) : null}
+                {settings && !selectedTaskId ? (
+                  <section className="qraft-settings" aria-label="Review settings">
+                    <strong>Review settings</strong>
+                    <p>
+                      Pin the drawer to keep it open. Drafts and your place survive reloads in this
+                      browser tab.
+                    </p>
+                    <button disabled={pending} onClick={() => setHidden(true)}>
+                      Hide Qraft until reload
+                    </button>
+                    {!showChooser ? (
+                      <>
+                        <button disabled={pending} onClick={() => setClearing(true)}>
+                          Clear saved review session…
+                        </button>
+                        {clearing ? (
+                          <div role="group" aria-label="Confirm clearing session">
+                            <p>Discard this file’s unsaved drafts and saved view state?</p>
+                            <button onClick={() => setClearing(false)}>Cancel</button>
+                            <button
+                              disabled={pending}
+                              onClick={() => {
+                                clearSession();
+                                setClearing(false);
+                                setSettings(false);
+                              }}
+                            >
+                              Discard unsaved session
+                            </button>
+                          </div>
+                        ) : null}
+                      </>
+                    ) : null}
+                  </section>
+                ) : null}
                 {showChooser ? (
                   <FileChooser
                     id={headingId}
@@ -453,8 +608,6 @@ export function QA({
                       if (pending || !catalog) return;
                       setFileId(id);
                       setChoosing(false);
-                      setForm(null);
-                      setDraft("");
                       requestAnimationFrame(() => heading.current?.focus());
                       try {
                         localStorage.setItem(`qraft:file:${catalog.projectId}`, id);
@@ -465,34 +618,19 @@ export function QA({
                   />
                 ) : (
                   <>
-                    {!selectedTaskId ? (
-                      <div className="qraft-progress-row">
-                        <strong>
-                          {progress.passed} / {progress.total}
-                        </strong>
-                        <div
-                          className="qraft-progress"
-                          role="progressbar"
-                          aria-valuemin={0}
-                          aria-valuemax={progress.total}
-                          aria-valuenow={progress.passed}
-                          aria-label={`${progress.passed} of ${progress.total} tasks completed`}
-                        >
-                          <span
-                            style={{
-                              width: `${progress.total ? (progress.passed / progress.total) * 100 : 0}%`,
-                            }}
-                          />
-                        </div>
-                        {progress.skipped ? <small>{progress.skipped} skipped</small> : null}
-                      </div>
-                    ) : null}
                     {!connected ? (
                       <p className="qraft-banner warning" role="status">
                         Disconnected. Qraft is reconnecting automatically.
                       </p>
                     ) : null}
                     {form?.kind !== "section" ? feedbackMessage : null}
+                    {document ? (
+                      <ReviewRecovery
+                        document={document}
+                        session={session}
+                        update={updateSession}
+                      />
+                    ) : null}
                     {document?.diagnostics.map((diagnostic) => (
                       <p
                         className="qraft-banner warning"
@@ -502,135 +640,52 @@ export function QA({
                       </p>
                     ))}
                     {selected ? (
-                      <article className="qraft-detail">
-                        <h2>{selected.task.title}</h2>
-                        <div className="qraft-status-options" role="group" aria-label="Task status">
-                          {(["open", "completed", "skipped"] as const).map((value) => (
-                            <button
-                              key={value}
-                              aria-pressed={selected.task.status === value}
-                              className={value}
-                              disabled={pending || selected.task.readOnly}
-                              onClick={() => status(selected.task, value)}
-                            >
-                              {labels[value]}
-                            </button>
-                          ))}
-                        </div>
-                        <section className="qraft-detail-section">
-                          <h3>
-                            <StickyNote size={13} /> Notes · {selected.task.notes.length}
-                          </h3>
-                          <NoteComposer
-                            id={headingId}
-                            draft={noteDraft}
-                            pending={pending}
-                            readOnly={selected.task.readOnly}
-                            inputRef={composer}
-                            onChange={updateNote}
-                            onSubmit={submitNote}
-                            onAttach={() => {
-                              setOpen(false);
-                              setPicking(true);
-                            }}
-                          />
-                          {selected.task.notes.length ? (
-                            <ol className="qraft-note-timeline">
-                              {selected.task.notes.map((note, index) => (
-                                <NoteItem
-                                  key={note.readOnly ? `${note.id}-${index}` : note.id}
-                                  note={note}
-                                  pending={pending}
-                                  draft={editDrafts[note.id]}
-                                  onDraft={(body) => editDraft(note.id, body)}
-                                  save={async (body) =>
-                                    Boolean(
-                                      await execute(
-                                        { type: "editNote", noteId: note.id, body },
-                                        "Note updated.",
-                                      ),
-                                    )
-                                  }
-                                  openSource={() => void openSource(note)}
-                                  error={sourceError?.noteId === note.id ? sourceError.text : null}
-                                />
-                              ))}
-                            </ol>
-                          ) : (
-                            <p className="qraft-empty-copy">
-                              No notes yet. Add observations for your coding agent.
-                            </p>
-                          )}
-                          {preservedEdits}
-                        </section>
-                      </article>
-                    ) : selectedTaskId ? (
+                      <TaskDetail
+                        task={selected.task}
+                        document={document!}
+                        headingId={headingId}
+                        pending={pending}
+                        noteDraft={noteDraft}
+                        draftBlocked={draftBlocked}
+                        composer={composer}
+                        editDrafts={editDrafts}
+                        sourceError={sourceError}
+                        status={status}
+                        onChange={updateNote}
+                        onSubmit={submitNote}
+                        onAttach={() => {
+                          setOpen(false);
+                          setPicking(true);
+                        }}
+                        editDraft={editDraft}
+                        execute={execute}
+                        openSource={openSource}
+                      />
+                    ) : selectedTaskId && document ? (
                       <div className="qraft-orphan" role="alert">
                         <strong>The selected task no longer exists.</strong>
                         <p>Your unsaved note remains here so you can copy it.</p>
-                        <textarea aria-label="Preserved draft" readOnly value={noteDraft.body} />
-                        {preservedEdits}
                         <button className="qraft-secondary" onClick={back}>
                           Back to checklist
                         </button>
                       </div>
                     ) : (
-                      <div className="qraft-view">
-                        <h2 className="qraft-document-title">{document?.title ?? "QA"}</h2>
-                        {!document ? <p role="status">Loading checklist…</p> : null}
-                        {document?.sections.length === 0 ? (
-                          <div className="qraft-empty">
-                            <strong>No QA tasks yet</strong>
-                            <p>
-                              Add a section below, or ask your coding editor to fill this Markdown
-                              file with ## sections and - [ ] tasks.
-                            </p>
-                          </div>
-                        ) : null}
-                        {document?.sections.map((section, sectionIndex) => (
-                          <section
-                            className="qraft-section"
-                            key={section.readOnly ? `${section.id}-${sectionIndex}` : section.id}
-                          >
-                            <h3>{section.title}</h3>
-                            <div className="qraft-task-list">
-                              {section.tasks.map((task, index) => (
-                                <TaskRow
-                                  key={task.readOnly ? `${task.id}-${index}` : task.id}
-                                  task={task}
-                                  pending={pending}
-                                  change={(value) => status(task, value)}
-                                  select={() => {
-                                    setSelectedTaskId(task.id);
-                                    setSourceError(null);
-                                  }}
-                                />
-                              ))}
-                            </div>
-                            {form?.kind === "task" && form.sectionId === section.id ? (
-                              titleForm
-                            ) : (
-                              <button
-                                id={`${headingId}-add-task-${section.id}`}
-                                className="qraft-add"
-                                disabled={pending || section.readOnly}
-                                onClick={(event) =>
-                                  beginForm(
-                                    { kind: "task", sectionId: section.id },
-                                    event.currentTarget,
-                                  )
-                                }
-                              >
-                                <Plus size={15} /> Add task
-                              </button>
-                            )}
-                          </section>
-                        ))}
-                      </div>
+                      <ChecklistView
+                        document={document}
+                        session={session}
+                        updateSession={updateSession}
+                        pending={pending}
+                        headingId={headingId}
+                        titleForm={titleForm}
+                        beginForm={beginForm}
+                        status={status}
+                        navigate={navigate}
+                      />
                     )}
                   </>
                 )}
               </div>
+              {!showChooser && selected ? navigation : null}
               {!showChooser && !selectedTaskId && document ? (
                 <footer className="qraft-footer">
                   {form?.kind === "section" ? (
@@ -648,6 +703,35 @@ export function QA({
                       <Plus size={16} /> Add section
                     </button>
                   )}
+                  <div className="qraft-footer-tools">
+                    {!providedStorage ? (
+                      <button
+                        className="qraft-change-file"
+                        disabled={pending}
+                        onClick={() => setChoosing(true)}
+                        title={`Selected file: ${fileLabel}`}
+                      >
+                        <FolderOpen size={15} aria-hidden="true" /> Change file
+                      </button>
+                    ) : null}
+                    <button
+                      className="qraft-pin"
+                      aria-label="Keep Qraft open"
+                      title="Keep Qraft open while interacting with the app"
+                      aria-pressed={pinned}
+                      onClick={togglePin}
+                    >
+                      <Pin size={15} /> Keep open
+                    </button>
+                    <button
+                      className="qraft-icon-button"
+                      aria-label="Review settings"
+                      aria-expanded={settings}
+                      onClick={() => setSettings((value) => !value)}
+                    >
+                      <Settings size={17} />
+                    </button>
+                  </div>
                 </footer>
               ) : null}
             </Dialog.Content>

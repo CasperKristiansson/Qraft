@@ -23,11 +23,17 @@ test("review states change from list and detail independently of notes without a
   await d.getByLabel("Write a note").fill("Improve the spacing.");
   await d.getByRole("button", { name: "Submit", exact: true }).click();
   await expect(d.getByText("Improve the spacing.", { exact: true })).toBeVisible();
-  await d.getByRole("button", { name: "Completed", exact: true }).click();
-  await expect(d.getByRole("button", { name: "Completed", exact: true })).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
+  await expect(marker()).toBeEnabled();
+  await d
+    .getByRole("button", { name: "Change quantity: Skipped. Change status", exact: true })
+    .press("Enter");
+  await expect(marker()).toBeEnabled();
+  await d
+    .getByRole("button", { name: "Change quantity: Not completed. Change status", exact: true })
+    .press("Enter");
+  await expect(
+    d.getByRole("button", { name: "Change quantity: Completed. Change status", exact: true }),
+  ).toBeVisible();
   await expect(d.getByRole("heading", { name: "Change quantity", exact: true })).toBeVisible();
   await expect(d.getByText("Checklist complete", { exact: true })).toHaveCount(0);
   await d.getByRole("button", { name: "Back to checklist", exact: true }).click();
@@ -80,9 +86,9 @@ test("section and task forms retain input on conflict and normalize through stor
   await d.getByRole("button", { name: "Add section", exact: true }).click();
   await d.getByLabel("Title").fill("Review");
   await d.getByRole("button", { name: "Save", exact: true }).click();
-  await expect(d.getByRole("heading", { name: "Review", exact: true })).toBeVisible();
+  await expect(d.getByRole("heading", { name: "Review 0", exact: true })).toBeVisible();
   await d
-    .getByRole("heading", { name: "Cart", exact: true })
+    .getByRole("heading", { name: "Cart 2", exact: true })
     .locator("..")
     .getByRole("button", { name: "Add task", exact: true })
     .click();
@@ -115,7 +121,7 @@ test("missing and ambiguous files remain recoverable", async ({ page }) => {
   await d.getByRole("button", { name: "Add section", exact: true }).click();
   await d.getByLabel("Title").fill("Recovered");
   await d.getByRole("button", { name: "Save", exact: true }).click();
-  await expect(d.getByRole("heading", { name: "Recovered", exact: true })).toBeVisible();
+  await expect(d.getByRole("heading", { name: "Recovered 0", exact: true })).toBeVisible();
   await page.request.post("/__qraft-example/malformed");
   await expect(d.getByText(/Duplicate Qraft ID/u).first()).toBeVisible();
   await expect(taskButton(page, "First duplicate")).toBeDisabled();

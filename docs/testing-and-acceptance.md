@@ -65,7 +65,7 @@ Required coverage:
 
 - Open/close drawer without changing host bounding box or scroll position.
 - Render checklist and progress from a fixture.
-- Change status from checklist and detail; single/double-click and keyboard; no auto-advance or completion card.
+- Change status from checklist and detail; single/double-click and keyboard; ordinary status actions stay put, explicit Complete and next advances only after a successful save, and no completion card appears.
 - Add section, task, attached note, and edit note and verify the exact resulting file.
 - Reflect an external edit without page reload.
 - Preserve form draft across a non-destructive refetch.
@@ -150,4 +150,14 @@ Picker refinement regression obligations: lock a clicked target across delayed c
 
 ## Execution discipline
 
+Launch review coverage includes an ordinary unsectioned checklist with instructions and independent note Observation metadata; a 50-task collapse/navigation journey with sticky footer actions and single-row detail navigation; reload/HMR draft and selection recovery; independent drafts in two tabs; ambiguous legacy and external note-body recovery; pinning with host pointer/keyboard use; retired-filter session recovery without draft loss; and responsive sheet/strip/picker interaction at 390×844 and 360×640 in addition to the desktop/768 viewports. Verify session storage failure and explicit clearing, and include complete-file BOM/newline variants for the new grammar and metadata.
+
 Use focused checks after relevant edits. Run the complete gates once on the final candidate; repeat only after a changed boundary or a recorded diagnostic hypothesis. Test with isolated fixture copies, including all uncommitted source, and a frozen dependency install. Never mutate a developer checklist for automated tests. Record source fingerprint, package digest, local URL, viewport, actions, results and screenshot paths for browser acceptance. Clean-consumer startup normally takes under 15 seconds; stop and diagnose at 60 seconds. Deployments and registry publication are outside internal verification.
+
+## Compatibility and setup acceptance
+
+The current profile exercises Node 24.19.0, React/React DOM 19.2.8, Vite 8.2.2/plugin-react 6.1.1 and Next.js 16.3.3. The maintenance profile uses Node 22.23.2 with Vite 7.3.6/plugin-react 5.2.0 and Next.js 15.5.25, retaining matching React 19.2.8. Run consumer scripts with `--maintenance` under that Node executable (including its directory in PATH). Record actual runtime, framework versions and archive digest per profile. These exact trials support the declared ranges; they do not prove every patch or platform combination.
+
+Packed consumers must run `qraft doctor` and `qraft setup`, preserve host files during diagnostics, exercise development writes and production exclusion, and build after removing the Qraft integration/dependency in an isolated removal copy. No host framework upgrade is part of setup.
+
+Hardening regression coverage includes competing OS processes, stale/replaced lock ownership, edits during staging, 2 MiB input/output bounds, invalid UTF-8 recovery with unchanged revision, bounded idle-file eviction, live stream limits, slow-reader cleanup, default Host/DNS-rebinding and Fetch Metadata rejection, trusted exact gateway origin, unavailable clipboard/session storage, and safe local request timeouts/HTML fallback diagnostics.

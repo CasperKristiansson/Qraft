@@ -30,10 +30,16 @@ export interface ElementReference {
     | undefined;
 }
 
+export interface NoteObservation {
+  route: string;
+  viewport: { width: number; height: number };
+}
+
 export interface QANote {
   id: string;
   body: string;
   element: ElementReference | null;
+  observation?: NoteObservation;
   readOnly?: boolean;
 }
 
@@ -45,6 +51,7 @@ export interface QATask {
   checked: boolean;
   notes: QANote[];
   status: TaskStatus;
+  instructions?: string;
   readOnly?: boolean;
 }
 
@@ -52,6 +59,7 @@ export interface QASection {
   id: string;
   title: string;
   tasks: QATask[];
+  implicit?: boolean;
   readOnly?: boolean;
 }
 

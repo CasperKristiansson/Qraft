@@ -1,14 +1,10 @@
 import { Target } from "lucide-react";
 import type { RefObject } from "react";
-import type { ElementReference } from "../domain/model";
+import type { ReviewSession } from "./review-session";
 import { ElementContext } from "./ElementContext";
 import { validDraft } from "./review-state";
 
-export interface NoteDraft {
-  body: string;
-  element: ElementReference | null;
-  warning?: string | null;
-}
+export type NoteDraft = ReviewSession["notes"][string];
 interface NoteComposerProps {
   id: string;
   draft: NoteDraft;
