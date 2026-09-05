@@ -20,7 +20,7 @@ import { defineConfig } from "vite";
 import { qraft } from "@qraft/qa/vite";
 
 export default defineConfig({
-  plugins: [react(), qraft({ file: "./QA.md" })],
+  plugins: [react(), qraft()],
 });
 ```
 
@@ -39,27 +39,36 @@ export function App() {
 }
 ```
 
-The optional `qraft()` `file` must be a `.md` or `.markdown` path inside the Vite root and defaults to `./QA.md`. Its optional `endpoint` defaults to `/__qraft`. The browser component never receives a filesystem path.
+The drawer first asks you to choose a Markdown checklist inside the Vite project. It remembers the choice per project in your browser. Use **Change file** to choose another. There is no default filename. An optional trusted `qraft({ file: "./reviews/checkout.md" })` restricts the chooser to that file, including a missing file which the first Add section action can create. The browser sends only a server-issued file ID, never a filesystem path. The optional `endpoint` still defaults to `/__qraft`.
 
-## QA.md dialect
+## Review workflow
 
-Qraft recognizes H2 sections, top-level task checkboxes, two-space-indented notes and finding checkboxes, and four-space-indented attachment metadata:
+Drag the small six-dot grip up or down the right edge; its position survives reload. Keyboard arrows and Home/End move it too. Click QA to open the checklist. Change status directly in a task row: not completed → completed → skipped → not completed. Double-click the status to skip. Open the title for explicit status buttons and notes.
+
+Notes are observations for your coding agent, without their own completion state. The composer is always available: Enter submits, Shift+Enter inserts a line break. Attach an element while retaining your draft, add multiple notes, and edit earlier notes. Task completion never depends on notes and never auto-advances. Skipped tasks remain in the total and are counted separately from completed tasks.
+
+## Markdown dialect
 
 ```md
-# Checkout QA
+# Checkout review
 
 ## Cart
 
 - [ ] Change quantity
   - Note: Check keyboard controls too.
-  - [ ] Quantity control jumps at two digits.
+  - Note: The increment button needs more spacing.
     - Component: `QuantitySelector`
     - Source: `src/cart/QuantitySelector.tsx:87:5`
     - Route: `/checkout`
     - Selector: `.quantity-selector`
+    - Context: `{"tag":"button","attributes":{"data-testid":"increment"},"text":"+","ancestors":["div.quantity"]}`
+- [x] Remove product
+- [-] Check an unsupported payment method
 ```
 
-Qraft adds hidden `<!-- qraft:id=... -->` comments when it creates an entity or first mutates compatible legacy content. Merely starting Vite, opening Qraft, or parsing the file never rewrites it. Unknown Markdown remains outside the read model and is preserved byte-for-byte during supported mutations. See [the complete Markdown contract](docs/markdown-storage.md).
+H2 headings define sections. Top-level markers are open `[ ]`, completed `[x]`, and skipped `[-]`. Two-space `Note:` bullets are editable notes. Legacy nested checkbox findings render as notes, with their original markers and bytes preserved. Qraft adds hidden stable IDs only when creating or first mutating an entity. Opening or selecting a file never rewrites it. See [the complete preservation contract](docs/markdown-storage.md).
+
+If no file exists, ask your coding editor to create a Markdown checklist with sections and tasks, then use Refresh files. Discovery ignores hidden folders, dependency/build/output folders and symlinks. It is bounded to 2,000 files and 10,000 entries; configure a specific file if a large project exceeds that bound. File and tab persistence require browser local storage; otherwise selection works for the current session. Unsaved note drafts survive navigation within the mounted drawer, but are not persisted across page reloads.
 
 ## Safe local use
 
@@ -73,7 +82,7 @@ Qraft adds hidden `<!-- qraft:id=... -->` comments when it creates an entity or 
 
 - Only Vite, React 19.2.8, desktop pointer input, and layouts at 768 CSS pixels or wider are supported.
 - The file store has an in-process command queue and a second revision check, but no cross-process lock. A simultaneous external write in the final check-to-rename window remains possible.
-- Element source context depends on React Grab and source-map availability. Plain findings remain available when context is partial or unavailable.
+- Element source context depends on React Grab and source-map availability. Attachments also retain bounded tag, identifying attributes, selected visible text, and ancestor context; no form values, full HTML, styles, or screenshots are captured. Selectors and source locations are best-effort identifiers and may change as the application changes. Plain notes remain available when context is partial or unavailable.
 - Picker traversal supports the main document, open Shadow DOM, and same-origin iframes. Closed shadow roots and cross-origin frames are inaccessible.
 - Editor opening depends on the local Vite/editor integration and can fail; Qraft keeps the stored path visible for manual use.
 - IDs and selector strings are implementation metadata, not a public automation API.
@@ -94,6 +103,6 @@ corepack pnpm verify:consumer
 
 ## Project status and documentation
 
-The v0.1 implementation is complete locally when every acceptance item and its current evidence are checked in [the implementation plan](docs/implementation-plan.md). This repository has not been pushed, published, deployed, or externally released by that local verification.
+The v0.1 implementation is complete locally when every acceptance item and its current evidence are checked in [the implementation plan](docs/implementation-plan.md). Commits and pushes are separate from local verification; no package publication or deployment is implied.
 
 Start with [the documentation index](docs/README.md). Product scope, design, architecture, Markdown, protocol, testing, roadmap evidence, and OSS boundaries each have one canonical owner. Third-party notices ship in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

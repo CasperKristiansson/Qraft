@@ -11,9 +11,9 @@ const document: QADocument = {
       id: "section",
       title: "Section",
       tasks: [
-        { id: "one", title: "One", checked: false, notes: [], findings: [] },
-        { id: "two", title: "Two", checked: true, notes: [], findings: [] },
-        { id: "three", title: "Three", checked: false, notes: [], findings: [] },
+        { id: "one", title: "One", checked: false, status: "open", notes: [] },
+        { id: "two", title: "Two", checked: true, status: "completed", notes: [] },
+        { id: "three", title: "Three", checked: false, status: "open", notes: [] },
       ],
     },
   ],
@@ -21,7 +21,7 @@ const document: QADocument = {
 
 describe("read model helpers", () => {
   it("calculates top-level task progress", () => {
-    expect(getProgress(document)).toEqual({ passed: 1, total: 3 });
+    expect(getProgress(document)).toEqual({ passed: 1, total: 3, skipped: 0 });
   });
 
   it("selects the next open task and wraps once", () => {
@@ -34,4 +34,10 @@ describe("read model helpers", () => {
   expect(qaCommandSchema.safeParse({ type: "createSection", title: "😀".repeat(2_000) }).success).toBe(true);
   expect(qaCommandSchema.safeParse({ type: "createSection", title: "😀".repeat(2_001) }).success).toBe(false);
   expect(qaCommandSchema.safeParse({ type: "createSection", title: "bad\0text" }).success).toBe(false);
+});
+
+it("keeps skipped tasks separate from completed progress", () => {
+  const copy = structuredClone(document); copy.sections[0]!.tasks[2]!.status = "skipped";
+  expect(getProgress(copy)).toEqual({ passed: 1, total: 3, skipped: 1 });
+  expect(getNextOpenTaskId(copy, "one")).toBe("one");
 });

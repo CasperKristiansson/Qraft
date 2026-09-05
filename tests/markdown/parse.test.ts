@@ -14,7 +14,7 @@ describe("parseMarkdown", () => {
     expect(parsed.document.sections).toHaveLength(1);
     expect(parsed.document.sections[0]?.tasks[0]).toMatchObject({ title: "Change quantity", checked: true });
     expect(parsed.document.sections[0]?.tasks[0]?.notes[0]?.body).toBe("Preserve a useful note.");
-    expect(parsed.document.sections[0]?.tasks[0]?.findings[0]?.element).toEqual({
+    expect(parsed.document.sections[0]?.tasks[0]?.notes[1]?.element).toEqual({
       route: "/checkout",
       component: "QuantitySelector",
       source: "src/QuantitySelector.tsx",

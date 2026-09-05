@@ -123,7 +123,7 @@ The server executes commands through the Markdown store's per-file queue. It kee
 - entries can expire after five minutes or a bounded count;
 - deduplication does not survive server restart and must not be described as durable.
 
-This prevents a browser retry from duplicating an appended task/note/finding without introducing persistent command state.
+This prevents a browser retry from duplicating an appended task/note without introducing persistent command state.
 
 ## Client behavior
 
@@ -149,10 +149,16 @@ This prevents a browser retry from duplicating an appended task/note/finding wit
 
 ## Editor opening
 
-Opening source is not a Qraft mutation endpoint. The client calls the pinned React Grab `openFile(filePath, line)` primitive, which first attempts Vite's `__open-in-editor` behavior and then uses React Grab's documented fallback.
+Opening source is not a Qraft mutation endpoint. The client makes a same-origin GET to Vite's `__open-in-editor` with the stored file, line and column. Redirects and requests lasting more than five seconds fail safely. Never open an external fallback website or new browser window.
 
 Only normalized repository-relative source paths returned through the domain model should be offered. Failures remain client-side UI errors and never write `QA.md`.
 
 ## Protocol tests
 
 The normative verification list lives in [Testing and acceptance](testing-and-acceptance.md). At minimum, cover every response status, origin/content-type/body constraints, stale revisions, duplicate command IDs, SSE cleanup/reconnect, watcher add/change/unlink, and absence from build/preview.
+
+## Owner-approved file selection extension — 2026-09-05
+
+GET `/__qraft/files` returns `{ projectId, files: [{ id, label }], truncated }`. IDs are opaque 64-character hashes and labels are project-relative paths for display. Only same-origin GET is accepted; no absolute paths are exposed. Without an explicit trusted file option, document/commands/events require `/__qraft/files/<id>` as their endpoint prefix. With an explicit file option, the legacy unscoped routes remain available to bound storage adapters, while the default UI still asks for a selection. Unknown IDs return a safe 404. No browser-supplied paths or document bodies are accepted. File endpoints apply the same method, origin, JSON, size, revision, deduplication, and production-absence rules as existing routes.
+
+Catalog and file selection do not write Markdown. Each selected file gets its own events and deduplication scope. Changing one browser selection never redirects another browser's pending command. Deleted/replaced/symlinked paths are revalidated before access; symlink escape is rejected. No file chooser or file route is registered in production preview.

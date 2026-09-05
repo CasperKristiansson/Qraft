@@ -20,12 +20,12 @@ async function fixtureRoot(source = "# QA\n") {
   return root;
 }
 
-async function dev(root: string) {
+async function dev(root: string, discover = false) {
   const server = await createServer({
     root,
     configFile: false,
     logLevel: "silent",
-    plugins: [qraft()],
+    plugins: [qraft(discover ? {} : { file: "QA.md" })],
     server: { host: "127.0.0.1", port: 0, strictPort: false },
   });
   servers.push(server);
@@ -202,4 +202,23 @@ describe("Qraft Vite protocol", () => {
     expect(response.headers.get("content-type")).not.toContain("application/json");
     expect(await response.text()).not.toContain("revision");
   });
+});
+
+it("discovers project Markdown without a default and isolates selected-file commands", async () => {
+  const root = await fixtureRoot("# One\n");
+  await writeFile(join(root, "Review.md"), "# Two\n");
+  const { url } = await dev(root, true);
+  const catalogResponse = await fetch(`${url}/__qraft/files`);
+  const catalog = await catalogResponse.json() as { projectId: string; files: { id: string; label: string }[] };
+  expect(catalog.files.map((file) => file.label)).toEqual(["QA.md", "Review.md"]);
+  expect(catalogResponse.headers.get("cache-control")).toBe("no-store");
+  expect((await fetch(`${url}/__qraft/files`, { method: "POST" })).status).toBe(405);
+  expect((await fetch(`${url}/__qraft/files`, { headers: { Origin: "http://evil.invalid" } })).status).toBe(403);
+  expect((await fetch(`${url}/__qraft/files/${"a".repeat(64)}/document`)).status).toBe(404);
+  expect((await fetch(`${url}/__qraft/document`)).headers.get("content-type")).not.toContain("application/json");
+  const id = catalog.files.find((file) => file.label === "Review.md")!.id;
+  const response = await fetch(`${url}/__qraft/files/${id}/commands`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ commandId: "chosen", baseRevision: sha256("# Two\n"), command: { type: "createSection", title: "Selected" } }) });
+  expect(response.status).toBe(200);
+  expect(await readFile(join(root, "QA.md"), "utf8")).toBe("# One\n");
+  expect(await readFile(join(root, "Review.md"), "utf8")).toContain("## Selected");
 });

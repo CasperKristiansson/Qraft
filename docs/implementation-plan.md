@@ -1,6 +1,12 @@
+# Owner feedback revision — complete, 2026-09-05
+
+The original M1–M6 acceptance below remains historical evidence for commit 7dae055. The owner approved a notes-only review workflow, three task states, editable attached notes, a compact draggable tab, simplified details, and remembered project file selection. Changed contracts are owned by the existing canonical documents. The revised local candidate now satisfies all 16 acceptance criteria, with current evidence in the final owner-feedback record below.
+
+Execution: update contracts → domain/Markdown goldens → file catalog and safety tests → UI/picker/browser regressions → final root checks and fresh screenshot review → commit/push (owner authorized), without waiting on hosted CI. Use focused checks during edits and one final aggregate candidate; repeat only after a relevant change or recorded diagnosis. No dependencies or external resources are needed.
+
 # Qraft v0.1 Codex Goal-mode execution plan
 
-## Status
+## Historical status — original v0.1 acceptance
 
 - Current state: M1–M6 and all 16 acceptance criteria are complete for the local internal v0.1 candidate, with final evidence below.
 - Active milestone: none — local roadmap complete; no external delivery is authorized or claimed.
@@ -704,3 +710,67 @@ One local aggregate candidate gate and three isolated candidate gates were run d
 Remaining implementation/acceptance work: **none within local v0.1 scope**. Remaining distribution decision: the owner has not selected a public license or authorized external distribution. Existing local-only limitations remain documented in README and canonical contracts. Final Git state is `main` at the unchanged base commit with the scoped M6 modifications and one new `scripts/source-fingerprint.mjs`; no user work was discarded and no commit was created.
 
 - 2026-09-05 — Closure hygiene: stopped the three test-owned loopback consumer/preview servers and closed the temporary Browser tab; restored the Browser viewport override. Historical URLs above are evidence locations, not claims of still-running services. Rebuilt the workspace generated output after the final CSS change; `diff -qr dist /private/tmp/qraft-final-hvkmyt4a/dist` passed with identical output. No test gate was repeated for the evidence-only documentation updates. Final Git status is retained in `artifacts/release/final-git-status.txt`.
+
+
+## Owner feedback revision diagnostics — 2026-09-05
+
+- Domain/Markdown focused checks passed 40 tests; protocol/catalog focused checks passed 11 tests including two-file isolation and symlink substitution.
+- First Chromium pass: 13/15 passed. The edit-note input used an implicit wrapped label that the ShadowRoot locator could not target; changed to explicit label/ID. The tab used React resize state for pixel top and briefly overflowed on resize; changed rendered top to viewport-relative CSS calculation.
+- Focused retest confirmed tab persistence/clamping. The remaining note test assumed the caret returned at the end after picker cancellation; actual text was retained and Shift+Enter inserted at the focused caret. The test now sets End before checking the newline position. Added retained edit drafts for external note/task removal; both note tests pass.
+- No dependencies, copied upstream implementation, screenshots-as-product feature, hosted resources, or framework adapters were added. New context uses the existing pinned public React Grab primitives and bounded platform DOM reads.
+
+- First clean-copy gate: frozen install and check passed (54 unit/integration tests/build). Browser passed 46/48; Firefox/WebKit interpret End differently on this host, so the Shift+Enter test still inserted a newline at the initial caret. The newline behavior was correct. Set the test caret explicitly using the native textarea selection API, preserving the same exact newline assertion. This test-only diagnostic justifies a replacement check/browser run; audit and consumer had not yet run. Product code and built output are unchanged.
+
+- Second clean-copy browser run passed the caret test in all engines; 46/48 passed overall. The new password-context test read the file before submission completed because its readiness locator also matched the textarea draft. Restricted the readiness assertion to the saved note timeline, then retained the exact persisted-context/no-value assertions. This is a test-only timing correction, not a product or persistence relaxation. Final audit/consumer still had not run.
+
+- Third isolated candidate passed all four gates: 54 unit/integration tests, 48 E2E tests, 111-license audit and packed consumer. During the subsequent hands-on Browser journey, source opening did not report the injected local failure. Inspection of installed React Grab's public artifact showed that openFile falls back to an external website; the old test forced window.open to throw and masked that behavior. Replace only source opening with a timeout-bounded same-origin Vite request with redirects rejected, and assert that a local failure never attempts window.open. Updated canonical protocol, architecture and provenance to resolve the local-only conflict. This relevant product delta requires a replacement artifact and final checks; prior Browser captures are diagnostic until recaptured. The first focused filter matched no tests; use the inspected source-open test title.
+
+- Source-opening focused Browser regression passed all three engines. The replacement aggregate stopped at TypeScript: the test callback referenced a shadowing QADocument variable named document. Use window.document explicitly in the serialized callback. No runtime product change; remaining gates had not run.
+
+## Final owner-feedback acceptance — 2026-09-05
+
+Status: **complete within the local internal scope**. Original M1–M6 evidence remains historical; this record refreshes all changed domain, Markdown, file/protocol, UI, picker and packaging boundaries. No earlier milestone was restarted as a separate project.
+
+### Candidate identity and clean-state proof
+
+- Base: `7dae055d578b406012fc01853e097b0ea8ecd07b`, branch `main`, clean before this feedback implementation. All changes belong to the owner-requested revision; no existing work was discarded.
+- Final source fingerprint: `38bc8a27ffca8d7a71cff20a3c81b7b79bbfd87e1f356db34dcd3c569af6de9a`. The 93-file path/mode/SHA-256 manifest is `artifacts/release/feedback/source-manifest.json`. Exact equality was verified between the working implementation and isolated copy `/private/tmp/qraft-feedback-final-06k9l2mk`.
+- The isolated copy started without `.git`, dependencies, generated output or local QA data. It included the actual current tracked/untracked implementation bytes and modes, excluding deleted files. `corepack pnpm install --frozen-lockfile` passed there. Later diagnostic deltas were copied into that same isolated tree, and the final manifest equality proves no uncommitted implementation was omitted.
+- Final packed archive SHA-256: `1f4267ea59070011b633fbed2e9e907599f342abf2202e144527f2c9ccf031fd`; 27 archive entries, public client/Vite exports and notices verified. Clean consumer: `/var/folders/vh/q11rp8711qz5l2_r6bsndlb00000gn/T/qraft-clean-consumer-CQgRSs`. No repository source aliases or linked source imports.
+- Final gates in the isolated root: `corepack pnpm check` passed format/lint/typecheck, 8 files/54 unit-integration tests and build; `corepack pnpm test:browser` passed 48/48 across Chromium, Firefox and WebKit; `corepack pnpm audit:release` passed exact pins, 111 installed licenses/notices, exports, browser boundary and Agentation exclusion; `corepack pnpm verify:consumer` passed installation, public exports, production build and five production endpoint-absence checks.
+- Final logs: `artifacts/release/feedback/{check,browser,audit,consumer}.log`; installation: `install.log`; receipt: `consumer.json`. No dependencies, lockfile pins or public distribution model changed.
+- Execution budget: one frozen installation; five isolated check starts, four browser starts and two audit/consumer runs. Every replacement follows the specific test diagnosis or source-opening product delta recorded above. The final candidate passed once; no unchanged gate was repeated afterward.
+
+### Current acceptance mapping
+
+| Criterion | Current evidence | Result |
+| --- | --- | --- |
+| 1. Install/integrate in Vite React | Packed public exports installed in the clean consumer; documented `qraft()` + `<QA />` file-choice journey | [x] Pass |
+| 2. Overlay preserves host | Browser before/after geometry at all three required sizes; M1/M6 E2E | [x] Pass |
+| 3. Read without startup rewrite | File-choice/reload E2E revision equality; catalog has no write operation | [x] Pass |
+| 4. Minimal task-state patch | Full-file status goldens for completed/open/skipped, lazy IDs and newline variants | [x] Pass |
+| 5. Canonical creation | Full-file section/task/attached-note goldens; packed Browser creation and saved Markdown readback | [x] Pass |
+| 6. Editable independent notes | Body-only note/legacy-note goldens, retained attachment bytes, three-engine note/status journeys | [x] Pass |
+| 7. External refresh | Packed Browser external note appears without reload and retains draft; watcher/SSE tests | [x] Pass |
+| 8. Stale-write rejection | Store race tests and deterministic packed Browser stale save, visible conflict and successful retry | [x] Pass |
+| 9. Safe picker targeting | Three-engine hover/ignore/cancel/host-control tests; packed selection leaves quantity at 2 | [x] Pass |
+| 10. Bounded identifying context | Strict schema, password-value exclusion regression, packed Markdown context readback and expanded context screenshot | [x] Pass |
+| 11. Local safe source opening | Final same-origin request regression checks file/line/column and no window fallback; packed Browser injected failure shows inline path | [x] Pass |
+| 12. Preserve unknown Markdown | Full-file goldens and atomic store tests; packed unknown comment/fence and conflict sentinel survive subsequent mutations | [x] Pass |
+| 13. Production absence | Five packed preview endpoint probes; Browser `/__qraft/files` and `/__qraft/document` show only host HTML and zero Qraft roots | [x] Pass |
+| 14. Clean-state aggregate checks | Final isolated `check`, 48-browser suite, package audit and clean consumer all passed on source fingerprint above | [x] Pass |
+| 15. License/provenance boundary | 111-package final audit, unchanged required React Grab notice and no Agentation material | [x] Pass |
+| 16. Current integrated visuals | Final packed Browser journey plus 20 verified native screenshots; original visual compared with explicit owner-approved revision | [x] Pass |
+
+### Final Browser journey and screenshots
+
+- URL: `http://127.0.0.1:4182/`; production preview: `http://127.0.0.1:4184/`. All final screenshots below use source `38bc8a27ffca8d7a71cff20a3c81b7b79bbfd87e1f356db34dcd3c569af6de9a` and archive `1f4267ea59070011b633fbed2e9e907599f342abf2202e144527f2c9ccf031fd`.
+- 1440×900: first-use chooser; select file; create section/task; keyboard complete from list; compact tab and remembered vertical movement/file choice after reload; double-click skip; open detail; Enter-submit note; attach quantity button without activation; edit saved note; observe external note; force stale revision with the fixture server paused before a queued request; reject without overwrite and retain/retry draft; local source failure; reopen/complete; all tasks completed with no celebration/auto-advance; empty file selection and return; expanded element context.
+- 1366×650: inspect list and scrolling note timeline, cancel picker with Escape, retain composer draft through navigation. 768×900: inspect list/detail and picker cancellation; `aria-modal=true`; Shift+Tab from Close wraps to Change file and Tab wraps back; Escape returns focus to the closed tab.
+- `browser-geometry.json` proves unchanged host boxes: 1440×384.8125, 1366×384.8125 and 768×630.6875, respectively. Body overflow remains `visible`, document scroll stays `(0,0)`, and body/document widths equal each viewport. The tab is 72.15625×26 px. Resize measurement was explicitly targeted back to the consumer after inspecting production; the earlier measurement of the inactive tab was discarded.
+- Final consumer Markdown SHA-256: `757ef008728cadaab8cf6b6dfc280647406fbf1a5280d5129b2f95b174c85ef8`. All four tasks are completed, all four notes remain, and the unknown comment/fence plus external sentinel are byte-for-byte intact.
+- Gallery: `artifacts/browser-evidence/review/feedback/index.html`, served at `http://127.0.0.1:4181/feedback/`. Screenshots: 17 native Browser JPEGs plus 3 supplemental lossless Playwright pointer-highlight PNGs. All image headers/dimensions passed the screenshot skill checker; originals were inspected. Browser warn/error log readback was empty on the final journey.
+- Image manifest: `artifacts/browser-evidence/review/feedback/screenshots.json`, SHA-256 `c40a3d9559079d1e1130e857cf94efd3545076e2c0b8ac012d54371db2cab9ae`. Each entry records URL, exact viewport, state, evidence layer, actual encoding, source fingerprint, artifact digest and image SHA-256. Image metadata was reconciled against the retained native files after a capture-session array binding failed to retain entries; image bytes were unaffected. Prior candidate images are retained separately as diagnostics and excluded from the final manifest.
+- Visual comparison retains the approved neutral, list-first typography and restrained purple identity. The owner's explicit update governs the compact concave tab, large Back, three states, note composer/timeline, softer shadow and removal of findings/completion surfaces.
+
+Remaining implementation or local acceptance work: **none**. Known limits remain documented: source/selector information is best-effort, drafts survive mounted-session navigation but are not persisted across reload, the picker does not capture screenshots or form values, and the tool is Vite/local/development-only. The owner authorized commit and push without waiting on hosted CI; the validated scoped diff is ready for that handoff. Public publication/deployment and external resources remain outside scope. Generated evidence and local fixture data stay ignored by Git.

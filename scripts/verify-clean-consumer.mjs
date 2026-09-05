@@ -106,33 +106,17 @@ export function fixturePlugin(): Plugin {
 `,
   "src/main.tsx": `import { useState } from "react";
 import { createRoot } from "react-dom/client";
-import { HttpQAStorage, QA, type QAStorage } from "@qraft/qa";
-import type { QADocument } from "@qraft/qa";
+import { QA } from "@qraft/qa";
 import "./style.css";
 
-class ConsumerStorage implements QAStorage {
-  private readonly delegate = new HttpQAStorage();
-  stale = false;
-  getDocument(signal?: AbortSignal) { return this.delegate.getDocument(signal); }
-  subscribe(onChange: () => void) { return this.delegate.subscribe(onChange); }
-  execute(command: Parameters<QAStorage["execute"]>[0], revision: string): Promise<QADocument> {
-    const base = this.stale ? "0".repeat(64) : revision;
-    this.stale = false;
-    return this.delegate.execute(command, base);
-  }
-}
-
 function App() {
-  const [storage] = useState(() => new ConsumerStorage());
   const [quantity, setQuantity] = useState(2);
-  const action = (name: string) => fetch(\`/__consumer/\${name}\`, { method: "POST" });
   return <>
     <main data-testid="host-layout">
       <nav><strong>Northstar</strong><span>Home</span><span>Shop</span><span>Deals</span></nav>
       <div className="grid"><section><p className="eyebrow">PACKED CLEAN CONSUMER</p><h1>Shopping cart</h1><article><b>Q</b><div><strong>Lounge Chair</strong><p>$249.00</p></div><div className="quantity"><button onClick={() => setQuantity(value => value - 1)}>−</button><span data-testid="quantity-value">{quantity}</span><button onClick={() => setQuantity(value => value + 1)}>+</button></div></article></section><aside><h2>Summary</h2><p>Subtotal <strong>$249.00</strong></p><p>Shipping <strong>$19.00</strong></p><hr/><p>Total <strong>$268.00</strong></p><button className="checkout">Checkout</button></aside></div>
     </main>
-    <div className="controls"><button onClick={() => void action("reset")}>Reset QA</button><button onClick={() => void action("external")}>External edit</button><button onClick={() => { storage.stale = true; }}>Stale next command</button><button onClick={() => void action("fail-write")}>Fail next write</button><button onClick={() => { void action("fail-open"); const original = window.open; window.open = (...args) => { window.open = original; throw new Error(String(args[0])); }; }}>Fail next source open</button></div>
-    {import.meta.env.DEV ? <QA storage={storage} /> : null}
+    {import.meta.env.DEV ? <QA /> : null}
   </>;
 }
 
@@ -158,7 +142,7 @@ const server = await preview({ root: consumer, preview: { host: "127.0.0.1", por
 const previewChecks = [];
 try {
   const address = server.httpServer.address();
-  for (const path of ["document", "commands", "events"]) {
+  for (const path of ["document", "commands", "events", "files", `files/${"a".repeat(64)}/document`]) {
     const response = await fetch(`http://127.0.0.1:${address.port}/__qraft/${path}`, { method: path === "commands" ? "POST" : "GET", signal: AbortSignal.timeout(5000) });
     const body = await response.text();
     if (response.headers.get("content-type")?.includes("application/json") || response.headers.get("content-type")?.includes("text/event-stream") || body.includes('"revision"')) throw new Error(`Production preview exposes ${path}`);

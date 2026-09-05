@@ -2,7 +2,6 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { QACommand } from "../../src/domain/commands";
-import { QraftError } from "../../src/domain/validation";
 import type { IdFactory } from "../../src/markdown/ids";
 import { patchMarkdown } from "../../src/markdown/patch";
 import { parseMarkdown } from "../../src/markdown/parse";
@@ -84,12 +83,12 @@ describe("minimal Markdown patches", () => {
       ids(created.note),
     ));
 
-  it("adds a finding with only normalized approved metadata", () =>
+  it("adds an attached note with only normalized approved metadata", () =>
     expectGolden(
       "stable.before.md",
-      "add-finding.after.md",
+      "add-attached-note.after.md",
       {
-        type: "addFinding",
+        type: "addNote",
         taskId: stable.task,
         body: "Alignment jumps",
         element: {
@@ -101,14 +100,14 @@ describe("minimal Markdown patches", () => {
           selector: ".quantity",
         },
       },
-      ids(created.finding),
+      ids(created.note),
     ));
 
-  it("resolves a finding by touching only its marker", () =>
+  it("edits a legacy checkbox note without changing its marker", () =>
     expectGolden(
       "stable.before.md",
-      "set-finding.after.md",
-      { type: "setFindingChecked", findingId: stable.finding, checked: true },
+      "edit-legacy-note.after.md",
+      { type: "editNote", noteId: stable.finding, body: "Edited legacy observation" },
       ids(),
     ));
 
@@ -135,29 +134,29 @@ describe("minimal Markdown patches", () => {
       [created.lazyTask, created.note],
     ],
     [
-      "add a finding to a legacy task",
+      "add an attached note to a legacy task",
       "legacy.before.md",
-      "legacy-add-finding.after.md",
-      { type: "addFinding", taskId: "TARGET_TASK", body: "Added finding", element: null } as QACommand,
-      [created.lazyTask, created.finding],
+      "legacy-add-attached-note.after.md",
+      { type: "addNote", taskId: "TARGET_TASK", body: "Added finding", element: null } as QACommand,
+      [created.lazyTask, created.note],
     ],
     [
-      "set a legacy finding status",
+      "edit a legacy checkbox note",
       "legacy.before.md",
-      "legacy-set-finding.after.md",
-      { type: "setFindingChecked", findingId: "TARGET_FINDING", checked: true } as QACommand,
+      "legacy-edit-note.after.md",
+      { type: "editNote", noteId: "TARGET_FINDING", body: "Edited legacy observation" } as QACommand,
       [created.lazyFinding],
     ],
   ])("assigns a stable ID only when asked to %s", async (_label, beforeName, afterName, command, allocated) => {
     const before = await golden(beforeName);
     const parsed = parseMarkdown(before);
     const targetTask = parsed.document.sections[0]?.tasks[0];
-    const targetFinding = targetTask?.findings[0];
+    const targetFinding = targetTask?.notes[0];
     const resolvedCommand =
       command.type === "createTask"
         ? { ...command, sectionId: parsed.document.sections[0]?.id ?? "" }
-        : command.type === "setFindingChecked"
-          ? { ...command, findingId: targetFinding?.id ?? "" }
+        : command.type === "editNote"
+          ? { ...command, noteId: targetFinding?.id ?? "" }
           : "taskId" in command
             ? { ...command, taskId: targetTask?.id ?? "" }
             : command;
@@ -166,11 +165,9 @@ describe("minimal Markdown patches", () => {
     );
   });
 
-  it("rejects passing a task with an unresolved finding", async () => {
-    const parsed = parseMarkdown(await golden("stable.before.md"));
-    expect(() => patchMarkdown(parsed, { type: "setTaskChecked", taskId: stable.task, checked: true })).toThrowError(
-      new QraftError("validation", "Resolve outstanding findings before passing this task."),
-    );
+  it("completes a task independently of legacy note markers", async () => {
+    const before = await golden("stable.before.md");
+    expect(patchMarkdown(parseMarkdown(before), { type: "setTaskStatus", taskId: stable.task, status: "completed" })).toBe(before.replace("- [ ] Task", "- [x] Task"));
   });
 
   it("omits a source path outside the project root and preserves final-newline style", () => {
@@ -178,15 +175,15 @@ describe("minimal Markdown patches", () => {
     const result = patchMarkdown(
       parseMarkdown(before),
       {
-        type: "addFinding",
+        type: "addNote",
         taskId: stable.task,
         body: "Outside source",
         element: { route: "/route?query", component: null, source: "../secret.ts", line: 1, column: 2, selector: null },
       },
-      { idFactory: ids(created.finding), root: "/project" },
+      { idFactory: ids(created.note), root: "/project" },
     );
     expect(result).not.toContain("secret.ts");
-    expect(result).toContain("\r\n  - [ ] Outside source");
+    expect(result).toContain("\r\n  - Note: Outside source");
     expect(result.endsWith("\r\n")).toBe(false);
   });
   it("uses the first newline for insertions and preserves all existing mixed bytes", () => {
@@ -208,4 +205,31 @@ describe("minimal Markdown patches", () => {
     expect(() => patchMarkdown(ambiguous, { type: "setTaskChecked", taskId: ambiguous.document.sections[0]!.tasks[0]!.id, checked: true })).toThrow("duplicate ID");
   });
 
+});
+
+it.each(["\n", "\r\n"])("skips and reopens by one marker, preserving all bytes with %j", (newline) => {
+  for (const final of ["", newline]) {
+    const before = "\uFEFF## Main" + newline + "- [X] Task <!-- qraft:id=" + stable.task + " -->" + newline + "  - [ ] Legacy child" + newline + "    - Unknown: `stay`" + final;
+    const skipped = patchMarkdown(parseMarkdown(before), { type: "setTaskStatus", taskId: stable.task, status: "skipped" });
+    expect(skipped).toBe(before.replace("- [X] Task", "- [-] Task"));
+    expect(parseMarkdown(skipped).document.sections[0]!.tasks[0]!.status).toBe("skipped");
+    expect(patchMarkdown(parseMarkdown(skipped), { type: "setTaskStatus", taskId: stable.task, status: "open" })).toBe(before.replace("- [X] Task", "- [ ] Task"));
+  }
+});
+
+it.each(["\n", "\r\n"])("edits only a note body and preserves attachment and unknown bytes with %j", (newline) => {
+  for (const final of ["", newline]) for (const prefix of ["  - Note: ", "  - [X] "]) {
+    const noteId = prefix.includes("Note") ? created.note : stable.finding;
+    const before = ["\uFEFF## Main", "- [ ] Task", prefix + "Original body  <!-- qraft:id=" + noteId + " -->  ", "    - Source: `src/App.tsx:12:3`", "    - Context: `{" + '"tag":"button","attributes":{"data-testid":"save"},"text":"Save","ancestors":["form#cart"]' + "}`", "    - Owner: `preserve this`", "", "<!-- untouched -->"].join(newline) + final;
+    const after = patchMarkdown(parseMarkdown(before), { type: "editNote", noteId, body: "  Edited\n observation  " });
+    expect(after).toBe(before.replace("Original body", "Edited observation"));
+    expect(parseMarkdown(after).document.sections[0]!.tasks[0]!.notes[0]!.element?.context?.attributes).toEqual({ "data-testid": "save" });
+  }
+});
+
+it("adds bounded identifying context to a canonical note with an exact full-file patch", () => {
+  const before = "## Main\n- [ ] Task <!-- qraft:id=" + stable.task + " -->\n\nOwner text.\n";
+  const element = { route: "/cart?private=yes", component: null, source: null, line: null, column: null, selector: "#save", context: { tag: "button", attributes: { id: "save" }, text: "Save", ancestors: ["form#cart"] } };
+  const after = patchMarkdown(parseMarkdown(before), { type: "addNote", taskId: stable.task, body: "Move this", element }, { idFactory: ids(created.note) });
+  expect(after).toBe(before + "  - Note: Move this <!-- qraft:id=" + created.note + " -->\n    - Route: `/cart`\n    - Selector: `#save`\n    - Context: `" + JSON.stringify(element.context) + "`\n");
 });

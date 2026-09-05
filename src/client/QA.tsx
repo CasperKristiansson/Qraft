@@ -1,74 +1,40 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { FocusScope } from "@radix-ui/react-focus-scope";
-import {
-  ArrowLeft,
-  Check,
-  ChevronRight,
-  Circle,
-  ExternalLink,
-  Flag,
-  Menu,
-  Plus,
-  RotateCcw,
-  StickyNote,
-  Target,
-  X,
-} from "lucide-react";
-import { openFile } from "react-grab/primitives";
+import { ArrowLeft, Check, ChevronRight, Circle, ExternalLink, Menu, Minus, Pencil, Plus, StickyNote, Target, X } from "lucide-react";
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { QACommand } from "../domain/commands";
-import type { QADocument, QAFinding, QASection, QATask } from "../domain/model";
-import { getNextOpenTaskId, getProgress } from "../domain/model";
+import type { ElementReference, QADocument, QANote, QATask, TaskStatus } from "../domain/model";
+import { getProgress } from "../domain/model";
 import { HttpQAStorage, QAStorageError } from "./http-storage";
-import type { QAStorage } from "./storage";
+import type { QAFileCatalog, QAStorage } from "./storage";
 import { ElementPicker, type PickerSelection } from "./picker/ElementPicker";
+import { EdgeTab } from "./EdgeTab";
 import styles from "./styles.css?raw";
 
-type FormState =
-  | { kind: "section" }
-  | { kind: "task"; sectionId: string }
-  | { kind: "note"; taskId: string }
-  | { kind: "finding"; taskId: string; context?: PickerSelection };
-
-type Feedback = { tone: "neutral" | "success" | "warning" | "error"; text: string };
+type FormState = { kind: "section" } | { kind: "task"; sectionId: string };
+type Feedback = { tone: "neutral" | "warning" | "error"; text: string };
+type NoteDraft = { body: string; element: ElementReference | null; warning?: string | null };
+const emptyDraft: NoteDraft = { body: "", element: null };
+const labels: Record<TaskStatus, string> = { open: "Not completed", completed: "Completed", skipped: "Skipped" };
+const nextStatus: Record<TaskStatus, TaskStatus> = { open: "completed", completed: "skipped", skipped: "open" };
+const validDraft = (value: string) => Array.from(value.trim()).length > 0 && Array.from(value.trim()).length <= 2_000;
 
 function useShadowMount() {
   const [mount, setMount] = useState<HTMLDivElement | null>(null);
   useLayoutEffect(() => {
     const host = document.createElement("div");
-    host.dataset.qraftRoot = "";
-    host.dataset.reactGrabIgnore = "";
+    host.dataset.qraftRoot = ""; host.dataset.reactGrabIgnore = "";
     const shadow = host.attachShadow({ mode: "open" });
-    const style = document.createElement("style");
-    style.textContent = styles;
-    const container = document.createElement("div");
-    container.dataset.qraftPortal = "";
-    shadow.append(style, container);
-    document.body.append(host);
-    setMount(container);
+    const style = document.createElement("style"); style.textContent = styles;
+    const container = document.createElement("div"); container.dataset.qraftPortal = "";
+    shadow.append(style, container); document.body.append(host); setMount(container);
     return () => host.remove();
   }, []);
   return mount;
 }
 
-function findTask(document: QADocument | null, id: string | null): { section: QASection; task: QATask } | null {
-  if (!document || !id) return null;
-  for (const section of document.sections) {
-    const task = section.tasks.find((candidate) => candidate.id === id);
-    if (task) return { section, task };
-  }
-  return null;
-}
-
-function validDraft(value: string): boolean {
-  const length = Array.from(value.trim()).length;
-  return length > 0 && length <= 2_000;
-}
-
-export interface QAProps {
-  storage?: QAStorage;
-}
+export interface QAProps { storage?: QAStorage }
 
 export function QA({ storage: providedStorage }: QAProps = {}) {
   const mount = useShadowMount();
@@ -76,450 +42,251 @@ export function QA({ storage: providedStorage }: QAProps = {}) {
   const [narrow, setNarrow] = useState(false);
   const [document, setDocument] = useState<QADocument | null>(null);
   const [connected, setConnected] = useState(true);
-  const [feedback, setFeedback] = useState<Feedback>({ tone: "neutral", text: "Loading QA.md…" });
+  const [feedback, setFeedback] = useState<Feedback>({ tone: "neutral", text: "Loading checklist…" });
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState | null>(null);
   const [draft, setDraft] = useState("");
+  const [notes, setNotes] = useState<Record<string, NoteDraft>>({});
+  const [edits, setEdits] = useState<Record<string, Record<string, string>>>({});
   const [pending, setPending] = useState(false);
   const [picking, setPicking] = useState(false);
-  const [sourceError, setSourceError] = useState<{ findingId: string; text: string } | null>(null);
+  const [sourceError, setSourceError] = useState<{ noteId: string; text: string } | null>(null);
+  const [catalog, setCatalog] = useState<QAFileCatalog | null>(null);
+  const [fileId, setFileId] = useState<string | null>(null);
+  const [choosing, setChoosing] = useState(false);
+  const [search, setSearch] = useState("");
+  const [catalogError, setCatalogError] = useState("");
+  const [catalogVersion, setCatalogVersion] = useState(0);
   const headingId = useId();
   const heading = useRef<HTMLHeadingElement>(null);
-  const formControl = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
+  const formControl = useRef<HTMLInputElement>(null);
+  const composer = useRef<HTMLTextAreaElement>(null);
   const refreshSequence = useRef(0);
-  const formTrigger = useRef<string | null>(null);
+  const locked = useRef(false);
+  const formTrigger = useRef<HTMLButtonElement | null>(null);
   const defaultStorage = useMemo(() => new HttpQAStorage("/__qraft", setConnected), []);
-  const storage = providedStorage ?? defaultStorage;
-  const progress = useMemo(() => (document ? getProgress(document) : { passed: 0, total: 0 }), [document]);
-  const selected = useMemo(() => findTask(document, selectedTaskId), [document, selectedTaskId]);
-  const completed = progress.total > 0 && progress.passed === progress.total;
+  const storage = useMemo(() => providedStorage ?? (fileId ? defaultStorage.forFile(fileId) : null), [providedStorage, defaultStorage, fileId]);
+  const progress = document ? getProgress(document) : { passed: 0, total: 0, skipped: 0 };
+  const selected = document?.sections.flatMap((section) => section.tasks.map((task) => ({ section, task }))).find(({ task }) => task.id === selectedTaskId);
+  const noteKey = `${fileId ?? "bound"}:${selectedTaskId ?? ""}`;
+  const noteDraft = notes[noteKey] ?? emptyDraft;
+  const editDrafts = edits[noteKey] ?? {};
+  const editDraft = (id: string, body: string | null) => setEdits((current) => {
+    const next = { ...(current[noteKey] ?? {}) };
+    if (body === null) delete next[id]; else next[id] = body;
+    return { ...current, [noteKey]: next };
+  });
+  const orphanEdits = Object.entries(editDrafts).filter(([id]) => !selected?.task.notes.some((note) => note.id === id));
+  const preservedEdits = orphanEdits.map(([id, body]) => <div className="qraft-orphan" key={id} role="alert"><strong>The note being edited no longer exists.</strong><textarea aria-label="Preserved edit draft" readOnly value={body} /><button className="qraft-add" onClick={() => editDraft(id, null)}>Discard edit draft</button></div>);
+  const fileLabel = catalog?.files.find((file) => file.id === fileId)?.label ?? "Markdown";
+  const showChooser = !providedStorage && (!fileId || choosing);
+  const updateNote = (patch: Partial<NoteDraft>) => setNotes((current) => ({ ...current, [noteKey]: { ...(current[noteKey] ?? emptyDraft), ...patch } }));
+
+  useEffect(() => {
+    if (providedStorage) return;
+    const controller = new AbortController();
+    setCatalogError("");
+    void defaultStorage.getFiles(controller.signal).then((next) => {
+      if (controller.signal.aborted) return;
+      setCatalog(next);
+      setFileId((current) => {
+        let saved = current;
+        if (!saved) { try { saved = localStorage.getItem(`qraft:file:${next.projectId}`); } catch { /* Choice works for this session. */ } }
+        return next.files.some((file) => file.id === saved) ? saved : null;
+      });
+    }).catch((error: unknown) => { if (!controller.signal.aborted) setCatalogError(error instanceof Error ? error.message : "Could not list Markdown files."); });
+    return () => controller.abort();
+  }, [defaultStorage, providedStorage, catalogVersion]);
 
   useEffect(() => {
     const media = matchMedia("(max-width: 800px)");
     const update = () => setNarrow(media.matches);
-    update();
-    media.addEventListener("change", update);
+    update(); media.addEventListener("change", update);
     return () => media.removeEventListener("change", update);
   }, []);
 
   useEffect(() => {
     const controller = new AbortController();
+    setDocument(null); setSelectedTaskId(null); setConnected(true);
+    setFeedback({ tone: "neutral", text: "Loading checklist…" });
+    if (!storage) return () => controller.abort();
     const refresh = async () => {
       const sequence = ++refreshSequence.current;
       try {
         const next = await storage.getDocument(controller.signal);
         if (controller.signal.aborted || sequence !== refreshSequence.current) return;
         setDocument(next);
-        setFeedback((current) => current.tone === "neutral" ? { tone: "neutral", text: "QA.md is synchronized." } : current);
       } catch (error) {
-        if (!controller.signal.aborted && sequence === refreshSequence.current) {
-          setFeedback({ tone: "error", text: error instanceof Error ? error.message : "Qraft could not load QA.md." });
-        }
+        if (!controller.signal.aborted && sequence === refreshSequence.current) setFeedback({ tone: "error", text: error instanceof Error ? error.message : "Could not load the checklist." });
       }
     };
     void refresh();
     const unsubscribe = storage.subscribe(() => void refresh());
-    return () => {
-      controller.abort();
-      unsubscribe();
-    };
+    return () => { controller.abort(); refreshSequence.current += 1; unsubscribe(); };
   }, [storage]);
-
-  useEffect(() => {
-    if (form) formControl.current?.focus();
-  }, [form]);
-
-  const beginForm = (next: FormState, trigger: HTMLButtonElement) => {
-    setForm(next);
-    setDraft("");
-    formTrigger.current = trigger.dataset.formTrigger ?? null;
-  };
-
-  const cancelForm = () => {
-    setForm(null);
-    setDraft("");
-    requestAnimationFrame(() => {
-      const key = formTrigger.current;
-      if (key) mount?.querySelector<HTMLButtonElement>(`[data-form-trigger="${key}"]`)?.focus();
-    });
-  };
+  useEffect(() => { if (form) formControl.current?.focus(); }, [form]);
 
   const execute = async (command: QACommand, success: string): Promise<QADocument | null> => {
-    if (!document || pending) return null;
-    refreshSequence.current += 1;
-    setPending(true);
+    if (!document || !storage || locked.current) return null;
+    locked.current = true; refreshSequence.current += 1; setPending(true);
     try {
       const next = await storage.execute(command, document.revision);
       refreshSequence.current += 1;
-      if (selectedTaskId?.startsWith("legacy:") && document) {
+      if (selectedTaskId?.startsWith("legacy:")) {
         const index = document.sections.flatMap((section) => section.tasks).findIndex((task) => task.id === selectedTaskId);
-        setSelectedTaskId(next.sections.flatMap((section) => section.tasks)[index]?.id ?? selectedTaskId);
+        const stable = next.sections.flatMap((section) => section.tasks)[index]?.id;
+        if (stable) {
+          setSelectedTaskId(stable);
+          setNotes((current) => ({ ...current, [`${fileId ?? "bound"}:${stable}`]: current[noteKey] ?? emptyDraft }));
+        }
       }
-      setDocument(next);
-      setFeedback({ tone: "success", text: success });
-      return next;
+      setDocument(next); setFeedback({ tone: "neutral", text: success }); return next;
     } catch (error) {
       if (error instanceof QAStorageError && error.document) setDocument(error.document);
-      setFeedback({
-        tone: error instanceof QAStorageError && error.code === "revision_conflict" ? "warning" : "error",
-        text: error instanceof Error ? error.message : "The change was not saved. Review and retry.",
-      });
+      setFeedback({ tone: error instanceof QAStorageError && error.code === "revision_conflict" ? "warning" : "error", text: error instanceof Error ? error.message : "The change was not saved. Review and retry." });
       return null;
-    } finally {
-      setPending(false);
-    }
+    } finally { locked.current = false; setPending(false); }
   };
-
+  const status = (task: QATask, value: TaskStatus) => void execute({ type: "setTaskStatus", taskId: task.id, status: value }, `Task ${labels[value].toLowerCase()}.`);
+  const cancelForm = () => { setForm(null); setDraft(""); requestAnimationFrame(() => formTrigger.current?.focus()); };
+  const beginForm = (next: FormState, trigger: HTMLButtonElement) => { formTrigger.current = trigger; setForm(next); setDraft(""); };
   const submitForm = async () => {
     if (!form || !validDraft(draft)) return;
-    let command: QACommand;
-    if (form.kind === "section") command = { type: "createSection", title: draft };
-    else if (form.kind === "task") command = { type: "createTask", sectionId: form.sectionId, title: draft };
-    else if (form.kind === "note") command = { type: "addNote", taskId: form.taskId, body: draft };
-    else command = { type: "addFinding", taskId: form.taskId, body: draft, element: form.context?.element ?? null };
-    const next = await execute(command, `${form.kind[0]?.toUpperCase()}${form.kind.slice(1)} saved to QA.md.`);
+    const command: QACommand = form.kind === "section" ? { type: "createSection", title: draft } : { type: "createTask", sectionId: form.sectionId, title: draft };
+    if (await execute(command, `${form.kind === "section" ? "Section" : "Task"} saved.`)) cancelForm();
+  };
+  const submitNote = async () => {
+    if (!selected || !validDraft(noteDraft.body)) return;
+    const index = document?.sections.flatMap((section) => section.tasks).findIndex((task) => task.id === selected.task.id) ?? -1;
+    const next = await execute({ type: "addNote", taskId: selected.task.id, body: noteDraft.body, element: noteDraft.element }, "Note saved.");
     if (next) {
-      setForm(null);
-      setDraft("");
+      const stable = next.sections.flatMap((section) => section.tasks)[index]?.id ?? selected.task.id;
+      setNotes((current) => ({ ...current, [noteKey]: emptyDraft, [`${fileId ?? "bound"}:${stable}`]: emptyDraft }));
+      requestAnimationFrame(() => composer.current?.focus());
     }
   };
-
-  const setTaskChecked = async (task: QATask, checked: boolean) => {
-    const next = await execute(
-      { type: "setTaskChecked", taskId: task.id, checked },
-      checked ? "Task passed." : "Task reopened.",
-    );
-    if (next && checked) {
-      const index = document?.sections.flatMap((section) => section.tasks).findIndex((current) => current.id === task.id) ?? -1;
-      const savedId = next.sections.flatMap((section) => section.tasks)[index]?.id ?? task.id;
-      const nextId = getNextOpenTaskId(next, savedId);
-      setSelectedTaskId(nextId ?? savedId);
-    }
-  };
-
-  const setFindingChecked = async (findingId: string, checked: boolean) => {
-    await execute(
-      { type: "setFindingChecked", findingId, checked },
-      checked ? "Finding resolved." : "Finding reopened.",
-    );
-  };
-
-  const cancelPicker = () => {
-    setPicking(false);
-    setOpen(true);
-    requestAnimationFrame(() => mount?.querySelector<HTMLButtonElement>("[data-form-trigger^=attach-]")?.focus());
-  };
-
-  const selectPicker = (selection: PickerSelection) => {
-    if (!selectedTaskId) return;
-    setPicking(false);
-    setForm({ kind: "finding", taskId: selectedTaskId, context: selection });
-    setDraft("");
-    setOpen(true);
-  };
-
-  const openFindingSource = async (finding: QAFinding) => {
-    const source = finding.element?.source;
-    if (!source) return;
+  const restoreComposer = () => { setPicking(false); setOpen(true); requestAnimationFrame(() => composer.current?.focus()); };
+  const selectPicker = (selection: PickerSelection) => { updateNote({ element: selection.element, warning: selection.contextWarning }); restoreComposer(); };
+  const openSource = async (note: QANote) => {
+    if (!note.element?.source) return;
     setSourceError(null);
     try {
-      await openFile(source, finding.element?.line ?? undefined);
-      setFeedback({ tone: "success", text: `Requested ${source} in the editor.` });
-    } catch {
-      setSourceError({ findingId: finding.id, text: `Could not open ${source}. Copy the path and open it in your editor.` });
+      const query = new URLSearchParams({ file: note.element.source });
+      if (note.element.line) query.set("line", String(note.element.line));
+      if (note.element.column) query.set("column", String(note.element.column));
+      const response = await fetch(`/__open-in-editor?${query}`, { redirect: "error", signal: AbortSignal.timeout(5_000) });
+      if (!response.ok) throw new Error("Editor request failed.");
     }
+    catch { setSourceError({ noteId: note.id, text: `Could not open ${note.element.source}. Copy the path and open it in your editor.` }); }
   };
-
+  const back = () => { setSelectedTaskId(null); setForm(null); setDraft(""); requestAnimationFrame(() => heading.current?.focus()); };
+  const titleForm = <form className="qraft-form" onSubmit={(event) => { event.preventDefault(); void submitForm(); }} onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); cancelForm(); } }}>
+    <strong>{form?.kind === "section" ? "Add section" : "Add task"}</strong><label htmlFor={`${headingId}-title`}>Title</label>
+    <input id={`${headingId}-title`} ref={formControl} value={draft} readOnly={pending} maxLength={4_000} onChange={(event) => setDraft(event.target.value)} />
+    <div className="qraft-form-actions"><button type="button" onClick={cancelForm} disabled={pending}>Cancel</button><button className="primary" disabled={pending || !validDraft(draft)}>{pending ? "Saving…" : "Save"}</button></div>
+  </form>;
   if (!mount) return null;
-
-  const formTitle = form?.kind === "section" ? "Add section" : form?.kind === "task" ? "Add task" : form?.kind === "note" ? "Add note" : "Add finding";
-  const bodyForm = form?.kind === "note" || form?.kind === "finding";
-
-  return createPortal(
-    picking ? <ElementPicker onCancel={cancelPicker} onSelect={selectPicker} /> : <Dialog.Root open={open} onOpenChange={setOpen} modal={false}>
-      <Dialog.Trigger asChild>
-        <button className="qraft-tab" aria-label={`Open Qraft, ${progress.passed} of ${progress.total} tasks passed`}>
-          <span>QA</span><strong>{progress.passed}/{progress.total}</strong>
-        </button>
-      </Dialog.Trigger>
-      <Dialog.Portal container={mount}>
-        <FocusScope asChild trapped={narrow} loop={narrow}>
-          <Dialog.Content
-            className="qraft-drawer"
-            aria-labelledby={headingId}
-            aria-modal={narrow || undefined}
-            onInteractOutside={(event) => { if (narrow) event.preventDefault(); }}
-            onKeyDown={(event) => {
-              if (!narrow || event.key !== "Tab") return;
-              const controls = Array.from(event.currentTarget.querySelectorAll<HTMLElement>("button:not(:disabled), input, textarea, summary, [tabindex='0']"));
-              const active = mount.getRootNode() instanceof ShadowRoot ? (mount.getRootNode() as ShadowRoot).activeElement : null;
-              const first = controls[0];
-              const last = controls.at(-1);
-              if (event.shiftKey && (active === first || active === heading.current)) { event.preventDefault(); last?.focus(); }
-              else if (!event.shiftKey && active === last) { event.preventDefault(); first?.focus(); }
-            }}
-            onOpenAutoFocus={(event) => { event.preventDefault(); heading.current?.focus(); }}
-            onEscapeKeyDown={(event) => { if (form) { event.preventDefault(); cancelForm(); } }}
-          >
-            <header className="qraft-header">
-              <Menu aria-hidden="true" size={19} />
-              <Dialog.Title ref={heading} id={headingId} tabIndex={-1}>Qraft</Dialog.Title>
-              <Dialog.Close className="qraft-icon-button" aria-label="Close Qraft"><X size={19} /></Dialog.Close>
-            </header>
-            <div className="qraft-content">
-              <div className="qraft-progress-row">
-                <strong>{progress.passed} / {progress.total}</strong>
-                <div className="qraft-progress" role="progressbar" aria-valuemin={0} aria-valuemax={progress.total} aria-valuenow={progress.passed} aria-label={`${progress.passed} of ${progress.total} tasks passed`}>
-                  <span style={{ width: `${progress.total ? (progress.passed / progress.total) * 100 : 0}%` }} />
-                </div>
-              </div>
-
-              {!connected ? <p className="qraft-banner warning" role="status">Disconnected. Qraft is reconnecting automatically.</p> : null}
-              {feedback.tone !== "neutral" ? <p className={`qraft-banner ${feedback.tone}`} aria-live="polite" role={feedback.tone === "error" ? "alert" : "status"}>{feedback.text}</p> : null}
-              {feedback.tone === "neutral" ? <p className="qraft-sr-only" aria-live="polite">{feedback.text}</p> : null}
-
-              {selected ? (
-                <TaskDetail
-                  section={selected.section}
-                  task={selected.task}
-                  completed={completed}
-                  pending={pending}
-                  activeForm={form}
-                  draft={draft}
-                  formTitle={formTitle}
-                  bodyForm={bodyForm}
-                  formControl={formControl}
-                  onDraft={setDraft}
-                  onBack={() => { setSelectedTaskId(null); setForm(null); setDraft(""); }}
-                  onBeginForm={beginForm}
-                  onCancelForm={cancelForm}
-                  onSubmitForm={() => void submitForm()}
-                  onTaskChecked={(checked) => void setTaskChecked(selected.task, checked)}
-                  onFindingChecked={(findingId, checked) => void setFindingChecked(findingId, checked)}
-                  onAttachElement={(trigger) => {
-                    formTrigger.current = trigger.dataset.formTrigger ?? null;
-                    setForm(null);
-                    setDraft("");
-                    setOpen(false);
-                    setPicking(true);
-                  }}
-                  sourceError={sourceError}
-                  onOpenSource={(finding) => void openFindingSource(finding)}
-                  onUsePlainFinding={() => setForm((current) => current?.kind === "finding" ? {
-                    ...current,
-                    context: { element: null, label: "Plain finding", sourceLabel: null, contextWarning: "No element context will be saved." },
-                  } : current)}
-                />
-              ) : (
-                <Checklist
-                  document={document}
-                  activeForm={form}
-                  pending={pending}
-                  draft={draft}
-                  formTitle={formTitle}
-                  bodyForm={bodyForm}
-                  formControl={formControl}
-                  selectedTaskId={selectedTaskId}
-                  onDraft={setDraft}
-                  onSelectTask={(id) => { setSelectedTaskId(id); setForm(null); setDraft(""); }}
-                  onBeginForm={beginForm}
-                  onCancelForm={cancelForm}
-                  onSubmitForm={() => void submitForm()}
-                />
-              )}
-
-              {selectedTaskId && !selected ? (
-                <div className="qraft-orphan" role="alert">
-                  <strong>The selected task no longer exists.</strong>
-                  <p>{draft ? "Your unsaved text remains below so you can copy it." : "Return to the checklist and choose another task."}</p>
-                  {draft ? <textarea readOnly value={draft} aria-label="Preserved draft" /> : null}
-                  <button className="qraft-secondary" type="button" onClick={() => setSelectedTaskId(null)}>Back to checklist</button>
-                </div>
-              ) : null}
-              <p className="qraft-preview-note">Local Markdown sync · {document?.revision.slice(0, 8) ?? "loading"}</p>
-            </div>
-          </Dialog.Content>
-        </FocusScope>
-      </Dialog.Portal>
-    </Dialog.Root>,
-    mount,
-  );
-}
-
-interface FormProps {
-  title: string;
-  body: boolean;
-  value: string;
-  pending: boolean;
-  controlRef: React.RefObject<HTMLInputElement | HTMLTextAreaElement | null>;
-  onValue: (value: string) => void;
-  onCancel: () => void;
-  onSubmit: () => void;
-  context?: PickerSelection;
-  onUsePlain?: () => void;
-}
-
-function InlineForm({ title, body, value, pending, controlRef, onValue, onCancel, onSubmit, context, onUsePlain }: FormProps) {
-  const fieldId = useId();
-  const length = Array.from(value.trim()).length;
-  return (
-    <form className="qraft-form" onSubmit={(event) => { event.preventDefault(); onSubmit(); }} onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); onCancel(); } }}>
-      <div className="qraft-form-heading"><strong>{title}</strong><span>{length}/2000</span></div>
-      {context ? (
-        <div className="qraft-context">
-          <strong>{context.label}</strong>
-          {context.sourceLabel ? <code>{context.sourceLabel}</code> : null}
-          {context.contextWarning ? <span>{context.contextWarning}</span> : null}
-          {context.element && onUsePlain ? <button type="button" onClick={onUsePlain}>Use plain finding</button> : null}
+  return createPortal(picking ? <ElementPicker onCancel={restoreComposer} onSelect={selectPicker} /> : <Dialog.Root open={open} onOpenChange={setOpen} modal={false}>
+    <EdgeTab open={open} passed={progress.passed} total={progress.total} />
+    <Dialog.Portal container={mount}><FocusScope asChild trapped={narrow} loop={narrow}>
+      <Dialog.Content className="qraft-drawer" aria-labelledby={headingId} aria-modal={narrow || undefined}
+        onInteractOutside={(event) => { if (narrow) event.preventDefault(); }}
+        onKeyDown={(event) => {
+          if (!narrow || event.key !== "Tab") return;
+          const controls = Array.from(event.currentTarget.querySelectorAll<HTMLElement>("button:not(:disabled), input:not(:disabled), textarea:not(:disabled), summary, [tabindex='0']"));
+          const active = (mount.getRootNode() as ShadowRoot).activeElement;
+          if (event.shiftKey && (active === controls[0] || active === heading.current)) { event.preventDefault(); controls.at(-1)?.focus(); }
+          else if (!event.shiftKey && active === controls.at(-1)) { event.preventDefault(); controls[0]?.focus(); }
+        }}
+        onOpenAutoFocus={(event) => { event.preventDefault(); heading.current?.focus(); }}
+        onEscapeKeyDown={(event) => { if (form) { event.preventDefault(); cancelForm(); } }}>
+        <header className={`qraft-header ${selectedTaskId ? "detail" : ""}`}>
+          {selectedTaskId ? <><button className="qraft-header-back" type="button" onClick={back} disabled={pending}><ArrowLeft size={21} /> Back to checklist</button><Dialog.Title className="qraft-sr-only" ref={heading} id={headingId} tabIndex={-1}>Task details</Dialog.Title></> : <><Menu aria-hidden="true" size={19} /><Dialog.Title ref={heading} id={headingId} tabIndex={-1}>Qraft</Dialog.Title></>}
+          <Dialog.Close className="qraft-icon-button" aria-label="Close Qraft"><X size={19} /></Dialog.Close>
+        </header>
+        <div className="qraft-content">
+          {showChooser ? <section className="qraft-file-chooser">
+            <h2>Choose a checklist</h2><p>Select a Markdown file from this project. Your choice is remembered in this browser.</p>
+            <label htmlFor={`${headingId}-search`}>Find a Markdown file</label><input id={`${headingId}-search`} value={search} onChange={(event) => setSearch(event.target.value)} />
+            {catalogError ? <p role="alert" className="qraft-banner error">{catalogError}</p> : null}
+            {!catalog && !catalogError ? <p role="status">Loading files…</p> : null}
+            {catalog?.files.filter((file) => file.label.toLowerCase().includes(search.toLowerCase())).map((file) => <button className="qraft-file" key={file.id} onClick={() => {
+              if (pending) return;
+              setFileId(file.id); setChoosing(false); setForm(null); setDraft("");
+              requestAnimationFrame(() => heading.current?.focus());
+              try { localStorage.setItem(`qraft:file:${catalog.projectId}`, file.id); } catch { /* Session selection remains usable. */ }
+            }}>{file.label}<ChevronRight size={16} /></button>)}
+            {catalog?.files.length === 0 ? <p>No Markdown files yet. Ask your coding editor to create a checklist with ## section headings and - [ ] tasks, then refresh the file list.</p> : null}
+            {catalog?.truncated ? <p>The file list was limited. Configure qraft's file option to include a specific checklist.</p> : null}
+            <button className="qraft-secondary" onClick={() => setCatalogVersion((value) => value + 1)}>Refresh files</button>
+            {fileId ? <button className="qraft-add" onClick={() => setChoosing(false)}>Cancel file change</button> : null}
+          </section> : <>
+            {!selectedTaskId ? <div className="qraft-progress-row"><strong>{progress.passed} / {progress.total}</strong><div className="qraft-progress" role="progressbar" aria-valuemin={0} aria-valuemax={progress.total} aria-valuenow={progress.passed} aria-label={`${progress.passed} of ${progress.total} tasks completed`}><span style={{ width: `${progress.total ? progress.passed / progress.total * 100 : 0}%` }} /></div>{progress.skipped ? <small>{progress.skipped} skipped</small> : null}</div> : null}
+            {!connected ? <p className="qraft-banner warning" role="status">Disconnected. Qraft is reconnecting automatically.</p> : null}
+            <p className={feedback.tone === "neutral" ? "qraft-sr-only" : `qraft-banner ${feedback.tone}`} aria-live="polite" role={feedback.tone === "error" ? "alert" : "status"}>{feedback.text}</p>
+            {document?.diagnostics.map((diagnostic) => <p className="qraft-banner warning" key={`${diagnostic.code}-${diagnostic.lines.join("-")}`}>{diagnostic.message} Lines {diagnostic.lines.join(", ")}.</p>)}
+            {selected ? <article className="qraft-detail">
+              <h2>{selected.task.title}</h2>
+              <div className="qraft-status-options" role="group" aria-label="Task status">{(["open", "completed", "skipped"] as const).map((value) => <button key={value} aria-pressed={selected.task.status === value} className={value} disabled={pending || selected.task.readOnly} onClick={() => status(selected.task, value)}>{labels[value]}</button>)}</div>
+              <section className="qraft-detail-section"><h3><StickyNote size={13} /> Notes · {selected.task.notes.length}</h3>
+                <form className="qraft-note-composer" onSubmit={(event) => { event.preventDefault(); void submitNote(); }}>
+                  <label htmlFor={`${headingId}-note`}>Write a note</label>
+                  <textarea ref={composer} id={`${headingId}-note`} value={noteDraft.body} maxLength={4_000} readOnly={pending || selected.task.readOnly} placeholder="What could be improved?" onChange={(event) => updateNote({ body: event.target.value })} onKeyDown={(event) => {
+                    if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing && event.nativeEvent.keyCode !== 229) { event.preventDefault(); void submitNote(); }
+                  }} />
+                  {noteDraft.element ? <div className="qraft-context"><ElementContext element={noteDraft.element} /><button type="button" disabled={pending} onClick={() => updateNote({ element: null, warning: null })}>Remove attachment</button></div> : null}
+                  {noteDraft.warning ? <p className="qraft-help">{noteDraft.warning}</p> : null}
+                  {Array.from(noteDraft.body.trim()).length > 2_000 ? <p className="qraft-field-error">Keep the text to 2,000 characters or fewer.</p> : null}
+                  <div className="qraft-composer-actions"><button type="button" disabled={pending || selected.task.readOnly} onClick={() => { setOpen(false); setPicking(true); }}><Target size={15} /> Attach element</button><button className="primary" disabled={pending || selected.task.readOnly || !validDraft(noteDraft.body)}>{pending ? "Saving…" : "Submit"}</button></div>
+                </form>
+                {selected.task.notes.length ? <ol className="qraft-note-timeline">{selected.task.notes.map((note, index) => <NoteItem key={note.readOnly ? `${note.id}-${index}` : note.id} note={note} pending={pending} draft={editDrafts[note.id]} onDraft={(body) => editDraft(note.id, body)} save={async (body) => Boolean(await execute({ type: "editNote", noteId: note.id, body }, "Note updated."))} openSource={() => void openSource(note)} error={sourceError?.noteId === note.id ? sourceError.text : null} />)}</ol> : <p className="qraft-empty-copy">No notes yet. Add observations for your coding agent.</p>}
+              {preservedEdits}</section>
+            </article> : selectedTaskId ? <div className="qraft-orphan" role="alert"><strong>The selected task no longer exists.</strong><p>Your unsaved note remains here so you can copy it.</p><textarea aria-label="Preserved draft" readOnly value={noteDraft.body} />{preservedEdits}<button className="qraft-secondary" onClick={back}>Back to checklist</button></div> : <div className="qraft-view">
+              <h2 className="qraft-document-title">{document?.title ?? "QA"}</h2>
+              {!document ? <p role="status">Loading checklist…</p> : null}
+              {document?.sections.length === 0 ? <div className="qraft-empty"><strong>No QA tasks yet</strong><p>Add a section below, or ask your coding editor to fill this Markdown file with ## sections and - [ ] tasks.</p></div> : null}
+              {document?.sections.map((section, sectionIndex) => <section className="qraft-section" key={section.readOnly ? `${section.id}-${sectionIndex}` : section.id}><h3>{section.title}</h3>
+                <div className="qraft-task-list">{section.tasks.map((task, index) => <TaskRow key={task.readOnly ? `${task.id}-${index}` : task.id} task={task} pending={pending} change={(value) => status(task, value)} select={() => { setSelectedTaskId(task.id); setSourceError(null); }} />)}</div>
+                {form?.kind === "task" && form.sectionId === section.id ? titleForm : <button className="qraft-add" disabled={pending || section.readOnly} onClick={(event) => beginForm({ kind: "task", sectionId: section.id }, event.currentTarget)}><Plus size={15} /> Add task</button>}
+              </section>)}
+              {document ? form?.kind === "section" ? titleForm : <button className="qraft-secondary" disabled={pending} onClick={(event) => beginForm({ kind: "section" }, event.currentTarget)}><Plus size={16} /> Add section</button> : null}
+              {document && progress.total > 0 ? <p className="qraft-help">Click a status to complete, skip, or reopen. Double-click to skip.</p> : null}
+            </div>}
+            <p className="qraft-preview-note">Local Markdown sync · {document?.revision.slice(0, 8) ?? "loading"}</p>
+            {!providedStorage && !selectedTaskId ? <button className="qraft-file-current" disabled={pending} onClick={() => setChoosing(true)} title={fileLabel}>Change file · {fileLabel}</button> : null}
+          </>}
         </div>
-      ) : null}
-      <label htmlFor={fieldId}>{body ? "Details" : "Title"}</label>
-      {body ? (
-        <textarea ref={controlRef as React.RefObject<HTMLTextAreaElement>} id={fieldId} value={value} maxLength={4_000} onChange={(event) => onValue(event.target.value)} />
-      ) : (
-        <input ref={controlRef as React.RefObject<HTMLInputElement>} id={fieldId} value={value} maxLength={4_000} onChange={(event) => onValue(event.target.value)} />
-      )}
-      {length > 2_000 ? <span className="qraft-field-error">Keep the text to 2,000 characters or fewer.</span> : null}
-      <div className="qraft-form-actions"><button type="button" onClick={onCancel}>Cancel</button><button className="primary" type="submit" disabled={!validDraft(value) || pending}>{pending ? "Saving…" : "Save"}</button></div>
-    </form>
-  );
+      </Dialog.Content>
+    </FocusScope></Dialog.Portal>
+  </Dialog.Root>, mount);
 }
 
-interface ChecklistProps {
-  document: QADocument | null;
-  activeForm: FormState | null;
-  pending: boolean;
-  draft: string;
-  formTitle: string;
-  bodyForm: boolean;
-  formControl: React.RefObject<HTMLInputElement | HTMLTextAreaElement | null>;
-  selectedTaskId: string | null;
-  onDraft: (value: string) => void;
-  onSelectTask: (id: string) => void;
-  onBeginForm: (form: FormState, trigger: HTMLButtonElement) => void;
-  onCancelForm: () => void;
-  onSubmitForm: () => void;
+function TaskRow({ task, pending, change, select }: { task: QATask; pending: boolean; change: (value: TaskStatus) => void; select: () => void }) {
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clear = () => { if (timer.current) clearTimeout(timer.current); timer.current = null; };
+  useEffect(() => clear, []);
+  return <div className={`qraft-task-row ${task.status}`}>
+    <button type="button" className={`qraft-status ${task.status}`} aria-label={`${task.title}: ${labels[task.status]}. Change status`} title="Click to cycle status; double-click to skip" disabled={pending || task.readOnly}
+      onClick={(event) => { if (event.detail === 0) { clear(); change(nextStatus[task.status]); } else { clear(); timer.current = setTimeout(() => { timer.current = null; change(nextStatus[task.status]); }, 300); } }}
+      onDoubleClick={() => { clear(); change("skipped"); }}>{task.status === "completed" ? <Check size={13} /> : task.status === "skipped" ? <Minus size={13} /> : <Circle size={13} />}</button>
+    <button type="button" className="qraft-task" disabled={pending || task.readOnly} onClick={select}><span className="qraft-task-copy"><span>{task.title}</span>{task.notes.length ? <small>{task.notes.length} {task.notes.length === 1 ? "note" : "notes"}</small> : null}</span><ChevronRight size={16} /></button>
+  </div>;
 }
 
-function Checklist(props: ChecklistProps) {
-  const { document, activeForm, pending, draft, formTitle, bodyForm, formControl, selectedTaskId, onDraft, onSelectTask, onBeginForm, onCancelForm, onSubmitForm } = props;
-  return (
-    <div className="qraft-view">
-      <h2 className="qraft-document-title">{document?.title ?? "QA"}</h2>
-      {document?.diagnostics.map((diagnostic) => <p className="qraft-banner warning" key={`${diagnostic.code}-${diagnostic.lines.join("-")}`}>{diagnostic.message} Lines {diagnostic.lines.join(", ")}.</p>)}
-      {!document ? <div className="qraft-loading" role="status">Loading checklist…</div> : null}
-      {document && document.sections.length === 0 ? <div className="qraft-empty"><strong>No QA tasks yet</strong><p>Add the first section when you are ready to start testing.</p></div> : null}
-      {document?.sections.map((section, sectionIndex) => (
-        <section className="qraft-section" key={section.readOnly ? `${section.id}-${sectionIndex}` : section.id}>
-          <h3>{section.title}</h3>
-          <div className="qraft-task-list">
-            {section.tasks.map((task, taskIndex) => {
-              const unresolved = task.findings.filter((finding) => !finding.checked).length;
-              return (
-                <button className="qraft-task" key={task.readOnly ? `${task.id}-${taskIndex}` : task.id} type="button" disabled={task.readOnly} aria-current={selectedTaskId === task.id ? "true" : undefined} onClick={() => onSelectTask(task.id)}>
-                  <span className={task.checked ? "qraft-status passed" : "qraft-status"}>{task.checked ? <Check size={13} /> : <Circle size={13} />}</span>
-                  <span className="qraft-task-copy"><span>{task.title}</span>{unresolved ? <small>{unresolved} open finding{unresolved === 1 ? "" : "s"}</small> : null}</span>
-                  {unresolved ? <span className="qraft-count" aria-label={`${unresolved} unresolved findings`}>{unresolved}</span> : <ChevronRight aria-hidden="true" size={16} />}
-                </button>
-              );
-            })}
-          </div>
-          {activeForm?.kind === "task" && activeForm.sectionId === section.id ? (
-            <InlineForm title={formTitle} body={bodyForm} value={draft} pending={pending} controlRef={formControl} onValue={onDraft} onCancel={onCancelForm} onSubmit={onSubmitForm} />
-          ) : (
-            <button className="qraft-add" type="button" data-form-trigger={`task-${section.id}`} disabled={section.readOnly} onClick={(event) => onBeginForm({ kind: "task", sectionId: section.id }, event.currentTarget)}><Plus size={15} /> Add task</button>
-          )}
-        </section>
-      ))}
-      {activeForm?.kind === "section" ? (
-        <InlineForm title={formTitle} body={bodyForm} value={draft} pending={pending} controlRef={formControl} onValue={onDraft} onCancel={onCancelForm} onSubmit={onSubmitForm} />
-      ) : (
-        <button className="qraft-secondary" type="button" data-form-trigger="section" onClick={(event) => onBeginForm({ kind: "section" }, event.currentTarget)}><Plus size={16} /> Add section</button>
-      )}
-    </div>
-  );
+function ElementContext({ element }: { element: ElementReference }) {
+  return <><strong>{element.component ?? element.context?.tag ?? "Selected element"}</strong>{element.source ? <code>{element.source}{element.line ? `:${element.line}` : ""}{element.column ? `:${element.column}` : ""}</code> : <small>Source unavailable; use the identifying context below.</small>}
+    <details><summary>Element context</summary><dl>{element.route ? <><dt>Route</dt><dd>{element.route}</dd></> : null}{element.selector ? <><dt>Selector</dt><dd><code>{element.selector}</code></dd></> : null}{element.context ? <><dt>Tag</dt><dd>{element.context.tag}</dd><dt>Attributes</dt><dd><code>{JSON.stringify(element.context.attributes)}</code></dd>{element.context.text ? <><dt>Text</dt><dd>{element.context.text}</dd></> : null}<dt>Ancestors</dt><dd><code>{element.context.ancestors.join(" → ")}</code></dd></> : null}</dl></details></>;
 }
 
-interface TaskDetailProps {
-  section: QASection;
-  task: QATask;
-  completed: boolean;
-  pending: boolean;
-  activeForm: FormState | null;
-  draft: string;
-  formTitle: string;
-  bodyForm: boolean;
-  formControl: React.RefObject<HTMLInputElement | HTMLTextAreaElement | null>;
-  onDraft: (value: string) => void;
-  onBack: () => void;
-  onBeginForm: (form: FormState, trigger: HTMLButtonElement) => void;
-  onCancelForm: () => void;
-  onSubmitForm: () => void;
-  onTaskChecked: (checked: boolean) => void;
-  onFindingChecked: (id: string, checked: boolean) => void;
-  onAttachElement: (trigger: HTMLButtonElement) => void;
-  sourceError: { findingId: string; text: string } | null;
-  onOpenSource: (finding: QAFinding) => void;
-  onUsePlainFinding: () => void;
-}
-
-function TaskDetail(props: TaskDetailProps) {
-  const { section, task, completed, pending, activeForm, draft, formTitle, bodyForm, formControl, onDraft, onBack, onBeginForm, onCancelForm, onSubmitForm, onTaskChecked, onFindingChecked, onAttachElement, sourceError, onOpenSource, onUsePlainFinding } = props;
-  const unresolved = task.findings.filter((finding) => !finding.checked).length;
-  const passBlocked = !task.checked && unresolved > 0;
-  return (
-    <article className="qraft-detail">
-      <button className="qraft-back" type="button" onClick={onBack}><ArrowLeft size={16} /> {section.title}</button>
-      {completed ? <div className="qraft-complete"><span><Check size={22} /></span><strong>Checklist complete</strong><p>Every QA task is passed.</p></div> : null}
-      <h2>{task.title}</h2>
-      <p className={`qraft-task-state ${task.checked ? "passed" : ""}`}>{task.checked ? <Check size={15} /> : <Circle size={15} />}{task.checked ? "Passed" : "Not completed"}</p>
-
-      <section className="qraft-detail-section">
-        <h3><StickyNote size={14} /> Notes</h3>
-        {task.notes.length ? <ul className="qraft-notes">{task.notes.map((note, index) => <li key={note.readOnly ? `${note.id}-${index}` : note.id}>{note.body}</li>)}</ul> : <p className="qraft-empty-copy">No notes yet.</p>}
-        {activeForm?.kind === "note" && activeForm.taskId === task.id ? (
-          <InlineForm title={formTitle} body={bodyForm} value={draft} pending={pending} controlRef={formControl} onValue={onDraft} onCancel={onCancelForm} onSubmit={onSubmitForm} />
-        ) : <button className="qraft-add" type="button" data-form-trigger={`note-${task.id}`} disabled={pending || task.readOnly} onClick={(event) => onBeginForm({ kind: "note", taskId: task.id }, event.currentTarget)}><Plus size={15} /> Note</button>}
-      </section>
-
-      <section className="qraft-detail-section">
-        <h3><Flag size={14} /> Findings</h3>
-        {task.findings.length ? <ul className="qraft-findings">{task.findings.map((finding, index) => (
-          <li key={finding.readOnly ? `${finding.id}-${index}` : finding.id}>
-            <button type="button" role="checkbox" aria-checked={finding.checked} aria-label={`${finding.checked ? "Reopen" : "Resolve"} finding: ${finding.body}`} disabled={pending || finding.readOnly} onClick={() => onFindingChecked(finding.id, !finding.checked)}>{finding.checked ? <Check size={13} /> : null}</button>
-            <div>
-              <span>{finding.body}</span>
-              {finding.element ? (
-                <div className="qraft-finding-context">
-                  {finding.element.component ? <strong>{finding.element.component}</strong> : null}
-                  {finding.element.source ? <code>{finding.element.source}{finding.element.line ? `:${finding.element.line}` : ""}</code> : null}
-                  {finding.element.route ? <small>Route {finding.element.route}</small> : null}
-                  {finding.element.selector ? <details><summary>Selector</summary><code>{finding.element.selector}</code></details> : null}
-                  {finding.element.source ? <button type="button" className="qraft-open-source" onClick={() => onOpenSource(finding)}><ExternalLink size={13} /> Open source</button> : null}
-                  {sourceError?.findingId === finding.id ? <span className="qraft-source-error" role="alert">{sourceError.text}</span> : null}
-                </div>
-              ) : null}
-            </div>
-          </li>
-        ))}</ul> : <p className="qraft-empty-copy">No findings yet.</p>}
-        {activeForm?.kind === "finding" && activeForm.taskId === task.id ? (
-          <InlineForm title={formTitle} body={bodyForm} value={draft} pending={pending} controlRef={formControl} onValue={onDraft} onCancel={onCancelForm} onSubmit={onSubmitForm} onUsePlain={onUsePlainFinding} {...(activeForm.context ? { context: activeForm.context } : {})} />
-        ) : (
-          <div className="qraft-inline-actions">
-            <button className="qraft-add" type="button" data-form-trigger={`finding-${task.id}`} disabled={pending || task.readOnly} onClick={(event) => onBeginForm({ kind: "finding", taskId: task.id }, event.currentTarget)}><Plus size={15} /> Finding</button>
-            <button className="qraft-add" type="button" data-form-trigger={`attach-${task.id}`} disabled={pending || task.readOnly} onClick={(event) => onAttachElement(event.currentTarget)}><Target size={15} /> Attach element</button>
-          </div>
-        )}
-      </section>
-
-      <div className="qraft-detail-footer">
-        {task.checked ? (
-          <button className="qraft-secondary" type="button" disabled={pending || task.readOnly} onClick={() => onTaskChecked(false)}><RotateCcw size={16} /> Reopen</button>
-        ) : (
-          <button className="qraft-primary" type="button" disabled={pending || passBlocked || task.readOnly} title={passBlocked ? "Resolve outstanding findings before passing this task." : undefined} onClick={() => onTaskChecked(true)}><Check size={16} /> Pass</button>
-        )}
-        {passBlocked ? <p className="qraft-help">Resolve outstanding findings before passing this task.</p> : null}
-      </div>
-    </article>
-  );
+function NoteItem({ note, pending, draft, onDraft, save, openSource, error }: { note: QANote; pending: boolean; draft: string | undefined; onDraft: (body: string | null) => void; save: (body: string) => Promise<boolean>; openSource: () => void; error: string | null }) {
+  const fieldId = useId();
+  const [editing, setEditing] = useState(draft !== undefined);
+  const [body, setBody] = useState(draft ?? note.body);
+  const input = useRef<HTMLTextAreaElement>(null);
+  const edit = useRef<HTMLButtonElement>(null);
+  useEffect(() => { if (editing) input.current?.focus(); }, [editing]);
+  const cancel = () => { onDraft(null); setEditing(false); requestAnimationFrame(() => edit.current?.focus()); };
+  const submit = async () => { if (validDraft(body) && await save(body)) cancel(); };
+  return <li>{editing ? <form className="qraft-note-edit" onSubmit={(event) => { event.preventDefault(); void submit(); }} onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); cancel(); } }}><label htmlFor={fieldId}>Edit note</label><textarea id={fieldId} ref={input} value={body} maxLength={4_000} readOnly={pending} onChange={(event) => { setBody(event.target.value); onDraft(event.target.value); }} /><div className="qraft-composer-actions"><button type="button" onClick={cancel} disabled={pending}>Cancel</button><button className="primary" disabled={pending || !validDraft(body)}>Save note</button></div></form> : <><p>{note.body}</p><button className="qraft-note-edit-trigger" ref={edit} disabled={pending || note.readOnly} onClick={() => { setBody(note.body); onDraft(note.body); setEditing(true); }} aria-label={`Edit note: ${note.body}`}><Pencil size={13} /> Edit</button></>}
+    {note.element ? <div className="qraft-context"><ElementContext element={note.element} />{note.element.source ? <button className="qraft-open-source" onClick={openSource}><ExternalLink size={13} /> Open source</button> : null}{error ? <span role="alert" className="qraft-source-error">{error}</span> : null}</div> : null}</li>;
 }

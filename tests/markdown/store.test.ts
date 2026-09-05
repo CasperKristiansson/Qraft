@@ -44,12 +44,12 @@ describe("MarkdownDocumentStore", () => {
     const task = document.sections[0]!.tasks[0]!;
     document = await store.execute({ type: "addNote", taskId: task.id, body: "Note" }, document.revision);
     document = await store.execute(
-      { type: "addFinding", taskId: task.id, body: "Finding", element: null },
+      { type: "addNote", taskId: task.id, body: "Finding", element: null },
       document.revision,
     );
-    const finding = document.sections[0]!.tasks[0]!.findings[0]!;
+    const finding = document.sections[0]!.tasks[0]!.notes[1]!;
     document = await store.execute(
-      { type: "setFindingChecked", findingId: finding.id, checked: true },
+      { type: "editNote", noteId: finding.id, body: "Edited observation" },
       document.revision,
     );
     document = await store.execute({ type: "setTaskChecked", taskId: task.id, checked: true }, document.revision);
@@ -61,7 +61,7 @@ describe("MarkdownDocumentStore", () => {
       "## Main <!-- qraft:id=section_00000000-0000-4000-8000-000000000001 -->\n" +
         "- [ ] Task <!-- qraft:id=task_00000000-0000-4000-8000-000000000002 -->\n" +
         "  - Note: Note <!-- qraft:id=note_00000000-0000-4000-8000-000000000003 -->\n" +
-        "  - [x] Finding <!-- qraft:id=finding_00000000-0000-4000-8000-000000000004 -->",
+        "  - Note: Edited observation <!-- qraft:id=note_00000000-0000-4000-8000-000000000004 -->",
     );
   });
 
@@ -193,9 +193,9 @@ describe("MarkdownDocumentStore", () => {
     const initial = "## Main\n- [ ] Task\n  - [ ] Finding\n    - Source: `../private.ts:8:2`\n";
     const { file, directory } = await temporaryFile(initial);
     const store = new MarkdownDocumentStore(file, directory);
-    expect((await store.read()).sections[0]?.tasks[0]?.findings[0]?.element?.source).toBeNull();
+    expect((await store.read()).sections[0]?.tasks[0]?.notes[0]?.element?.source).toBeNull();
     await expect(store.execute({ type: "createSection", title: "More" }, EMPTY_REVISION)).rejects.toMatchObject({
-      document: { sections: [{ tasks: [{ findings: [{ element: { source: null, line: null, column: null } }] }] }] },
+      document: { sections: [{ tasks: [{ notes: [{ element: { source: null, line: null, column: null } }] }] }] },
     });
     expect(await readFile(file, "utf8")).toBe(initial);
   });

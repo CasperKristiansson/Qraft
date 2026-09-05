@@ -8,9 +8,16 @@
 button, input, textarea { color: inherit; font: inherit; }
 button:focus-visible, input:focus-visible, textarea:focus-visible, [tabindex="-1"]:focus-visible { outline: 2px solid var(--qraft-focus); outline-offset: 2px; }
 button:disabled { cursor: not-allowed; opacity: .48; }
-.qraft-tab { position: fixed; z-index: 2147483647; right: 0; top: 50%; transform: translateY(-50%); display: grid; gap: 4px; place-items: center; min-height: 98px; padding: 12px 9px; border: 0; border-radius: 10px 0 0 10px; background: var(--qraft-purple); color: white; box-shadow: 0 8px 24px rgb(36 29 55 / 18%); cursor: pointer; writing-mode: vertical-rl; }
-.qraft-tab span { font-size: 11px; font-weight: 800; letter-spacing: .08em; } .qraft-tab strong { font-size: 13px; } .qraft-tab:hover { background: var(--qraft-purple-strong); }
-.qraft-drawer { position: fixed; inset: 0 0 0 auto; z-index: 2147483647; width: min(380px, 100vw); height: 100dvh; overflow: auto; padding: 0; border: 0; border-left: 1px solid var(--qraft-border); background: var(--qraft-surface); color: var(--qraft-ink); box-shadow: -12px 0 36px rgb(36 29 55 / 14%); }
+ .qraft-tab { position: fixed; z-index: 2147483647; right: 0; display: flex; align-items: center; height: 26px; padding: 0 5px 0 2px; border-radius: 7px 0 0 7px; background: var(--qraft-purple); color: white; }
+.qraft-tab[hidden] { display: none; }
+.qraft-tab::before, .qraft-tab::after { content: ""; position: absolute; right: 0; width: 7px; height: 7px; pointer-events: none; }
+.qraft-tab::before { bottom: 100%; border-radius: 0 0 7px 0; box-shadow: 0 4px 0 0 var(--qraft-purple); }
+.qraft-tab::after { top: 100%; border-radius: 0 7px 0 0; box-shadow: 0 -4px 0 0 var(--qraft-purple); }
+.qraft-grip, .qraft-tab-open { display: flex; align-items: center; justify-content: center; height: 26px; min-height: 26px; padding: 0 3px; border: 0; background: transparent; color: white; font-size: 11px; cursor: pointer; }
+.qraft-grip { cursor: ns-resize; touch-action: none; width: 20px; }
+.qraft-tab-open { gap: 5px; font-weight: 600; }
+.qraft-grip:focus-visible, .qraft-tab-open:focus-visible { outline: 2px solid white; outline-offset: -2px; border-radius: 4px; }
+.qraft-drawer { position: fixed; inset: 0 0 0 auto; z-index: 2147483647; width: min(380px, 100vw); height: 100dvh; overflow: auto; padding: 0; border: 0; border-left: 1px solid var(--qraft-border); background: var(--qraft-surface); color: var(--qraft-ink); box-shadow: -3px 0 14px rgb(36 29 55 / 5%); }
 .qraft-header { position: sticky; top: 0; z-index: 2; display: grid; grid-template-columns: 24px 1fr 40px; align-items: center; gap: 10px; min-height: 58px; padding: 0 12px 0 18px; border-bottom: 1px solid var(--qraft-border); background: white; }
 .qraft-header h1, .qraft-header h2 { margin: 0; font-size: 16px; line-height: 1; }
 .qraft-icon-button { display: grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: 10px; background: transparent; cursor: pointer; } .qraft-icon-button:hover { background: #f5f4f7; }
@@ -28,20 +35,9 @@ button:disabled { cursor: not-allowed; opacity: .48; }
 .qraft-primary { width: 100%; padding: 0 14px; border: 1px solid var(--qraft-purple); background: var(--qraft-purple); color: white; box-shadow: 0 1px 2px rgb(31 20 64 / 14%); } .qraft-primary:hover { background: var(--qraft-purple-strong); }
 .qraft-back { justify-content: flex-start; min-height: 32px; margin: 5px 0 18px; padding: 0 5px; border: 0; background: transparent; color: var(--qraft-muted); } .qraft-back:hover { color: var(--qraft-purple-strong); }
 .qraft-detail h2 { margin: 0; padding-bottom: 16px; border-bottom: 1px solid var(--qraft-border); font-size: 22px; line-height: 1.2; letter-spacing: -.02em; }
-.qraft-task-state { display: flex; align-items: center; gap: 7px; margin: 15px 0 22px; color: var(--qraft-muted); } .qraft-task-state.passed { color: var(--qraft-green); font-weight: 700; }
 .qraft-detail-section { margin-top: 24px; } .qraft-detail-section h3 { display: flex; align-items: center; gap: 7px; margin: 0 0 11px; color: var(--qraft-muted); font-size: 11px; letter-spacing: .09em; text-transform: uppercase; }
-.qraft-empty-copy { margin: 0; color: var(--qraft-muted); font-size: 13px; } .qraft-notes, .qraft-findings { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
-.qraft-notes li { padding: 10px 12px; border-left: 2px solid var(--qraft-border); background: #faf9fb; }
-.qraft-findings li { display: grid; grid-template-columns: 20px 1fr; gap: 9px; align-items: start; padding: 9px 0; border-bottom: 1px solid var(--qraft-soft-border); }
-.qraft-findings li > button { display: grid; place-items: center; width: 18px; height: 18px; margin-top: 1px; padding: 0; border: 1.5px solid var(--qraft-amber); border-radius: 5px; background: white; color: white; } .qraft-findings li > button[aria-checked="true"] { border-color: var(--qraft-green); background: var(--qraft-green); }
-.qraft-findings li div { display: grid; gap: 3px; } .qraft-findings small { color: var(--qraft-muted); font-size: 11px; } .qraft-inline-actions { display: flex; flex-wrap: wrap; gap: 5px; }
-.qraft-finding-context { gap: 5px !important; margin-top: 6px; padding: 9px 10px; border-left: 2px solid var(--qraft-purple); background: var(--qraft-purple-pale); }
-.qraft-finding-context code, .qraft-context code { overflow-wrap: anywhere; color: #4f4960; font: 11px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; }
-.qraft-finding-context details summary { color: var(--qraft-muted); cursor: pointer; font-size: 11px; }
 .qraft-open-source { display: inline-flex; align-items: center; gap: 5px; width: max-content; min-height: 30px; padding: 0 8px; border: 1px solid #d4c9f4; border-radius: 8px; background: white; color: var(--qraft-purple-strong); cursor: pointer; }
 .qraft-source-error { color: var(--qraft-red); font-size: 11px; }
-.qraft-detail-footer { margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--qraft-border); } .qraft-detail-footer .qraft-secondary { margin-top: 0; } .qraft-help { margin: 8px 2px 0; color: var(--qraft-amber); font-size: 12px; }
-.qraft-complete { display: grid; place-items: center; margin: 0 0 22px; padding: 22px 16px; border: 1px solid #cfe7d8; border-radius: 16px; background: #f5fbf7; text-align: center; } .qraft-complete > span { display: grid; place-items: center; width: 40px; height: 40px; margin-bottom: 9px; border-radius: 50%; background: var(--qraft-green); color: white; } .qraft-complete strong { font-size: 17px; } .qraft-complete p { margin: 3px 0 0; color: var(--qraft-muted); font-size: 12px; }
 .qraft-banner { margin: 14px 0 0; padding: 10px 12px; border: 1px solid var(--qraft-border); border-radius: 10px; background: #faf9fb; font-size: 12px; } .qraft-banner.success { border-color: #b8dec8; background: #f3fbf6; color: #17683b; } .qraft-banner.warning { border-color: #ebd0a9; background: #fff8ec; color: #7a4a08; } .qraft-banner.error { border-color: #e0a4a4; background: #fff4f4; color: #882727; }
 .qraft-loading, .qraft-empty { margin-top: 20px; padding: 24px 18px; border: 1px dashed var(--qraft-border); border-radius: 16px; color: var(--qraft-muted); text-align: center; } .qraft-empty p { margin: 5px 0 0; font-size: 12px; }
 .qraft-orphan { margin-top: 20px; padding: 14px; border: 1px solid #e0a4a4; border-radius: 12px; background: #fff4f4; } .qraft-orphan p { margin: 5px 0 10px; } .qraft-orphan textarea { width: 100%; min-height: 92px; }
@@ -61,6 +57,47 @@ button:disabled { cursor: not-allowed; opacity: .48; }
 @media (max-width: 767px) { .qraft-drawer { width: 100vw; border-left: 0; } }
 @media (prefers-reduced-motion: no-preference) { .qraft-drawer { animation: qraft-enter 140ms ease-out; } @keyframes qraft-enter { from { transform: translateX(12px); opacity: .75; } } }
 
-.qraft-content { overflow-wrap: anywhere; } .qraft-findings li > div { min-width: 0; }
 
 .qraft-tab[aria-expanded="true"] { visibility: hidden; }
+
+.qraft-header.detail { grid-template-columns: 1fr 40px; }
+.qraft-header-back { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0; border: 0; background: transparent; text-align: left; font-size: 15px; font-weight: 600; cursor: pointer; }
+.qraft-task-row { display: grid; grid-template-columns: 32px 1fr; align-items: center; border-bottom: 1px solid var(--qraft-soft-border); }
+.qraft-task-row > .qraft-status { width: 24px; height: 24px; padding: 3px; background: white; cursor: pointer; }
+.qraft-task-row > .qraft-status.completed { color: white; background: var(--qraft-green); border-color: var(--qraft-green); }
+.qraft-task-row > .qraft-status.skipped { color: var(--qraft-muted); border-color: var(--qraft-muted); }
+.qraft-task-row > .qraft-status svg { fill: none; width: 13px; height: 13px; }
+.qraft-task-row > .qraft-status.open svg { visibility: hidden; }
+.qraft-task-row .qraft-task { grid-template-columns: minmax(0,1fr) auto; border: 0; padding-left: 5px; }
+.qraft-task-row.skipped .qraft-task-copy > span { text-decoration: line-through; color: var(--qraft-muted); }
+.qraft-task-copy small { color: var(--qraft-muted); }
+.qraft-status-options { display: flex; gap: 4px; margin: 12px 0 26px; }
+.qraft-status-options button { flex: 1; min-height: 36px; padding: 6px; border: 1px solid var(--qraft-border); border-radius: 7px; background: white; font-size: 12px; cursor: pointer; }
+.qraft-status-options button[aria-pressed="true"] { border-color: var(--qraft-purple); background: var(--qraft-purple-pale); color: var(--qraft-purple-strong); }
+.qraft-status-options .completed[aria-pressed="true"] { border-color: var(--qraft-green); color: #17683b; background: #f3fbf6; }
+.qraft-status-options .skipped[aria-pressed="true"] { text-decoration: line-through; }
+.qraft-note-composer, .qraft-note-edit { display: grid; gap: 9px; }
+.qraft-note-composer label, .qraft-note-edit label, .qraft-file-chooser label { display: grid; gap: 8px; font-size: 12px; font-weight: 600; }
+.qraft-note-composer textarea, .qraft-note-edit textarea, .qraft-file-chooser input { width: 100%; border: 1px solid var(--qraft-border); border-radius: 9px; padding: 11px; background: white; }
+.qraft-note-composer textarea, .qraft-note-edit textarea { min-height: 96px; resize: vertical; }
+.qraft-composer-actions { display: flex; justify-content: space-between; gap: 8px; }
+.qraft-composer-actions button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 11px; min-height: 36px; border: 1px solid var(--qraft-border); border-radius: 8px; background: white; cursor: pointer; font-size: 12px; }
+.qraft-composer-actions button.primary { background: var(--qraft-purple); color: white; border-color: var(--qraft-purple); }
+.qraft-note-timeline { list-style: none; padding: 0; margin: 26px 0 0; }
+.qraft-note-timeline > li { position: relative; padding: 0 0 20px 14px; margin: 0; border-left: 2px solid var(--qraft-soft-border); overflow-wrap: anywhere; }
+.qraft-note-timeline > li::before { content: ""; position: absolute; left: -4px; top: 6px; width: 6px; height: 6px; border-radius: 50%; background: #b7afc9; }
+.qraft-note-timeline p { margin: 0 0 6px; }
+.qraft-note-edit-trigger { display: inline-flex; align-items: center; gap: 5px; min-height: 28px; margin: 0 0 8px; border: 0; background: transparent; color: var(--qraft-muted); font-size: 12px; cursor: pointer; }
+.qraft-context { overflow-wrap: anywhere; font-size: 12px; }
+.qraft-context code { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 11px; }
+.qraft-context summary { cursor: pointer; padding: 6px 0; color: var(--qraft-purple-strong); }
+.qraft-context dt { font-weight: 600; margin-top: 8px; }
+.qraft-context dd { margin: 2px 0; }
+.qraft-context button { min-height: 30px; width: fit-content; padding: 4px 8px; border: 1px solid #d4c9f4; border-radius: 7px; background: white; color: var(--qraft-purple-strong); cursor: pointer; }
+.qraft-progress-row small { grid-column: 1 / -1; color: var(--qraft-muted); }
+.qraft-file-chooser h2 { font-size: 20px; }
+.qraft-file-chooser p { color: var(--qraft-muted); font-size: 13px; }
+.qraft-file-chooser input { margin: 7px 0 14px; }
+.qraft-file { display: flex; justify-content: space-between; gap: 8px; width: 100%; min-height: 44px; padding: 8px; border: 0; border-bottom: 1px solid var(--qraft-soft-border); background: white; text-align: left; overflow-wrap: anywhere; cursor: pointer; }
+.qraft-file:hover { background: var(--qraft-purple-pale); }
+.qraft-file-current { display: block; max-width: 100%; margin: 6px auto 0; border: 0; background: transparent; color: var(--qraft-muted); font-size: 11px; overflow-wrap: anywhere; cursor: pointer; }

@@ -1,9 +1,9 @@
+import { elementContextSchema } from "../domain/commands";
 import { createHash } from "node:crypto";
 import type {
   ElementReference,
   QADiagnostic,
   QADocument,
-  QAFinding,
   QANote,
   QASection,
   QATask,
@@ -116,7 +116,7 @@ export function parseMarkdown(source: string): ParsedMarkdown {
   let sawTitle = false;
   let section: QASection | null = null;
   let task: QATask | null = null;
-  let finding: QAFinding | null = null;
+  let finding: QANote | null = null;
   let sectionSpan: SourceSpan | null = null;
   let taskSpan: SourceSpan | null = null;
   let findingSpan: SourceSpan | null = null;
@@ -193,7 +193,7 @@ export function parseMarkdown(source: string): ParsedMarkdown {
       continue;
     }
 
-    const taskMatch = line.content.match(/^- \[([ xX])\] (.*)$/u);
+    const taskMatch = line.content.match(/^- \[([ xX-])\] (.*)$/u);
     if (taskMatch) {
       if (!section) {
         diagnostics.push({
@@ -216,7 +216,7 @@ export function parseMarkdown(source: string): ParsedMarkdown {
         title: result.text,
         checked: (taskMatch[1] ?? " ").toLowerCase() === "x",
         notes: [],
-        findings: [],
+        status: taskMatch[1] === "-" ? "skipped" : taskMatch[1]?.toLowerCase() === "x" ? "completed" : "open",
       };
       section.tasks.push(task);
       taskSpan = span;
@@ -239,8 +239,8 @@ export function parseMarkdown(source: string): ParsedMarkdown {
       if (findingSpan) findingSpan.end = line.start;
       const result = splitId(findingMatch[2] ?? "", "finding");
       const span = register("finding", result, line, line.start + 5);
-      finding = { id: span.id, body: result.text, checked: (findingMatch[1] ?? " ").toLowerCase() === "x", element: null };
-      task.findings.push(finding);
+      finding = { id: span.id, body: result.text, element: null };
+      task.notes.push(finding);
       findingSpan = span;
       if (taskSpan) taskSpan.end = line.end;
       if (sectionSpan) sectionSpan.end = line.end;
@@ -262,18 +262,20 @@ export function parseMarkdown(source: string): ParsedMarkdown {
       findingSpan = null;
       const result = splitId(noteMatch[1] ?? "", "note");
       const span = register("note", result, line, null);
-      const note: QANote = { id: span.id, body: result.text };
+      const note: QANote = { id: span.id, body: result.text, element: null };
+      finding = note;
+      findingSpan = span;
       task.notes.push(note);
       if (taskSpan) taskSpan.end = line.end;
       if (sectionSpan) sectionSpan.end = line.end;
       continue;
     }
 
-    const metadataMatch = line.content.match(/^    - (Component|Source|Route|Selector):\s*(.+)$/u);
+    const metadataMatch = line.content.match(/^    - (Component|Source|Route|Selector|Context):\s*(.+)$/u);
     if (metadataMatch && finding) {
       const label = metadataMatch[1] ?? "";
       const value = inlineCode(metadataMatch[2] ?? "");
-      const element = finding.element ?? {
+      const element: ElementReference = finding.element ?? {
         route: "",
         component: null,
         source: null,
@@ -285,6 +287,9 @@ export function parseMarkdown(source: string): ParsedMarkdown {
       if (label === "Route") element.route = value.split(/[?#]/u)[0] ?? "";
       if (label === "Selector") element.selector = value;
       if (label === "Source") Object.assign(element, parseSource(value));
+      if (label === "Context") {
+        try { const parsed = elementContextSchema.safeParse(JSON.parse(value)); if (parsed.success) element.context = parsed.data; } catch { /* Unknown context remains untouched. */ }
+      }
       finding.element = element;
       if (findingSpan) findingSpan.end = line.end;
       if (taskSpan) taskSpan.end = line.end;
@@ -327,7 +332,6 @@ export function parseMarkdown(source: string): ParsedMarkdown {
     for (const currentTask of currentSection.tasks) {
       if (duplicateIds.has(currentTask.id)) currentTask.readOnly = true;
       for (const note of currentTask.notes) if (duplicateIds.has(note.id)) note.readOnly = true;
-      for (const currentFinding of currentTask.findings) if (duplicateIds.has(currentFinding.id)) currentFinding.readOnly = true;
     }
   }
 

@@ -22,7 +22,7 @@ interface SuccessfulCommand {
 
 type Next = (error?: unknown) => void;
 
-function json(response: ServerResponse, status: number, value: unknown, etag?: string): void {
+export function json(response: ServerResponse, status: number, value: unknown, etag?: string): void {
   response.statusCode = status;
   response.setHeader("Content-Type", "application/json; charset=utf-8");
   response.setHeader("Cache-Control", "no-store");
@@ -30,7 +30,7 @@ function json(response: ServerResponse, status: number, value: unknown, etag?: s
   response.end(JSON.stringify(value));
 }
 
-function safeError(response: ServerResponse, status: number, code: string, message: string, retryable: boolean, extra = {}): void {
+export function safeError(response: ServerResponse, status: number, code: string, message: string, retryable: boolean, extra = {}): void {
   json(response, status, { error: { code, message, retryable }, ...extra });
 }
 

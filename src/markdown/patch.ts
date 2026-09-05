@@ -59,7 +59,8 @@ export function normalizeElement(element: ElementReference | null, root?: string
     source,
     line: source ? element.line : null,
     column: source ? element.column : null,
-    selector: element.selector ? normalizeEntityText(element.selector) : null,
+    selector: element.selector ? element.selector.trim().replace(/\s+/gu, " ") : null,
+    ...(element.context ? { context: element.context } : {}),
   };
 }
 
@@ -114,8 +115,8 @@ function getTask(parsed: ParsedMarkdown, id: string): { entity: QATask; span: So
   return { entity, span };
 }
 
-function findingLine(body: string, id: string, element: ElementReference | null, newline: string): string {
-  const lines = [`  - [ ] ${escapeEntityText(body)}${entityComment(id)}`];
+function noteLine(body: string, id: string, element: ElementReference | null, newline: string): string {
+  const lines = [`  - Note: ${escapeEntityText(body)}${entityComment(id)}`];
   if (element?.component) lines.push(`    - Component: ${codeFence(element.component)}`);
   if (element?.source) {
     const suffix = element.line ? `:${element.line}${element.column ? `:${element.column}` : ""}` : "";
@@ -123,6 +124,7 @@ function findingLine(body: string, id: string, element: ElementReference | null,
   }
   if (element?.route) lines.push(`    - Route: ${codeFence(element.route)}`);
   if (element?.selector) lines.push(`    - Selector: ${codeFence(element.selector)}`);
+  if (element?.context) lines.push(`    - Context: ${codeFence(JSON.stringify(element.context))}`);
   return lines.join(newline);
 }
 
@@ -145,14 +147,12 @@ export function patchMarkdown(parsed: ParsedMarkdown, command: QACommand, option
     edits.push({ start: offset, end: offset, text: topLevelLineInsertion(parsed, offset, line) });
   }
 
-  if (command.type === "setTaskChecked") {
-    const { entity, span } = getTask(parsed, command.taskId);
-    if (command.checked && entity.findings.some((finding) => !finding.checked)) {
-      throw new QraftError("validation", "Resolve outstanding findings before passing this task.");
-    }
+  if (command.type === "setTaskChecked" || command.type === "setTaskStatus") {
+    const { span } = getTask(parsed, command.taskId);
     stabilize(span, "task", idFactory, edits);
     if (span.checkboxOffset === null) throw new QraftError("validation", "The task checkbox could not be located.");
-    edits.push({ start: span.checkboxOffset, end: span.checkboxOffset + 1, text: command.checked ? "x" : " " });
+    const status = command.type === "setTaskStatus" ? command.status : command.checked ? "completed" : "open";
+    edits.push({ start: span.checkboxOffset, end: span.checkboxOffset + 1, text: status === "completed" ? "x" : status === "skipped" ? "-" : " " });
   }
 
   if (command.type === "addNote") {
@@ -160,34 +160,21 @@ export function patchMarkdown(parsed: ParsedMarkdown, command: QACommand, option
     stabilize(span, "task", idFactory, edits);
     const id = idFactory("note");
     const offset = ownedInsertionOffset(parsed, span);
-    const line = `  - Note: ${escapeEntityText(command.body)}${entityComment(id)}`;
-    edits.push({ start: offset, end: offset, text: lineInsertion(parsed, offset, line) });
+    const element = normalizeElement(command.element ?? null, options.root);
+    edits.push({ start: offset, end: offset, text: lineInsertion(parsed, offset, noteLine(command.body, id, element, parsed.newline)) });
   }
 
-  if (command.type === "addFinding") {
-    const { span } = getTask(parsed, command.taskId);
-    stabilize(span, "task", idFactory, edits);
-    const id = idFactory("finding");
-    const offset = ownedInsertionOffset(parsed, span);
-    const element = normalizeElement(command.element, options.root);
-    edits.push({
-      start: offset,
-      end: offset,
-      text: lineInsertion(parsed, offset, findingLine(command.body, id, element, parsed.newline)),
-    });
-  }
-
-  if (command.type === "setFindingChecked") {
-    if (parsed.duplicateIds.has(command.findingId)) throw new QraftError("conflict", `Finding ${command.findingId} has a duplicate ID.`);
-    const entity = parsed.document.sections
-      .flatMap((section) => section.tasks)
-      .flatMap((task) => task.findings)
-      .find((candidate) => candidate.id === command.findingId);
-    const span = parsed.spans.get(command.findingId);
-    if (!entity || !span || span.kind !== "finding") throw new QraftError("not-found", "The finding no longer exists.");
-    stabilize(span, "finding", idFactory, edits);
-    if (span.checkboxOffset === null) throw new QraftError("validation", "The finding checkbox could not be located.");
-    edits.push({ start: span.checkboxOffset, end: span.checkboxOffset + 1, text: command.checked ? "x" : " " });
+  if (command.type === "editNote") {
+    if (parsed.duplicateIds.has(command.noteId)) throw new QraftError("conflict", "The note has a duplicate ID.");
+    const span = parsed.spans.get(command.noteId);
+    if (!span || (span.kind !== "note" && span.kind !== "finding")) throw new QraftError("not-found", "The note no longer exists.");
+    const line = parsed.source.slice(span.firstLineStart, span.firstLineEnd);
+    const prefix = line.match(/^  - (?:Note:\s*|\[[ xX]\]\s*)/u)?.[0];
+    if (!prefix) throw new QraftError("validation", "The note body could not be located.");
+    const tail = line.slice(prefix.length);
+    const body = (span.stable ? tail.replace(/\s*<!--\s*qraft:id=[^>]+-->\s*$/u, "") : tail).trimEnd();
+    stabilize(span, span.kind, idFactory, edits);
+    edits.push({ start: span.firstLineStart + prefix.length, end: span.firstLineStart + prefix.length + body.length, text: escapeEntityText(command.body) });
   }
 
   return applyEdits(parsed.source, edits);

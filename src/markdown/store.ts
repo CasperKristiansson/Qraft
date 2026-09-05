@@ -1,3 +1,4 @@
+import { validateFilePath } from "./path-safety";
 import { readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import writeFileAtomic from "write-file-atomic";
@@ -34,7 +35,7 @@ function decode(bytes: Buffer): string {
   try {
     return new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
   } catch {
-    throw new QraftError("validation", "QA.md is not valid UTF-8.");
+    throw new QraftError("validation", "The selected Markdown file is not valid UTF-8.");
   }
 }
 
@@ -59,7 +60,7 @@ export class MarkdownDocumentStore {
   #document(source: string): QADocument {
     const document = parseMarkdown(source).document;
     for (const task of document.sections.flatMap((section) => section.tasks)) {
-      for (const finding of task.findings) {
+      for (const finding of task.notes) {
         const element = finding.element;
         if (element) finding.element = { ...normalizeElement({ ...element, component: null, selector: null }, this.root)!, component: element.component, selector: element.selector };
       }
@@ -69,6 +70,7 @@ export class MarkdownDocumentStore {
 
   async read(): Promise<QADocument> {
     try {
+      await validateFilePath(this.root, this.filePath);
       return this.#document(decode(await readExact(this.filePath)));
     } catch (error) {
       if (error instanceof QraftError) throw error;
@@ -93,6 +95,7 @@ export class MarkdownDocumentStore {
   async #execute(input: QACommand, baseRevision: string): Promise<QADocument> {
     try {
       const command = qaCommandSchema.parse(input);
+      await validateFilePath(this.root, this.filePath);
       const initialBytes = await readExact(this.filePath);
       const initialSource = decode(initialBytes);
       const parsed = parseMarkdown(initialSource);
@@ -111,6 +114,7 @@ export class MarkdownDocumentStore {
         throw error;
       }
       await this.#dependencies.beforeCommitCheck?.();
+      await validateFilePath(this.root, this.filePath);
       const latestBytes = await readExact(this.filePath);
       const latestRevision = sha256(latestBytes);
       if (latestRevision !== parsed.document.revision) {
@@ -118,6 +122,7 @@ export class MarkdownDocumentStore {
       }
       const atomicWrite = this.#dependencies.atomicWrite ?? writeFileAtomic;
       const document = this.#document(nextSource);
+      await validateFilePath(this.root, this.filePath);
       await atomicWrite(this.filePath, Buffer.from(nextSource, "utf8"));
       for (const listener of this.#listeners) listener(document);
       return document;

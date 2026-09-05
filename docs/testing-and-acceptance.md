@@ -20,8 +20,8 @@ Required coverage:
 - Escape titles and metadata without creating unintended Markdown.
 - Normalize source paths and reject/omit paths outside the Vite root.
 - Calculate progress and deterministic next-task ordering.
-- Reject passing a task with unresolved findings.
-- Prove resolving/reopening does not mutate related state implicitly.
+- Verify all three task states and independent notes.
+- Prove status changes do not mutate notes or legacy child checkboxes.
 
 Every Markdown mutation test compares the entire before/after file byte-for-byte. Parsed-model assertions alone are insufficient.
 
@@ -65,15 +65,15 @@ Required coverage:
 
 - Open/close drawer without changing host bounding box or scroll position.
 - Render checklist and progress from a fixture.
-- Select task, pass/reopen, block pass with an open finding, and auto-advance.
-- Add section, task, note, and finding and verify the exact resulting file.
+- Change status from checklist and detail; single/double-click and keyboard; no auto-advance or completion card.
+- Add section, task, attached note, and edit note and verify the exact resulting file.
 - Reflect an external edit without page reload.
 - Preserve form draft across a non-destructive refetch.
 - Recover visibly from revision conflict, disconnect, and write failure.
 - Picker ignores Qraft UI, highlights host elements, and suppresses host click.
 - Picker cancels on `Escape` without a write.
 - Picker saves only approved element fields.
-- Element context failure still permits a plain finding.
+- Element context failure still permits a plain note.
 - Open source requests the normalized file and line and reports failure safely.
 - Keyboard navigation, focus return/trap, live messages, and 768 px layout.
 
@@ -98,13 +98,13 @@ v0.1 is complete only when all statements are true:
 1. A Vite React app can install the package and add `qraft()` plus `<QA />` using the documented integration.
 2. The drawer overlays rather than resizes the host application.
 3. An existing compatible `QA.md` renders without being rewritten on startup.
-4. Passing or reopening a task changes only the intended checkbox marker plus a lazy ID when required.
-5. Adding a section, task, note, or finding produces canonical readable Markdown with stable IDs.
-6. A task with an unresolved finding cannot be passed in UI or command/store layers.
+4. Completing, reopening, or skipping a task changes only the intended checkbox marker plus a lazy ID when required.
+5. Adding a section, task, or attached note produces canonical readable Markdown with stable IDs.
+6. Notes can be edited with minimal patches; all three task states are independent of notes and legacy findings.
 7. External file edits appear in the drawer without a page reload.
 8. A stale browser revision cannot overwrite an external edit.
 9. Element selection ignores Qraft UI and does not trigger the selected host control.
-10. A saved attachment contains at most route pathname, component, repository-relative source/line/column, and selector.
+10. Attachments contain only the bounded identifying context in architecture; no input values, full HTML, screenshots, or unrestricted page capture.
 11. `Open source` uses the stored normalized path and fails safely.
 12. Unknown Markdown outside Qraft-owned lines survives every mutation byte-for-byte.
 13. Vite production builds and preview servers expose no Qraft filesystem endpoint.
@@ -141,3 +141,7 @@ A change is done when:
 ## Definition of done for v0.1
 
 All six implementation milestones are complete, all 16 acceptance criteria pass from a clean checkout, internal consumer installation has been exercised, and remaining limitations are documented without being misrepresented as verified capabilities.
+
+## Owner feedback regression obligations
+
+Verify compact tab geometry and concave joins; pointer and keyboard drag persistence/clamping; remembered per-project file choice, unknown ID/path/symlink rejection, two-file isolation, no startup write, and chooser recovery. Verify Enter/IME/Shift+Enter, multiple notes, editing and attachment preservation, note counts, retained drafts through navigation/picker/conflict, no detail progress or celebration, and long/narrow scrolling. Golden tests cover skipped markers, attached note metadata, body-only note edits, LF/CRLF/BOM/final-newline cases and legacy checkbox note preservation. Refresh Browser screenshots at 1440×900, 1366×650 and 768×900, then run check, test:browser, audit:release and verify:consumer on the final candidate.

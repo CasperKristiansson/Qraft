@@ -27,7 +27,7 @@ At the inspected commit, public primitives include:
 
 `getElementContext()` exposes component/source/selector information plus richer DOM, stack, Fiber, HTML, and style context. Qraft deliberately persists only the limited fields in [Architecture](architecture.md).
 
-`openFile()` first attempts the host dev server's editor endpoint. The Qraft design relies on that published behavior and handles failure in UI.
+The installed `openFile()` implementation attempts the host editor endpoint and then opens an external website on failure. Qraft does not use that primitive: its local-only source action requests Vite's editor endpoint directly and reports failure inline. Selection continues to use the published primitives above. This behavior was verified against the installed `react-grab@0.2.0` artifact during the 2026-09-05 packed-consumer review; no upstream code was copied.
 
 ### petite-react-grab
 

@@ -1,87 +1,41 @@
 import { mkdir } from "node:fs/promises";
-import { chromium } from "@playwright/test";
+import { chromium, expect } from "@playwright/test";
 
-const [
-  name = "qraft",
-  widthText = "1440",
-  heightText = "900",
-  state = "open",
-  baseUrl = "http://127.0.0.1:5173",
-  resetPath = "/__qraft-example/recreate",
-] = process.argv.slice(2);
-const width = Number(widthText);
-const height = Number(heightText);
+const [name = "qraft", widthText = "1440", heightText = "900", state = "checklist", baseUrl = "http://127.0.0.1:5173", resetPath = "/__qraft-example/recreate"] = process.argv.slice(2);
+const width = Number(widthText), height = Number(heightText);
 const directory = "artifacts/browser-evidence";
 const path = `${directory}/${name}--${width}x${height}.png`;
-
 await mkdir(directory, { recursive: true });
 const browser = await chromium.launch();
-const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: 1 });
-page.setDefaultTimeout(10_000);
-console.log("capture: browser ready");
-await page.goto(state === "protocol" ? `${baseUrl}/?protocol=1` : baseUrl, {
-  waitUntil: "domcontentloaded",
-  timeout: 10_000,
-});
-console.log("capture: example loaded");
-if (["open", "checklist", "detail", "finding", "add-task", "complete", "picker", "attached"].includes(state)) {
+try {
+  const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: 1 });
+  page.setDefaultTimeout(10_000);
+  await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
   await page.request.post(`${baseUrl}${resetPath}`);
-  await page.waitForTimeout(900);
-  await page.reload({ waitUntil: "domcontentloaded" });
-}
-if (["open", "checklist", "detail", "finding", "add-task", "complete", "picker", "attached"].includes(state)) {
-  await page.getByRole("button", { name: /Open Qraft/u }).click();
-  await page.locator("[data-qraft-root]").waitFor({ state: "attached" });
-  await page.getByRole("dialog").waitFor({ state: "visible" });
-}
-if (state === "detail" || state === "finding") {
-  await page.getByRole("dialog").getByRole("button", { name: "Change quantity" }).click();
-}
-if (state === "picker" || state === "attached") {
-  await page.getByRole("dialog").getByRole("button", { name: "Change quantity" }).click();
-  await page.getByRole("dialog").getByRole("button", { name: "Attach element" }).click();
-  const increment = page.getByRole("button", { name: "+" });
-  await increment.hover();
-  await page.locator("[data-qraft-root]").locator(".qraft-picker-outline").waitFor({ state: "visible" });
-  if (state === "attached") {
-    await increment.click();
-    await page.getByRole("dialog").getByLabel("Details").fill("Increment alignment is wrong.");
+  await page.reload();
+  const drawer = page.getByRole("dialog");
+  if (state !== "closed") {
+    await page.getByRole("button", { name: /Open Qraft/u }).click();
+    await expect(drawer.getByRole("heading", { name: "Choose a checklist", exact: true })).toBeVisible();
+    if (state !== "files") {
+      const file = drawer.getByRole("button", { name: "QA.local.md", exact: true });
+      await (await file.count() ? file : drawer.getByRole("button", { name: "QA.md", exact: true })).click();
+      await expect(drawer.locator(".qraft-task").filter({ hasText: "Change quantity" })).toBeVisible();
+    }
   }
-}
-if (state === "finding") {
-  await page.getByRole("dialog").getByRole("button", { name: "Finding" }).click();
-  await page.getByRole("dialog").getByLabel("Details").fill("Alignment jumps from 9 to 10.");
-}
-if (state === "add-task") {
-  await page.getByRole("dialog").getByRole("heading", { name: "CART" }).locator("..").getByRole("button", { name: "Add task" }).click();
-}
-if (state === "complete") {
-  let document = await page.request.get(`${baseUrl}/__qraft/document`).then((response) => response.json());
-  for (const task of document.sections.flatMap((section) => section.tasks).filter((task) => !task.checked)) {
-    const response = await page.request.post(`${baseUrl}/__qraft/commands`, {
-      headers: { "Content-Type": "application/json" },
-      data: { commandId: crypto.randomUUID(), baseRevision: document.revision, command: { type: "setTaskChecked", taskId: task.id, checked: true } },
-    });
-    document = await response.json();
+  if (["detail", "note", "picker", "attached", "complete"].includes(state)) await drawer.locator(".qraft-task").filter({ hasText: "Change quantity" }).click();
+  if (state === "note") await drawer.getByLabel("Write a note").fill("Alignment jumps from 9 to 10.");
+  if (["picker", "attached"].includes(state)) {
+    await drawer.getByRole("button", { name: "Attach element", exact: true }).click();
+    const increment = page.getByRole("button", { name: "+", exact: true });
+    await increment.hover(); await expect(page.locator(".qraft-picker-outline")).toBeVisible();
+    if (state === "attached") { await increment.click(); await drawer.getByLabel("Write a note").fill("The increment button needs more spacing."); }
   }
-  await page.waitForTimeout(900);
-  await page.getByRole("dialog").getByRole("button", { name: "Expired session" }).click();
-}
-if (state === "protocol") {
-  await page.getByRole("button", { name: /Open Qraft/u }).click();
-  await page.getByRole("dialog").waitFor({ state: "visible" });
-  await page.getByText(/M3 live Vite protocol/u).waitFor();
-}
-await page.waitForTimeout(200);
-console.log("capture: Qraft stable");
-await page.screenshot({ path, fullPage: false });
-const metrics = await page.evaluate(() => ({
-  innerWidth,
-  innerHeight,
-  documentScrollWidth: document.documentElement.scrollWidth,
-  bodyScrollWidth: document.body?.scrollWidth ?? 0,
-  horizontalOverflow:
-    document.documentElement.scrollWidth > innerWidth || (document.body?.scrollWidth ?? 0) > innerWidth,
-}));
-await browser.close();
-console.log(JSON.stringify({ path, metrics }));
+  if (state === "add-task") await drawer.getByRole("heading", { name: "Cart", exact: true }).locator("..").getByRole("button", { name: "Add task", exact: true }).click();
+  if (state === "complete") { await drawer.getByRole("button", { name: "Completed", exact: true }).click(); await expect(drawer.getByRole("button", { name: "Completed", exact: true })).toHaveAttribute("aria-pressed", "true"); }
+  if (state !== "picker") await page.mouse.move(10, 10);
+  await page.screenshot({ path, fullPage: false, animations: "disabled" });
+  const metrics = await page.evaluate(() => ({ innerWidth, innerHeight, documentScrollWidth: document.documentElement.scrollWidth, bodyScrollWidth: document.body.scrollWidth }));
+  if (metrics.documentScrollWidth > width || metrics.bodyScrollWidth > width) throw new Error("Horizontal overflow in capture.");
+  console.log(JSON.stringify({ path, metrics, url: page.url(), state }));
+} finally { await browser.close(); }

@@ -1,6 +1,6 @@
 import type { QACommand } from "../domain/commands";
 import type { QADocument } from "../domain/model";
-import type { QAStorage } from "./storage";
+import type { QAFileCatalog, QAStorage } from "./storage";
 
 interface ErrorResponse {
   error?: { code: string; message: string; retryable: boolean };
@@ -25,6 +25,17 @@ export class HttpQAStorage implements QAStorage {
     private readonly endpoint = "/__qraft",
     private readonly onConnectionState?: (connected: boolean) => void,
   ) {}
+
+  async getFiles(signal?: AbortSignal): Promise<QAFileCatalog> {
+    const response = await fetch(`${this.endpoint}/files`, { cache: "no-store", ...(signal ? { signal } : {}) });
+    if (!response.ok) throw await this.#error(response);
+    return await response.json() as QAFileCatalog;
+  }
+
+  forFile(id: string): HttpQAStorage {
+    if (!/^[a-f0-9]{64}$/u.test(id)) throw new Error("Invalid file selection.");
+    return new HttpQAStorage(`${this.endpoint}/files/${id}`, this.onConnectionState);
+  }
 
   async getDocument(signal?: AbortSignal): Promise<QADocument> {
     const response = await fetch(`${this.endpoint}/document`, { cache: "no-store", ...(signal ? { signal } : {}) });

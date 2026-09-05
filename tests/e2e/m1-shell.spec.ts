@@ -1,11 +1,10 @@
+import { reset } from "./helpers";
 import { expect, test } from "@playwright/test";
 
 test("M1 shadow drawer overlays the host and supports keyboard close", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto("/");
-  await page.request.post("/__qraft-example/recreate");
-  await page.waitForTimeout(900);
-  await page.reload();
+  await reset(page);
+  await page.getByRole("button", { name: "Close Qraft", exact: true }).click();
   const before = await page.getByTestId("host-layout").boundingBox();
   const scrollBefore = await page.evaluate(() => ({ x: scrollX, y: scrollY }));
   await page.getByRole("button", { name: /Open Qraft/u }).click();

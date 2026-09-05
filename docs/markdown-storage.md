@@ -16,7 +16,7 @@ This document owns the persisted grammar, parsing rules, identity model, and saf
 ## Cart <!-- qraft:id=section_d98729e1 -->
 
 - [ ] Change quantity <!-- qraft:id=task_e9e53cc7 -->
-  - [ ] Alignment jumps when changing quantity from 9 to 10. <!-- qraft:id=finding_758583f2 -->
+  - Note: Alignment jumps when changing quantity from 9 to 10. <!-- qraft:id=note_758583f2 -->
     - Component: `QuantitySelector`
     - Source: `src/components/cart/QuantitySelector.tsx:87:5`
     - Route: `/checkout`
@@ -29,17 +29,17 @@ Example IDs are shortened for readability. The writer generates a type prefix fo
 - `section_<uuid>`
 - `task_<uuid>`
 - `note_<uuid>`
-- `finding_<uuid>`
+- `finding_<uuid>` is accepted only for legacy nested checkbox notes.
 
 ## Recognized grammar
 
 - The first H1 beginning `# ` is the document title. If absent, the UI title is `QA`.
 - H2 headings beginning `## ` are sections.
 - A GitHub-style checkbox beginning in column 1 is a QA task.
-- A checkbox indented by exactly two spaces beneath a task is a finding.
+- A checkbox indented by exactly two spaces beneath a task is a legacy note. Its marker and ID are preserved; its old completion state has no workflow effect.
 - A bullet beginning `  - Note:` beneath a task is a note.
-- Four-space-indented labeled bullets beneath a finding can be `Component`, `Source`, `Route`, or `Selector` metadata.
-- Checkbox markers `[ ]`, `[x]`, and `[X]` are accepted. A touched status marker is written as `[ ]` or `[x]`.
+- Four-space-indented labeled bullets beneath a note can be `Component`, `Source`, `Route`, `Selector`, or `Context` metadata. `Context` is a single inline-code JSON object with bounded tag/attributes/text/ancestors defined in architecture.
+- Top-level markers `[ ]`, `[x]`, `[X]`, and `[-]` mean open, completed, completed, and skipped. A touched marker uses space, lowercase x, or hyphen.
 - A Qraft ID comment appears on the entity's first line and matches `<!-- qraft:id=... -->`.
 - All unrecognized Markdown is retained but absent from the domain read model.
 
@@ -49,8 +49,8 @@ Qraft is not a general Markdown editor. The parser should be line-oriented and r
 
 - A section owns recognized top-level tasks until the next H2.
 - A task owns its recognized two-space children and their four-space metadata until the next top-level task or H2.
-- A finding owns consecutive recognized four-space metadata lines until another two-space child, top-level task, or H2.
-- Notes and findings outside a task are diagnostics and remain untouched.
+- A note owns consecutive recognized four-space metadata lines until another two-space child, top-level task, or H2.
+- Notes (including legacy findings) outside a task are diagnostics and remain untouched.
 - Top-level tasks before the first H2 are allowed in an implicit untitled section only if the implementation plan explicitly adds that support. For v0.1, render them as diagnostics and do not mutate them.
 
 This strictness avoids inventing ownership when hand-authored indentation is ambiguous.
@@ -92,12 +92,9 @@ The parser must correctly read inline code using variable-length backtick fences
 
 ## Status semantics
 
-- The task checkbox is the human QA pass state.
-- The finding checkbox is actionable issue resolution state.
-- A task with an unresolved finding cannot be changed to passed.
-- Resolving a finding never changes its parent task.
-- Reopening a task never changes its findings.
-- The store enforces these rules even if a client bypasses UI controls.
+- Task status is open, completed, or skipped. Notes never block any transition.
+- A task transition changes only its marker and a lazy ID when required.
+- Notes have no completion state; legacy child checkbox bytes remain unchanged.
 
 ## Minimal patch rules
 
@@ -105,9 +102,10 @@ The writer patches the smallest recognized span. It never serializes the domain 
 
 Required mutation shapes:
 
-- Task/finding status: replace only the checkbox marker character or space.
+- Task status: replace only the checkbox marker character or space.
 - Legacy ID assignment: append only one ID comment to the entity's first line.
-- Add note/finding: insert at the end of the task's owned block, before the next top-level task/H2.
+- Add note: insert at the end of the task's owned block, before the next top-level task/H2.
+- Edit note: replace only its body span, preserving prefix, trailing whitespace, existing ID, attachment metadata, and all unknown content. Insert a lazy ID if needed; legacy child checkbox prefixes remain untouched.
 - Add task: insert at the end of the section's recognized content, before the next H2.
 - Add section: append a blank-line-normalized H2 block.
 - First write to a missing file: create only the content required by the command.

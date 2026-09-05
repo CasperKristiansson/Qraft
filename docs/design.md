@@ -1,18 +1,18 @@
 # Interaction and interface design
 
-This document owns drawer, task-detail, picker, accessibility, and host-app interaction behavior. Product scope remains in [Product requirements](product-requirements.md).
+This document owns interaction and presentation. See [product requirements](product-requirements.md).
 
 ## Approved visual baseline
 
 ![Approved Qraft v0.1 six-surface visual direction](visuals/qraft-v0.1-visual-direction.png)
 
-Status: **Owner-approved and locked for v0.1 on 2026-09-04.**
+Status: **Original baseline approved 2026-09-04; interaction and geometry revisions explicitly approved by owner feedback on 2026-09-05.**
 
 Artifact: `docs/visuals/qraft-v0.1-visual-direction.png`
 
 SHA-256: `ba14d7f37f19b257c521b31c5b2293f2f40a2dd69e817f65fd66d46b11315850`
 
-The image locks the visual character and the treatment of these six surfaces:
+The original image established the visual character and the treatment of these six surfaces:
 
 1. checklist drawer and right-edge progress tab;
 2. selected task detail;
@@ -37,209 +37,34 @@ Implementation should reproduce its hierarchy, density, geometry, purple accent 
 
 Every implementation milestone must inspect its available surface through `@Browser`; user-visible milestones must compare the rendered result directly with this artifact.
 
-## Design principles
+## Current interaction contract — owner feedback 2026-09-05
 
-1. The checklist stays visible without becoming part of the application layout.
-2. The shortest successful path is select task, test, pass, continue.
-3. Recording a problem adds only one extra decision: note or actionable finding.
-4. Qraft must look and behave like separate developer tooling, not like the host product.
-5. Error states preserve tester input and explain the recovery action.
+The owner-approved changes in this section supersede the original edge tab, detail, finding, and completion surfaces in the image. Retain its neutral typography, restrained purple accent, list-first hierarchy, and local-only identity.
 
-The interaction can use familiar annotation concepts—activate, hover, select, describe—but its implementation and visual design must be original. See [Upstream and licensing](upstream-and-licensing.md).
+### Closed tab
 
-## Closed state
+Use a tight horizontal group: six-dot grip (three columns/two rows), QA, completed/total. Aim for a 26 px-high tab with 11 px text, rather than a tall vertical tab. Use concave junctions where the tab meets the viewport edge. The grip moves the tab only vertically; pointer capture prevents losing drag outside its bounds. Dragging does not open the drawer. Persist a normalized vertical position, clamp on resize, and tolerate unavailable browser storage. Arrow keys move the focused grip; Home/End reach the limits. The separate QA button opens the drawer and receives focus on close.
 
-A compact tab is fixed to the vertical center of the right viewport edge.
+### Checklist
 
-```text
-┌───────────┐
-│ QA 7 / 14 │
-└───────────┘
-```
+Keep progress at the top, followed by sections, task rows, Add task and Add section. Display a separate skipped count. The status control and task title are separate buttons. Single status activation cycles open/completed/skipped/open; double-click sets skipped without racing a first-click mutation. A delayed single-click decision must be canceled on unmount. Provide explicit state names and a textual instruction; do not rely only on the double-click gesture. Skipped task titles are struck through. Show total notes per task, never open findings.
 
-- Progress counts passed top-level tasks over all top-level tasks.
-- Findings do not change the numerator or denominator.
-- The accessible name includes both the label and progress.
-- Activating the tab opens the drawer and focuses its heading.
+### Details and notes
 
-## Drawer shell
+Replace the Qraft header icon/title with a generously sized Back to checklist button; retain Close. No progress bar in details. Show title and explicit Not completed / Completed / Skipped controls. Do not auto-advance or show a completion card.
 
-The drawer overlays the application and never resizes or shifts it.
+Always show a labeled note textarea with Submit and Attach element. Enter submits unless composing text with an IME; Shift+Enter inserts a line break. Submitting clears only the saved draft and keeps composer focus. Notes form a file-ordered timeline and have Edit controls. Editing changes note body only, preserving its attachment and unknown Markdown. Escape cancels editing; unsaved composer text survives navigation and background refresh. Picker activation retains the note draft; selection adds context to it, and cancellation restores the composer. An attachment can be removed before submission. Existing notes display concise context, an expandable full context view, and Open source when available.
 
-```css
-position: fixed;
-inset: 0 0 0 auto;
-width: min(380px, 100vw);
-height: 100dvh;
-z-index: 2147483647;
-```
+### File choice and empty state
 
-Qraft mounts within a Shadow DOM whose host is marked `data-qraft-root` and `data-react-grab-ignore`. Its CSS begins from an explicit local reset. It must not:
+First use opens a file chooser with project-relative display labels, search, and Refresh files. Remember the selected server-issued ID per project; revalidate it against the catalog on reload. Change file is available in the checklist. File selection affects only that browser's storage instance. Preserve drafts per selected file during the mounted session. No default filename is chosen or created. If no file exists, instruct the tester to ask their coding agent to create a Markdown checklist, then refresh. An explicitly configured missing file can be selected and created by Add section.
 
-- change `document.body` overflow;
-- write global style rules;
-- inherit host typography or box sizing accidentally;
-- modify the host application's width, scroll position, or focus styles.
+### Errors and accessibility
 
-The drawer supports desktop viewports at 768 px and above. At supported widths from 768 through 800 px it exposes modal dialog semantics and traps focus within the fixed 380 px overlay. Qraft uses non-modal Radix composition with its own ShadowRoot keyboard containment to avoid global body scroll locking.
+Keep current safe conflict, disconnected, parse warning, read-only ambiguity, write error, and source-opening error feedback. Retain input after failures. Removed tasks retain a copyable draft. Use a polite live region for success, without large persistent success banners. Keep native labeled inputs/buttons, visible focus, text status, and reduced-motion support.
 
-## Checklist view
+The drawer remains fixed at width min(380px,100vw), height 100dvh and the right edge. Soften the shadow to a subtle boundary. Styles remain in Shadow DOM, with no host layout or global style changes. At 768–800 px use modal semantics and keyboard containment without body scroll locking. Escape closes the drawer unless an edit/form or picker consumes it. On desktop, outside interaction can dismiss the drawer while retaining drafts.
 
-The checklist view contains:
+### Element identification
 
-- document title, defaulting to `QA`;
-- passed/total progress;
-- sections in file order;
-- tasks in file order with status and unresolved-finding count;
-- a selected-task indication;
-- `Add task` within each section;
-- document-level `Add section`;
-- loading, parse-warning, conflict, disconnected, and write-error feedback.
-
-Clicking a task changes only browser-local selection state. It does not mutate Markdown.
-
-An empty or missing file shows an explanation and `Add section`. It is not created until the first successful mutation.
-
-## Task detail
-
-```text
-← Cart
-
-Change quantity
-──────────────────────────
-
-○ Not completed
-
-NOTES
-No notes yet.
-[ + Note ]
-
-FINDINGS
-No findings yet.
-[ + Finding ]  [ 🎯 Attach element ]
-
-──────────────────────────
-[ ✓ Pass ]
-```
-
-The detail view shows:
-
-- parent section and back control;
-- task title and open/passed status;
-- notes in document order;
-- findings in document order;
-- each finding's open/resolved checkbox;
-- concise element context where present;
-- `Add note`, `Add finding`, `Attach element`, and `Pass` or `Reopen` actions.
-
-### Passing and reopening
-
-- `Pass` is disabled while any finding is unresolved.
-- Its disabled explanation is: “Resolve outstanding findings before passing this task.”
-- After a successful pass, select the next open task in document order.
-- At the end of the document, wrap to the first open task.
-- When none remain, show a completed state and keep the current task selected.
-- Reopening keeps all child findings unchanged.
-
-There is no skipped state in v0.1.
-
-## Authoring forms
-
-`Add section`, `Add task`, `Add note`, and `Add finding` use small in-drawer forms.
-
-- Focus moves to the input when a form opens.
-- Submit is disabled for empty or invalid content.
-- `Escape` cancels the form and returns focus to its trigger.
-- Submitting shows a pending state and prevents duplicate submission.
-- On a revision conflict, retain the input, refresh the document, and ask the tester to review and retry.
-- If the parent task disappeared, retain the text in an error state so it can be copied.
-- Text may be entered in a textarea, but persisted v0.1 content is one logical paragraph: trim and collapse line breaks to spaces.
-
-An unwanted finding cannot be deleted in v0.1. It may be marked resolved and clarified with a note.
-
-## Element attachment flow
-
-1. The tester selects `Attach element` from a task.
-2. The drawer minimizes to a small cancel control with brief picker instructions.
-3. Qraft listens for pointer movement and click in the document capture phase.
-4. `getElementAtPoint()` selects a target using a filter that excludes Qraft and ignored subtrees.
-5. `getElementBounds()` positions a fixed hover outline and label.
-6. A click prevents default and stops propagation before the host control can act.
-7. Qraft calls `getElementContext()` and opens the finding form with a compact target summary.
-8. The tester describes the problem and saves the finding with the approved context fields.
-9. `Escape` from picker or form cancels and restores task detail without writing.
-
-Only one element can be attached to one finding in v0.1.
-
-### Hover feedback
-
-- Use a translucent fill, one-pixel outline, and small label.
-- The label text falls back in this order: component name, selector, lowercase tag name.
-- Keep the label inside the viewport.
-- Overlay elements use `pointer-events: none`.
-- Context resolution is asynchronous. Increment a request number for every pointer target and discard stale results.
-- Remove every capture listener and overlay on save, cancel, component unmount, or error.
-
-### Finding form
-
-The form displays only context useful for recognition:
-
-```text
-QuantitySelector
-src/components/cart/QuantitySelector.tsx:87
-
-What's wrong?
-┌─────────────────────────────────────┐
-│ Alignment jumps from 9 to 10.       │
-└─────────────────────────────────────┘
-
-                         Cancel  Attach
-```
-
-The saved context is limited by the `ElementReference` contract in [Architecture](architecture.md). If React context resolution fails, the tester can still save a plain finding.
-
-## Attached finding display
-
-A finding displays:
-
-- open or resolved state;
-- body;
-- component when known;
-- repository-relative source location when known;
-- route pathname when known;
-- selector in a secondary disclosure because it can be long;
-- `Open source` when a source path exists.
-
-`Open source` calls React Grab's `openFile(source, line)`. Failure is shown inline and does not modify the checklist.
-
-Re-highlighting a persisted selector is deferred. React Grab selectors can cross shadow roots and same-origin iframes with non-standard markers, so `document.querySelector()` is not a correct implementation.
-
-## Status and failure states
-
-| State | Required presentation and recovery |
-| --- | --- |
-| Loading | Drawer shell with non-blocking progress state. |
-| Missing file | Empty checklist and `Add section`. |
-| Parse warning | Known content remains usable; warning names the affected lines. |
-| Duplicate ID | Affected entity is read-only; warning names ID and line numbers. |
-| Disconnected SSE | Subtle persistent status; automatic reconnect and refetch. |
-| Revision conflict | Preserve draft, refresh document, request review and retry. |
-| Write error | Persistent message with retry; never imply the write succeeded. |
-| Picker context failure | Return to form and offer a plain finding. |
-| Open-source failure | Inline message and copyable source path. |
-
-## Accessibility
-
-- Use native buttons, headings, form labels, and checkboxes where semantics match.
-- All controls are keyboard reachable with visible focus.
-- Opening the drawer focuses its heading; closing returns focus to the tab.
-- `Escape` closes the drawer unless a picker or form consumes it first.
-- At narrow widths, trap focus inside the modal drawer.
-- Announce successful mutations and errors through a polite live region.
-- Express status with text or icons as well as color.
-- Render checklist strings as text, never raw HTML.
-- Avoid animation that ignores `prefers-reduced-motion`.
-
-## Visual acceptance
-
-The Playwright example must prove that opening and closing Qraft does not change the host application's measured bounding box or document scroll position. Screenshots may be used as test diagnostics, but screenshot capture is not a Qraft product feature.
+Use the existing published React Grab primitives. Capture bounded identifying attributes and ancestor structure even when React context fails. Include the selected element's short visible text only after explicit selection; exclude form values, editable content, scripts/styles and hidden descendants. Do not claim selectors or source are infallible. Show when source context is unavailable. See [architecture](architecture.md) for exact bounds and [Markdown](markdown-storage.md) for persistence.

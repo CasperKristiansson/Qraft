@@ -37,13 +37,13 @@ If implementation requires changing an agreed contract, update its owning docume
 - Support Vite only.
 - Use one package at the repository root with `.` and `./vite` exports.
 - Keep Qraft local-only and development-only.
-- Store QA state in one Markdown file, defaulting to `./QA.md`.
+- Store active QA state in one user-selected project Markdown file; no filename is selected implicitly.
 - The browser sends typed commands; it never sends a filesystem path or complete replacement document.
 - Patch the smallest recognized Markdown span and preserve all unknown Markdown byte-for-byte.
 - Use stable hidden IDs and add IDs to legacy content only when that content is first mutated.
 - Detect stale revisions before writing. Never overwrite an external edit.
 - Use `react-grab/primitives` for element selection and source context.
-- Treat `docs/visuals/qraft-v0.1-visual-direction.png` as the owner-approved visual baseline.
+- Treat `docs/visuals/qraft-v0.1-visual-direction.png` and the owner-approved revisions in `docs/design.md` as the visual direction.
 - Do not depend on, copy, or adapt Agentation implementation code, CSS, assets, or bundles.
 - Do not add accounts, auth, cloud storage, a database, MCP, AI, screenshots, video, issue-tracker integrations, or non-Vite adapters.
 

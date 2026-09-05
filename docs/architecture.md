@@ -17,7 +17,7 @@ Browser                                        Vite development process
                                                          QA.md
 ```
 
-The browser knows domain objects and typed commands. It does not know the Markdown path, parser offsets, filesystem APIs, or Vite watcher. The server knows the configured path but accepts no path from a browser request.
+The browser knows domain objects and typed commands. It receives project-relative file labels and opaque file IDs but never parser offsets or filesystem APIs. The server resolves file IDs from its own catalog; it accepts no path from a browser request.
 
 ## Consumer integration
 
@@ -28,7 +28,7 @@ import { defineConfig } from "vite";
 import { qraft } from "@qraft/qa/vite";
 
 export default defineConfig({
-  plugins: [react(), qraft({ file: "./QA.md" })],
+  plugins: [react(), qraft()],
 });
 ```
 
@@ -52,7 +52,7 @@ The file path belongs only to the server plugin. `<QA />` does not accept it.
 
 ```ts
 export interface QraftViteOptions {
-  /** Resolved relative to Vite root. Default: "QA.md". */
+  /** Resolved relative to Vite root. Optional chooser restriction; no default. */
   file?: string;
 
   /** Same-origin endpoint prefix. Default: "/__qraft". */
@@ -70,7 +70,7 @@ export interface QraftViteOptions {
 
 ### Domain
 
-Owns data types, command types, validation, invariants, progress, and next-task ordering. It imports no React, HTTP, Vite, or filesystem APIs.
+Owns data types, command types, validation, invariants, progress, and status semantics. It imports no React, HTTP, Vite, or filesystem APIs.
 
 ### Markdown
 
@@ -107,20 +107,14 @@ export interface QASection {
 export interface QATask {
   id: string;
   title: string;
-  checked: boolean;
+  checked: boolean; // compatibility projection: status === "completed"
   notes: QANote[];
-  findings: QAFinding[];
+  status: "open" | "completed" | "skipped";
 }
 
 export interface QANote {
   id: string;
   body: string;
-}
-
-export interface QAFinding {
-  id: string;
-  body: string;
-  checked: boolean;
   element: ElementReference | null;
 }
 
@@ -131,10 +125,11 @@ export interface ElementReference {
   line: number | null;
   column: number | null;
   selector: string | null;
+  context?: { tag: string; attributes: Record<string, string>; text: string; ancestors: string[] };
 }
 ```
 
-`route` is `location.pathname` only. `source` is a repository-relative path normalized to `/`; the server omits it if it resolves outside the Vite root. Never persist query strings, hashes, DOM/Fiber objects, stacks, HTML previews, styles, or page content.
+`route` is `location.pathname` only. `source` is a repository-relative path normalized to `/`; the server omits it if it resolves outside the Vite root. The optional context contains tag (80 chars), at most 12 identifying attributes (80-char keys/300-char values), selected visible text (300 chars), and up to 5 ancestor descriptions (300 chars each). Never persist query strings, hashes, DOM/Fiber objects, stacks, HTML previews, styles, form values, or unrestricted page content.
 
 `revision` is the SHA-256 hash of the exact file bytes returned by the server.
 
@@ -145,14 +140,10 @@ export type QACommand =
   | { type: "createSection"; title: string }
   | { type: "createTask"; sectionId: string; title: string }
   | { type: "setTaskChecked"; taskId: string; checked: boolean }
-  | { type: "addNote"; taskId: string; body: string }
-  | {
-      type: "addFinding";
-      taskId: string;
-      body: string;
-      element: ElementReference | null;
-    }
-  | { type: "setFindingChecked"; findingId: string; checked: boolean };
+  | { type: "setTaskStatus"; taskId: string; status: "open" | "completed" | "skipped" }
+  | { type: "addNote"; taskId: string; body: string; element?: ElementReference | null }
+  | { type: "editNote"; noteId: string; body: string };
+
 
 export interface CommandRequest {
   commandId: string;
@@ -166,9 +157,7 @@ There is no replace-document command. `commandId` lets the transport reject or s
 Business invariants include:
 
 - duplicate IDs are never valid mutation targets;
-- passing a task with unresolved findings is rejected at the domain/store boundary, not only in UI;
-- resolving a finding does not pass its parent;
-- reopening a task does not reopen findings;
+- task statuses and notes are independent; legacy finding markers are never mutated by task actions;
 - entity text is normalized and validated on the server.
 
 ## Client storage interface
@@ -274,3 +263,11 @@ The Vite plugin exists only during `serve`. The consumer is responsible for moun
 - Confirmed mutations invalidate older in-flight UI reads. Background synchronization preserves actionable save/conflict errors and drafts. Legacy task identity is remapped only after Qraft's own successful append/status command, whose preserved order is known.
 - The store normalizes attachment source paths for reads and conflict documents as well as new writes. External Markdown bytes remain unchanged.
 - Candidate and package provenance is recorded by `scripts/source-fingerprint.mjs`, `audit:release`, and `verify:consumer`; these local tools do not publish packages.
+
+## Project file catalog
+
+The default plugin discovers .md/.markdown files inside the Vite root, excluding hidden directories, node_modules, dist, coverage and artifacts, and never follows symlinks. Discovery is bounded (2,000 files and 10,000 directory entries) and reports truncation. A trusted `file` option restricts discovery to that path. The browser chooses an opaque SHA-256 file ID from GET files and uses file-scoped document/commands/events endpoints. Catalog identity is scoped to the canonical project root. Stores/event hubs are created only for selected files and share the existing per-file transaction queue. Revalidate path containment and symlink absence before reads/writes, including before rename. A missing previously discovered file stays selectable so its UI can recover, but an unknown ID is rejected. No global active file is shared between clients.
+
+`HttpQAStorage` provides catalog loading and creates file-scoped storage instances. The core `QAStorage` interface remains bound to one document, including explicit in-memory/test adapters. Local storage stores only file IDs and tab position, never checklist bodies or notes. Per-file drafts remain in browser memory for the mounted session.
+
+Source opening uses Vite's same-origin editor endpoint directly, with a five-second timeout and redirects rejected. React Grab's `openFile` fallback opens an external website and is excluded from the local-only client workflow. This action never changes Markdown.

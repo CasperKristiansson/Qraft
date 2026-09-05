@@ -1,13 +1,5 @@
-import { expect, test, type Page } from "@playwright/test";
-
-async function reset(page: Page, path = "/") {
-  await page.goto(path);
-  await page.request.post("/__qraft-example/recreate");
-  await page.waitForTimeout(900);
-  await page.reload();
-  await page.getByRole("button", { name: /Open Qraft/u }).click();
-  await expect(page.getByRole("dialog")).toBeVisible();
-}
+import { reset } from "./helpers";
+import { expect, test } from "@playwright/test";
 
 function luminance(hex: string) {
   const channels = hex.match(/[\da-f]{2}/giu)?.map((value) => Number.parseInt(value, 16) / 255) ?? [];
@@ -27,7 +19,7 @@ test("M6 reduced motion, contrast, live status, focus containment, and narrow la
   const drawer = page.getByRole("dialog");
   await expect(drawer.getByRole("heading", { name: "Qraft" })).toBeFocused();
   expect(await drawer.evaluate((element) => getComputedStyle(element).animationName)).toBe("none");
-  await expect(drawer.getByRole("progressbar")).toHaveAttribute("aria-label", /tasks passed/u);
+  await expect(drawer.getByRole("progressbar")).toHaveAttribute("aria-label", /tasks completed/u);
 
   const colors = await drawer.evaluate((element) => {
     const style = getComputedStyle(element);
@@ -44,11 +36,11 @@ test("M6 reduced motion, contrast, live status, focus containment, and narrow la
   await drawer.getByRole("button", { name: "Add section" }).click();
   await drawer.getByLabel("Title").fill("Accessibility");
   await drawer.getByRole("button", { name: "Save" }).click();
-  await expect(drawer.getByRole("status")).toContainText("Section saved to QA.md.");
+  await expect(drawer.getByRole("status")).toContainText("Section saved.");
 
   await drawer.getByRole("button", { name: "Close Qraft" }).focus();
   await page.keyboard.press("Shift+Tab");
-  await expect(drawer.getByRole("button", { name: "Add section", exact: true })).toBeFocused();
+  await expect(drawer.getByRole("button", { name: /Change file/u })).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(drawer.getByRole("button", { name: "Close Qraft" })).toBeFocused();
   expect(await page.evaluate(() => getComputedStyle(document.body).overflow)).toBe("visible");
@@ -63,38 +55,33 @@ test("M6 reduced motion, contrast, live status, focus containment, and narrow la
 test("M6 filesystem failure is recoverable and preserves the unsaved draft", async ({ page }) => {
   await reset(page, "/?protocol=1");
   const drawer = page.getByRole("dialog");
-  await drawer.getByRole("button", { name: "Change quantity" }).click();
-  await drawer.getByRole("button", { name: "Finding" }).click();
-  await drawer.getByLabel("Details").fill("Keep this draft after a failed write.");
+  await drawer.getByRole("button", { name: "Change quantity", exact: true }).click();
+  await drawer.getByLabel("Write a note").fill("Keep this draft after a failed write.");
 
   await page.getByRole("button", { name: "Fail next write" }).click();
   await page.getByRole("button", { name: /Open Qraft/u }).click();
-  await drawer.getByRole("button", { name: "Save" }).click();
+  await drawer.getByRole("button", { name: "Submit" }).click();
   await expect(drawer.getByRole("alert")).toContainText("original was left unchanged");
-  await expect(drawer.getByLabel("Details")).toHaveValue("Keep this draft after a failed write.");
+  await expect(drawer.getByLabel("Write a note")).toHaveValue("Keep this draft after a failed write.");
   await page.request.post("/__qraft-example/restore-writes");
-  await drawer.getByRole("button", { name: "Save", exact: true }).click();
-  await expect(drawer.getByRole("checkbox", { name: /Keep this draft/u })).toBeVisible();
+  await drawer.getByRole("button", { name: "Submit", exact: true }).click();
+  await expect(drawer.getByText("Keep this draft after a failed write.", { exact: true })).toBeVisible();
 });
 
-test("M6 legacy task remains selected when first mutation assigns an ID", async ({ page }) => {
-  await page.goto("/");
-  await page.request.post("/__qraft-example/legacy");
-  await page.reload();
-  await page.getByRole("button", { name: /Open Qraft/u }).click();
-  const drawer = page.getByRole("dialog");
+test("legacy task retains selection after its first note and status change", async ({ page }) => {
+  await reset(page, "/?protocol=1"); await page.request.post("/__qraft-example/legacy"); await page.reload();
+  await page.getByRole("button", { name: /Open Qraft/u }).click(); const drawer = page.getByRole("dialog");
   await drawer.getByRole("button", { name: "Legacy task", exact: true }).click();
-  await drawer.getByRole("button", { name: "Note", exact: true }).click();
-  await drawer.getByLabel("Details").fill("First mutation");
-  await drawer.getByRole("button", { name: "Save", exact: true }).click();
-  await expect(drawer.getByRole("heading", { name: "Legacy task" })).toBeVisible();
-  await expect(drawer.getByText("First mutation", { exact: true })).toBeVisible();
-  await drawer.getByRole("button", { name: "Pass", exact: true }).click();
-  await expect(drawer.getByRole("heading", { name: "Next task" })).toBeVisible();
+  await drawer.getByLabel("Write a note").fill("First mutation"); await drawer.getByRole("button", { name: "Submit", exact: true }).click();
+  await expect(drawer.getByRole("heading", { name: "Legacy task", exact: true })).toBeVisible();
+  await expect(drawer.getByLabel("Write a note")).toHaveValue("");
+  await drawer.getByRole("button", { name: "Completed", exact: true }).click();
+  await expect(drawer.getByRole("button", { name: "Completed", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(drawer.getByRole("heading", { name: "Legacy task", exact: true })).toBeVisible();
 });
 
 test("M6 disconnected stream reconnects and refetches while preserving a draft", async ({ page }) => {
-  await page.route("**/__qraft/events", (route) => route.abort());
+  await page.route("**/__qraft/**/events", (route) => route.abort());
   await reset(page);
   const drawer = page.getByRole("dialog");
   await drawer.getByRole("button", { name: "Add section", exact: true }).click();
@@ -103,7 +90,7 @@ test("M6 disconnected stream reconnects and refetches while preserving a draft",
   await page.request.post("/__qraft-example/external-edit");
   const response = await page.request.get("/__qraft/document");
   const latest = await response.json();
-  await page.unroute("**/__qraft/events");
+  await page.unroute("**/__qraft/**/events");
   await expect(drawer.getByText(/Disconnected/u)).toHaveCount(0);
   await expect(drawer.getByLabel("Title")).toHaveValue("Reconnect draft");
   await expect(drawer.getByText(new RegExp(latest.revision.slice(0, 8)))).toBeVisible();

@@ -6,3 +6,5 @@ export interface QAStorage {
   execute(command: QACommand, baseRevision: string): Promise<QADocument>;
   subscribe(onChange: () => void): () => void;
 }
+
+export interface QAFileCatalog { projectId: string; files: { id: string; label: string }[]; truncated: boolean }

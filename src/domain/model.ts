@@ -12,28 +12,24 @@ export interface ElementReference {
   line: number | null;
   column: number | null;
   selector: string | null;
-}
-
-export interface QAFinding {
-  id: string;
-  body: string;
-  checked: boolean;
-  element: ElementReference | null;
-  readOnly?: boolean;
+  context?: { tag: string; attributes: Record<string, string>; text: string; ancestors: string[] } | undefined;
 }
 
 export interface QANote {
   id: string;
   body: string;
+  element: ElementReference | null;
   readOnly?: boolean;
 }
+
+export type TaskStatus = "open" | "completed" | "skipped";
 
 export interface QATask {
   id: string;
   title: string;
   checked: boolean;
   notes: QANote[];
-  findings: QAFinding[];
+  status: TaskStatus;
   readOnly?: boolean;
 }
 
@@ -54,11 +50,12 @@ export interface QADocument {
 export interface QAProgress {
   passed: number;
   total: number;
+  skipped: number;
 }
 
 export function getProgress(document: QADocument): QAProgress {
   const tasks = document.sections.flatMap((section) => section.tasks);
-  return { passed: tasks.filter((task) => task.checked).length, total: tasks.length };
+  return { passed: tasks.filter((task) => task.checked).length, total: tasks.length, skipped: tasks.filter((task) => task.status === "skipped").length };
 }
 
 export function getNextOpenTaskId(document: QADocument, currentTaskId: string): string | null {
@@ -67,7 +64,7 @@ export function getNextOpenTaskId(document: QADocument, currentTaskId: string): 
   const currentIndex = Math.max(0, tasks.findIndex((task) => task.id === currentTaskId));
   for (let offset = 1; offset <= tasks.length; offset += 1) {
     const candidate = tasks[(currentIndex + offset) % tasks.length];
-    if (candidate && !candidate.checked) return candidate.id;
+    if (candidate && candidate.status === "open") return candidate.id;
   }
   return null;
 }

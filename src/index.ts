@@ -5,7 +5,7 @@ export type {
   ElementReference,
   QADiagnostic,
   QADocument,
-  QAFinding,
+  TaskStatus,
   QANote,
   QASection,
   QATask,
