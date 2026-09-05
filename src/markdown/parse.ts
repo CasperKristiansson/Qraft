@@ -46,7 +46,8 @@ interface IdResult {
   malformedId: string | null;
 }
 
-const uuid = "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}";
+const uuid =
+  "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}";
 const validId = new RegExp(`^(section|task|note|finding)_${uuid}$`, "u");
 
 export function sha256(source: string | Uint8Array): string {
@@ -66,7 +67,13 @@ function sourceLines(source: string): SourceLine[] {
     const raw = source.slice(start, end);
     const newline = raw.endsWith("\r\n") ? "\r\n" : raw.endsWith("\n") ? "\n" : "";
     const bom = start === 0 && raw.startsWith("\uFEFF") ? 1 : 0;
-    lines.push({ content: raw.slice(bom, raw.length - newline.length), newline, number, start: start + bom, end });
+    lines.push({
+      content: raw.slice(bom, raw.length - newline.length),
+      newline,
+      number,
+      start: start + bom,
+      end,
+    });
     start = end;
     number += 1;
   }
@@ -75,8 +82,14 @@ function sourceLines(source: string): SourceLine[] {
 
 function splitId(text: string, kind: EntityKind): IdResult {
   const match = text.match(/^(.*?)(?:\s*<!--\s*qraft:id=([^\s>]+)\s*-->)\s*$/u);
-  if (!match) return { text: text.trim(), id: null, malformedId: text.includes("<!-- qraft:id=") ? "ambiguous" : null };
-  if ((text.match(/<!--\s*qraft:id=/gu) ?? []).length !== 1) return { text: text.trim(), id: null, malformedId: "ambiguous" };
+  if (!match)
+    return {
+      text: text.trim(),
+      id: null,
+      malformedId: text.includes("<!-- qraft:id=") ? "ambiguous" : null,
+    };
+  if ((text.match(/<!--\s*qraft:id=/gu) ?? []).length !== 1)
+    return { text: text.trim(), id: null, malformedId: "ambiguous" };
   const candidate = match[2] ?? "";
   return {
     text: (match[1] ?? "").trim(),
@@ -86,7 +99,10 @@ function splitId(text: string, kind: EntityKind): IdResult {
 }
 
 function legacyId(kind: EntityKind, line: number, text: string): string {
-  const digest = createHash("sha256").update(`${kind}\0${line}\0${text}`).digest("hex").slice(0, 16);
+  const digest = createHash("sha256")
+    .update(`${kind}\0${line}\0${text}`)
+    .digest("hex")
+    .slice(0, 16);
   return `legacy:${kind}:${line}:${digest}`;
 }
 
@@ -124,10 +140,19 @@ export function parseMarkdown(source: string): ParsedMarkdown {
 
   const newlineKinds = new Set(lines.map((line) => line.newline).filter(Boolean));
   if (newlineKinds.size > 1) {
-    diagnostics.push({ code: "mixed-newlines", message: "The file mixes LF and CRLF newlines.", lines: [] });
+    diagnostics.push({
+      code: "mixed-newlines",
+      message: "The file mixes LF and CRLF newlines.",
+      lines: [],
+    });
   }
 
-  const register = (kind: EntityKind, result: IdResult, line: SourceLine, checkboxOffset: number | null): SourceSpan => {
+  const register = (
+    kind: EntityKind,
+    result: IdResult,
+    line: SourceLine,
+    checkboxOffset: number | null,
+  ): SourceSpan => {
     if (result.malformedId) {
       diagnostics.push({
         code: "malformed-markdown",
@@ -158,7 +183,12 @@ export function parseMarkdown(source: string): ParsedMarkdown {
     if (fenceMatch) {
       const marker = fenceMatch[1] ?? "";
       if (!fence) fence = marker;
-      else if (marker[0] === fence[0] && marker.length >= fence.length && /^ {0,3}(`+|~+)\s*$/u.test(line.content)) fence = null;
+      else if (
+        marker[0] === fence[0] &&
+        marker.length >= fence.length &&
+        /^ {0,3}(`+|~+)\s*$/u.test(line.content)
+      )
+        fence = null;
       if (sectionSpan) sectionSpan.end = line.end;
       if (taskSpan) taskSpan.end = line.end;
       continue;
@@ -216,7 +246,12 @@ export function parseMarkdown(source: string): ParsedMarkdown {
         title: result.text,
         checked: (taskMatch[1] ?? " ").toLowerCase() === "x",
         notes: [],
-        status: taskMatch[1] === "-" ? "skipped" : taskMatch[1]?.toLowerCase() === "x" ? "completed" : "open",
+        status:
+          taskMatch[1] === "-"
+            ? "skipped"
+            : taskMatch[1]?.toLowerCase() === "x"
+              ? "completed"
+              : "open",
       };
       section.tasks.push(task);
       taskSpan = span;
@@ -271,7 +306,9 @@ export function parseMarkdown(source: string): ParsedMarkdown {
       continue;
     }
 
-    const metadataMatch = line.content.match(/^    - (Component|Source|Route|Selector|Context):\s*(.+)$/u);
+    const metadataMatch = line.content.match(
+      /^    - (Component|Source|Route|Selector|Context):\s*(.+)$/u,
+    );
     if (metadataMatch && finding) {
       const label = metadataMatch[1] ?? "";
       const value = inlineCode(metadataMatch[2] ?? "");
@@ -288,7 +325,12 @@ export function parseMarkdown(source: string): ParsedMarkdown {
       if (label === "Selector") element.selector = value;
       if (label === "Source") Object.assign(element, parseSource(value));
       if (label === "Context") {
-        try { const parsed = elementContextSchema.safeParse(JSON.parse(value)); if (parsed.success) element.context = parsed.data; } catch { /* Unknown context remains untouched. */ }
+        try {
+          const parsed = elementContextSchema.safeParse(JSON.parse(value));
+          if (parsed.success) element.context = parsed.data;
+        } catch {
+          /* Unknown context remains untouched. */
+        }
       }
       finding.element = element;
       if (findingSpan) findingSpan.end = line.end;

@@ -19,7 +19,8 @@ export interface PatchOptions {
 function applyEdits(source: string, edits: TextEdit[]): string {
   let result = source;
   const sorted = [...edits].sort((left, right) => right.start - left.start || right.end - left.end);
-  for (const edit of sorted) result = result.slice(0, edit.start) + edit.text + result.slice(edit.end);
+  for (const edit of sorted)
+    result = result.slice(0, edit.start) + edit.text + result.slice(edit.end);
   return result;
 }
 
@@ -27,7 +28,12 @@ function entityComment(id: string): string {
   return ` <!-- qraft:id=${id} -->`;
 }
 
-function stabilize(span: SourceSpan, kind: EntityKind, idFactory: IdFactory, edits: TextEdit[]): string {
+function stabilize(
+  span: SourceSpan,
+  kind: EntityKind,
+  idFactory: IdFactory,
+  edits: TextEdit[],
+): string {
   if (span.stable) return span.id;
   const id = idFactory(kind);
   edits.push({ start: span.firstLineEnd, end: span.firstLineEnd, text: entityComment(id) });
@@ -46,29 +52,42 @@ function codeFence(value: string): string {
 
 function normalizeSource(value: string | null, root?: string): string | null {
   let source = value?.replaceAll("\\", "/").split(/[?#]/u)[0] ?? null;
-  if (!source || /^[A-Za-z]:|^[a-z]+:\/\//iu.test(source) || /[\x00-\x1f\x7f]/u.test(source)) return null;
+  if (!source || /^[A-Za-z]:|^[a-z]+:\/\//iu.test(source) || /[\x00-\x1f\x7f]/u.test(source))
+    return null;
   if (root) {
     const absolute = isAbsolute(source) ? resolve(source) : resolve(root, source);
     const fromRoot = relative(root, absolute).replaceAll("\\", "/");
-    source = fromRoot === "" || fromRoot === ".." || fromRoot.startsWith("../") || isAbsolute(fromRoot) ? null : fromRoot;
+    source =
+      fromRoot === "" || fromRoot === ".." || fromRoot.startsWith("../") || isAbsolute(fromRoot)
+        ? null
+        : fromRoot;
   }
   return source;
 }
 
-export function normalizeElement(element: ElementReference | null, root?: string): ElementReference | null {
+export function normalizeElement(
+  element: ElementReference | null,
+  root?: string,
+): ElementReference | null {
   if (!element) return null;
   const route = element.route.split(/[?#]/u)[0] ?? "";
   const source = normalizeSource(element.source, root);
   const seen = new Set<string>();
-  const sourceTrail = element.context?.sourceTrail?.flatMap((frame) => {
-    const path = normalizeSource(frame.source, root);
-    if (!path || /(?:^|\/)node_modules(?:\/|$)/u.test(path)) return [];
-    const normalized = { ...frame, component: frame.component?.trim().replace(/\s+/gu, " ") ?? null, source: path };
-    const key = JSON.stringify(normalized);
-    if (seen.has(key)) return [];
-    seen.add(key);
-    return [normalized];
-  }).slice(0, 5);
+  const sourceTrail = element.context?.sourceTrail
+    ?.flatMap((frame) => {
+      const path = normalizeSource(frame.source, root);
+      if (!path || /(?:^|\/)node_modules(?:\/|$)/u.test(path)) return [];
+      const normalized = {
+        ...frame,
+        component: frame.component?.trim().replace(/\s+/gu, " ") ?? null,
+        source: path,
+      };
+      const key = JSON.stringify(normalized);
+      if (seen.has(key)) return [];
+      seen.add(key);
+      return [normalized];
+    })
+    .slice(0, 5);
   return {
     route,
     component: element.component ? normalizeEntityText(element.component) : null,
@@ -76,7 +95,9 @@ export function normalizeElement(element: ElementReference | null, root?: string
     line: source ? element.line : null,
     column: source ? element.column : null,
     selector: element.selector ? element.selector.trim().replace(/\s+/gu, " ") : null,
-    ...(element.context ? { context: { ...element.context, ...(sourceTrail ? { sourceTrail } : {}) } } : {}),
+    ...(element.context
+      ? { context: { ...element.context, ...(sourceTrail ? { sourceTrail } : {}) } }
+      : {}),
   };
 }
 
@@ -103,7 +124,11 @@ function topLevelLineInsertion(parsed: ParsedMarkdown, offset: number, line: str
   const before = parsed.source.slice(0, offset);
   const after = parsed.source.slice(offset);
   const leading = before.length > 0 && !before.endsWith("\n") ? parsed.newline : "";
-  const trailing = after.startsWith("## ") ? `${parsed.newline}${parsed.newline}` : after.length > 0 || parsed.hasFinalNewline ? parsed.newline : "";
+  const trailing = after.startsWith("## ")
+    ? `${parsed.newline}${parsed.newline}`
+    : after.length > 0 || parsed.hasFinalNewline
+      ? parsed.newline
+      : "";
   return `${leading}${line}${trailing}`;
 }
 
@@ -111,31 +136,48 @@ function appendSection(parsed: ParsedMarkdown, line: string): string {
   if (parsed.source.length === 0) return line;
   const endsWithNewline = parsed.source.endsWith("\n");
   const hasBlankLine = parsed.source.endsWith(`${parsed.newline}${parsed.newline}`);
-  const prefix = endsWithNewline ? (hasBlankLine ? "" : parsed.newline) : `${parsed.newline}${parsed.newline}`;
+  const prefix = endsWithNewline
+    ? hasBlankLine
+      ? ""
+      : parsed.newline
+    : `${parsed.newline}${parsed.newline}`;
   return `${prefix}${line}${endsWithNewline ? parsed.newline : ""}`;
 }
 
 function getSection(parsed: ParsedMarkdown, id: string): { entity: QASection; span: SourceSpan } {
-  if (parsed.duplicateIds.has(id)) throw new QraftError("conflict", `Section ${id} has a duplicate ID.`);
+  if (parsed.duplicateIds.has(id))
+    throw new QraftError("conflict", `Section ${id} has a duplicate ID.`);
   const entity = parsed.document.sections.find((candidate) => candidate.id === id);
   const span = parsed.spans.get(id);
-  if (!entity || !span || span.kind !== "section") throw new QraftError("not-found", "The section no longer exists.");
+  if (!entity || !span || span.kind !== "section")
+    throw new QraftError("not-found", "The section no longer exists.");
   return { entity, span };
 }
 
 function getTask(parsed: ParsedMarkdown, id: string): { entity: QATask; span: SourceSpan } {
-  if (parsed.duplicateIds.has(id)) throw new QraftError("conflict", `Task ${id} has a duplicate ID.`);
-  const entity = parsed.document.sections.flatMap((section) => section.tasks).find((candidate) => candidate.id === id);
+  if (parsed.duplicateIds.has(id))
+    throw new QraftError("conflict", `Task ${id} has a duplicate ID.`);
+  const entity = parsed.document.sections
+    .flatMap((section) => section.tasks)
+    .find((candidate) => candidate.id === id);
   const span = parsed.spans.get(id);
-  if (!entity || !span || span.kind !== "task") throw new QraftError("not-found", "The task no longer exists.");
+  if (!entity || !span || span.kind !== "task")
+    throw new QraftError("not-found", "The task no longer exists.");
   return { entity, span };
 }
 
-function noteLine(body: string, id: string, element: ElementReference | null, newline: string): string {
+function noteLine(
+  body: string,
+  id: string,
+  element: ElementReference | null,
+  newline: string,
+): string {
   const lines = [`  - Note: ${escapeEntityText(body)}${entityComment(id)}`];
   if (element?.component) lines.push(`    - Component: ${codeFence(element.component)}`);
   if (element?.source) {
-    const suffix = element.line ? `:${element.line}${element.column ? `:${element.column}` : ""}` : "";
+    const suffix = element.line
+      ? `:${element.line}${element.column ? `:${element.column}` : ""}`
+      : "";
     lines.push(`    - Source: ${codeFence(`${element.source}${suffix}`)}`);
   }
   if (element?.route) lines.push(`    - Route: ${codeFence(element.route)}`);
@@ -144,14 +186,22 @@ function noteLine(body: string, id: string, element: ElementReference | null, ne
   return lines.join(newline);
 }
 
-export function patchMarkdown(parsed: ParsedMarkdown, command: QACommand, options: PatchOptions = {}): string {
+export function patchMarkdown(
+  parsed: ParsedMarkdown,
+  command: QACommand,
+  options: PatchOptions = {},
+): string {
   const idFactory = options.idFactory ?? createEntityId;
   const edits: TextEdit[] = [];
 
   if (command.type === "createSection") {
     const id = idFactory("section");
     const line = `## ${escapeEntityText(command.title)}${entityComment(id)}`;
-    edits.push({ start: parsed.source.length, end: parsed.source.length, text: appendSection(parsed, line) });
+    edits.push({
+      start: parsed.source.length,
+      end: parsed.source.length,
+      text: appendSection(parsed, line),
+    });
   }
 
   if (command.type === "createTask") {
@@ -166,9 +216,15 @@ export function patchMarkdown(parsed: ParsedMarkdown, command: QACommand, option
   if (command.type === "setTaskChecked" || command.type === "setTaskStatus") {
     const { span } = getTask(parsed, command.taskId);
     stabilize(span, "task", idFactory, edits);
-    if (span.checkboxOffset === null) throw new QraftError("validation", "The task checkbox could not be located.");
-    const status = command.type === "setTaskStatus" ? command.status : command.checked ? "completed" : "open";
-    edits.push({ start: span.checkboxOffset, end: span.checkboxOffset + 1, text: status === "completed" ? "x" : status === "skipped" ? "-" : " " });
+    if (span.checkboxOffset === null)
+      throw new QraftError("validation", "The task checkbox could not be located.");
+    const status =
+      command.type === "setTaskStatus" ? command.status : command.checked ? "completed" : "open";
+    edits.push({
+      start: span.checkboxOffset,
+      end: span.checkboxOffset + 1,
+      text: status === "completed" ? "x" : status === "skipped" ? "-" : " ",
+    });
   }
 
   if (command.type === "addNote") {
@@ -177,20 +233,32 @@ export function patchMarkdown(parsed: ParsedMarkdown, command: QACommand, option
     const id = idFactory("note");
     const offset = ownedInsertionOffset(parsed, span);
     const element = normalizeElement(command.element ?? null, options.root);
-    edits.push({ start: offset, end: offset, text: lineInsertion(parsed, offset, noteLine(command.body, id, element, parsed.newline)) });
+    edits.push({
+      start: offset,
+      end: offset,
+      text: lineInsertion(parsed, offset, noteLine(command.body, id, element, parsed.newline)),
+    });
   }
 
   if (command.type === "editNote") {
-    if (parsed.duplicateIds.has(command.noteId)) throw new QraftError("conflict", "The note has a duplicate ID.");
+    if (parsed.duplicateIds.has(command.noteId))
+      throw new QraftError("conflict", "The note has a duplicate ID.");
     const span = parsed.spans.get(command.noteId);
-    if (!span || (span.kind !== "note" && span.kind !== "finding")) throw new QraftError("not-found", "The note no longer exists.");
+    if (!span || (span.kind !== "note" && span.kind !== "finding"))
+      throw new QraftError("not-found", "The note no longer exists.");
     const line = parsed.source.slice(span.firstLineStart, span.firstLineEnd);
     const prefix = line.match(/^  - (?:Note:\s*|\[[ xX]\]\s*)/u)?.[0];
     if (!prefix) throw new QraftError("validation", "The note body could not be located.");
     const tail = line.slice(prefix.length);
-    const body = (span.stable ? tail.replace(/\s*<!--\s*qraft:id=[^>]+-->\s*$/u, "") : tail).trimEnd();
+    const body = (
+      span.stable ? tail.replace(/\s*<!--\s*qraft:id=[^>]+-->\s*$/u, "") : tail
+    ).trimEnd();
     stabilize(span, span.kind, idFactory, edits);
-    edits.push({ start: span.firstLineStart + prefix.length, end: span.firstLineStart + prefix.length + body.length, text: escapeEntityText(command.body) });
+    edits.push({
+      start: span.firstLineStart + prefix.length,
+      end: span.firstLineStart + prefix.length + body.length,
+      text: escapeEntityText(command.body),
+    });
   }
 
   return applyEdits(parsed.source, edits);

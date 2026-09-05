@@ -2,8 +2,11 @@ import { reset } from "./helpers";
 import { expect, test } from "@playwright/test";
 
 function luminance(hex: string) {
-  const channels = hex.match(/[\da-f]{2}/giu)?.map((value) => Number.parseInt(value, 16) / 255) ?? [];
-  const linear = channels.map((value) => (value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4));
+  const channels =
+    hex.match(/[\da-f]{2}/giu)?.map((value) => Number.parseInt(value, 16) / 255) ?? [];
+  const linear = channels.map((value) =>
+    value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4,
+  );
   return 0.2126 * (linear[0] ?? 0) + 0.7152 * (linear[1] ?? 0) + 0.0722 * (linear[2] ?? 0);
 }
 
@@ -12,7 +15,9 @@ function contrast(left: string, right: string) {
   return ((values[0] ?? 0) + 0.05) / ((values[1] ?? 0) + 0.05);
 }
 
-test("M6 reduced motion, contrast, live status, focus containment, and narrow layout remain accessible", async ({ page }) => {
+test("M6 reduced motion, contrast, live status, focus containment, and narrow layout remain accessible", async ({
+  page,
+}) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.setViewportSize({ width: 768, height: 900 });
   await reset(page);
@@ -29,7 +34,8 @@ test("M6 reduced motion, contrast, live status, focus containment, and narrow la
       accent: style.getPropertyValue("--qraft-purple").trim(),
     };
   });
-  const hex = (rgb: number[]) => `#${rgb.map((value) => value.toString(16).padStart(2, "0")).join("")}`;
+  const hex = (rgb: number[]) =>
+    `#${rgb.map((value) => value.toString(16).padStart(2, "0")).join("")}`;
   expect(contrast(hex(colors.body), hex(colors.background))).toBeGreaterThanOrEqual(4.5);
   expect(contrast(colors.accent, "#ffffff")).toBeGreaterThanOrEqual(4.5);
 
@@ -62,25 +68,38 @@ test("M6 filesystem failure is recoverable and preserves the unsaved draft", asy
   await page.getByRole("button", { name: /Open Qraft/u }).click();
   await drawer.getByRole("button", { name: "Submit" }).click();
   await expect(drawer.getByRole("alert")).toContainText("original was left unchanged");
-  await expect(drawer.getByLabel("Write a note")).toHaveValue("Keep this draft after a failed write.");
+  await expect(drawer.getByLabel("Write a note")).toHaveValue(
+    "Keep this draft after a failed write.",
+  );
   await page.request.post("/__qraft-example/restore-writes");
   await drawer.getByRole("button", { name: "Submit", exact: true }).click();
-  await expect(drawer.getByText("Keep this draft after a failed write.", { exact: true })).toBeVisible();
+  await expect(
+    drawer.getByText("Keep this draft after a failed write.", { exact: true }),
+  ).toBeVisible();
 });
 
 test("legacy task retains selection after its first note and status change", async ({ page }) => {
-  await reset(page, "/?protocol=1"); await page.request.post("/__qraft-example/legacy"); await page.reload();
-  await page.getByRole("button", { name: /Open Qraft/u }).click(); const drawer = page.getByRole("dialog");
+  await reset(page, "/?protocol=1");
+  await page.request.post("/__qraft-example/legacy");
+  await page.reload();
+  await page.getByRole("button", { name: /Open Qraft/u }).click();
+  const drawer = page.getByRole("dialog");
   await drawer.getByRole("button", { name: "Legacy task", exact: true }).click();
-  await drawer.getByLabel("Write a note").fill("First mutation"); await drawer.getByRole("button", { name: "Submit", exact: true }).click();
+  await drawer.getByLabel("Write a note").fill("First mutation");
+  await drawer.getByRole("button", { name: "Submit", exact: true }).click();
   await expect(drawer.getByRole("heading", { name: "Legacy task", exact: true })).toBeVisible();
   await expect(drawer.getByLabel("Write a note")).toHaveValue("");
   await drawer.getByRole("button", { name: "Completed", exact: true }).click();
-  await expect(drawer.getByRole("button", { name: "Completed", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(drawer.getByRole("button", { name: "Completed", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
   await expect(drawer.getByRole("heading", { name: "Legacy task", exact: true })).toBeVisible();
 });
 
-test("M6 disconnected stream reconnects and refetches while preserving a draft", async ({ page }) => {
+test("M6 disconnected stream reconnects and refetches while preserving a draft", async ({
+  page,
+}) => {
   await page.route("**/__qraft/**/events", (route) => route.abort());
   await reset(page);
   const drawer = page.getByRole("dialog");
@@ -90,7 +109,12 @@ test("M6 disconnected stream reconnects and refetches while preserving a draft",
   await page.request.post("/__qraft-example/external-edit");
   const response = await page.request.get("/__qraft/document");
   const latest = await response.json();
-  const refreshed = page.waitForResponse(async (response) => /\/__qraft\/.*\/document$/u.test(response.url()) && response.request().method() === "GET" && (await response.json()).revision === latest.revision);
+  const refreshed = page.waitForResponse(
+    async (response) =>
+      /\/__qraft\/.*\/document$/u.test(response.url()) &&
+      response.request().method() === "GET" &&
+      (await response.json()).revision === latest.revision,
+  );
   await page.unroute("**/__qraft/**/events");
   await expect(drawer.getByText(/Disconnected/u)).toHaveCount(0);
   await expect(drawer.getByLabel("Title")).toHaveValue("Reconnect draft");

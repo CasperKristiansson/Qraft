@@ -3,7 +3,8 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { EMPTY_REVISION, parseMarkdown, sha256 } from "../../src/markdown/parse";
 
-const fixture = (name: string) => readFile(resolve(import.meta.dirname, "../fixtures", name), "utf8");
+const fixture = (name: string) =>
+  readFile(resolve(import.meta.dirname, "../fixtures", name), "utf8");
 
 describe("parseMarkdown", () => {
   it("parses the canonical model and preserves the exact source", async () => {
@@ -12,7 +13,10 @@ describe("parseMarkdown", () => {
     expect(parsed.source).toBe(source);
     expect(parsed.document.title).toBe("Checkout QA");
     expect(parsed.document.sections).toHaveLength(1);
-    expect(parsed.document.sections[0]?.tasks[0]).toMatchObject({ title: "Change quantity", checked: true });
+    expect(parsed.document.sections[0]?.tasks[0]).toMatchObject({
+      title: "Change quantity",
+      checked: true,
+    });
     expect(parsed.document.sections[0]?.tasks[0]?.notes[0]?.body).toBe("Preserve a useful note.");
     expect(parsed.document.sections[0]?.tasks[0]?.notes[1]?.element).toEqual({
       route: "/checkout",
@@ -56,7 +60,9 @@ describe("parseMarkdown", () => {
     const mixed = parseMarkdown((await fixture("line-endings-mixed.md")).trimEnd());
     expect(lf.newline).toBe("\n");
     expect(crlf.newline).toBe("\r\n");
-    expect(mixed.document.diagnostics).toContainEqual(expect.objectContaining({ code: "mixed-newlines" }));
+    expect(mixed.document.diagnostics).toContainEqual(
+      expect.objectContaining({ code: "mixed-newlines" }),
+    );
     expect(mixed.hasFinalNewline).toBe(false);
     expect(parseMarkdown("").document.revision).toBe(EMPTY_REVISION);
   });

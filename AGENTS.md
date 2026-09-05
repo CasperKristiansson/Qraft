@@ -2,7 +2,7 @@
 
 ## Mission
 
-Build Qraft v0.1 as a small, development-only React QA drawer backed by a local Markdown file. Preserve the human-and-agent workflow: the browser and coding agents share `QA.md` as the source of QA state.
+Build Qraft as a small, development-only React QA drawer backed by a local Markdown file. Preserve the human-and-agent workflow: the browser and coding agents share `QA.md` as the source of QA state.
 
 The product is internal-first. Prefer the smallest complete implementation over framework breadth or speculative infrastructure.
 
@@ -26,16 +26,15 @@ Do not create a second specification for the same concern.
 - Modules, dependencies, and boundaries: `docs/architecture.md`
 - Markdown grammar and file mutation: `docs/markdown-storage.md`
 - HTTP/SSE interface and safeguards: `docs/dev-server-protocol.md`
-- Milestones and sequencing: `docs/implementation-plan.md`
 - Test obligations and release acceptance: `docs/testing-and-acceptance.md`
 - Third-party research and licensing boundaries: `docs/upstream-and-licensing.md`
 
 If implementation requires changing an agreed contract, update its owning document in the same change. If two canonical documents conflict, stop and resolve the documentation conflict before implementing either interpretation.
 
-## Non-negotiable v0.1 boundaries
+## Supported implementation boundaries
 
-- Support Vite only.
-- Use one package at the repository root with `.` and `./vite` exports.
+- Support Vite and Next.js App Router with the Node runtime.
+- Use one package at the repository root with `.`, `./vite`, and `./next` exports.
 - Keep Qraft local-only and development-only.
 - Store active QA state in one user-selected project Markdown file; no filename is selected implicitly.
 - The browser sends typed commands; it never sends a filesystem path or complete replacement document.
@@ -43,9 +42,9 @@ If implementation requires changing an agreed contract, update its owning docume
 - Use stable hidden IDs and add IDs to legacy content only when that content is first mutated.
 - Detect stale revisions before writing. Never overwrite an external edit.
 - Use `react-grab/primitives` for element selection and source context.
-- Treat `docs/visuals/qraft-v0.1-visual-direction.png` and the owner-approved revisions in `docs/design.md` as the visual direction.
+- Treat `docs/design.md` as the current interaction and visual contract.
 - Do not depend on, copy, or adapt Agentation implementation code, CSS, assets, or bundles.
-- Do not add accounts, auth, cloud storage, a database, MCP, AI, screenshots, video, issue-tracker integrations, or non-Vite adapters.
+- Do not add accounts, auth, cloud storage, a database, MCP, AI, screenshots, video, issue-tracker integrations, or additional framework adapters without an owner request.
 
 ## Architecture rules
 
@@ -71,22 +70,22 @@ Markdown integrity is a merge condition.
 
 ## Working method
 
-- Implement milestones in the order defined in `docs/implementation-plan.md` unless the user explicitly changes the sequence.
-- Use `@Browser` during every milestone to exercise the nearest integrated Qraft surface. Automated tests do not replace this interactive browser checkpoint.
-- Record the URL, viewport, journey, result, and current source revision for every milestone's `@Browser` evidence before marking it complete.
+- Finish one tested vertical slice at a time; prioritize the current user request.
+- Use `@Browser` for each changed integrated surface to exercise the nearest integrated Qraft surface. Automated tests do not replace this interactive browser checkpoint.
+- Record the URL, viewport, journey, result, and current source revision for each integrated browser pass.
 - Finish one tested vertical slice before starting the next.
 - Prefer narrow, reviewable changes.
 - Add tests with behavior, not as a later cleanup.
 - Diagnose failures from evidence; do not weaken a contract or test merely to make it pass.
-- Do not hand-edit generated build output or commit transient artifacts.
+- Do not hand-edit generated build output or commit transient artifacts. Internal consumers may commit a verified package archive with their dependency and lockfile.
 - Do not commit, push, publish, release, or create external resources unless the user asks for that action.
 
 ## Open-source reuse
 
-- Use only the exact repositories and roles allowlisted in `docs/implementation-plan.md` and `docs/upstream-and-licensing.md`.
+- Use only the exact repositories and roles allowlisted in `docs/upstream-and-licensing.md`.
 - Prefer a maintained public package when it directly removes difficult accessibility, selection, validation, or atomic-write work.
 - For structural references, study the named files, tests, lifecycle, and failure handling, then implement the smallest Qraft-owned equivalent. Do not copy whole components or subsystems.
-- Record source repository, inspected commit, source paths, reused idea, and resulting Qraft files in the plan evidence log.
+- Record source repository, inspected commit, source paths, reused idea, and resulting Qraft files in the upstream document.
 - Preserve required notices for copied or substantially adapted code. Dependencies alone still require license review in the final package audit.
 - Do not add another component system, styling system, parser, watcher, transport, state library, or utility dependency without a demonstrated gap and a documented plan/architecture change.
 
@@ -100,15 +99,15 @@ Once the package shell exists, root `package.json` scripts are the command autho
 - package build;
 - Playwright end-to-end tests.
 
-Run the smallest relevant checks during iteration and all required checks from `docs/testing-and-acceptance.md` before claiming a milestone or v0.1 complete. Report what actually ran and distinguish local test evidence from behavior merely specified in documents.
+Run the smallest relevant checks during iteration and all required checks from `docs/testing-and-acceptance.md` before claiming a package candidate complete. Report what actually ran and distinguish local test evidence from behavior merely specified in documents.
 
-Every milestone also requires a hands-on `@Browser` pass. Playwright proves repeatability; `@Browser` proves that an agent inspected the actual rendered behavior and compared user-visible work with the approved visual direction.
+Every user-visible change also requires a hands-on `@Browser` pass. Playwright proves repeatability; `@Browser` proves that an agent inspected the actual rendered behavior and compared user-visible work with the written design contract.
 
 ## Documentation style
 
 - Write decisions as testable statements.
 - Link to the canonical document instead of duplicating its content.
-- Keep future ideas in the deferred section of `docs/implementation-plan.md`.
+- Keep active documentation focused on implemented behavior; propose future scope in the conversation.
 - Record a new architecture decision in `docs/architecture.md` unless the decision becomes large enough to justify a dedicated ADR directory.
 - Use repository-relative links.
 

@@ -11,14 +11,21 @@ export function exampleFixturePlugin(): Plugin {
     async configureServer(server) {
       const originalMode = (await stat(server.config.root)).mode & 0o777;
       let restoreTimer: ReturnType<typeof setTimeout> | undefined;
-      const restore = async () => { clearTimeout(restoreTimer); await chmod(server.config.root, originalMode); };
+      const restore = async () => {
+        clearTimeout(restoreTimer);
+        await chmod(server.config.root, originalMode);
+      };
       server.httpServer?.once("close", () => void restore());
       const fixture = resolve(server.config.root, "QA.md");
       const malformed = resolve(server.config.root, "QA.malformed.md");
       const local = resolve(server.config.root, "QA.local.md");
       await copyFile(fixture, local);
       server.middlewares.use(async (request, response, next) => {
-        if (request.method === "GET" && request.url?.startsWith("/__open-in-editor") && failSourceOpen) {
+        if (
+          request.method === "GET" &&
+          request.url?.startsWith("/__open-in-editor") &&
+          failSourceOpen
+        ) {
           failSourceOpen = false;
           response.statusCode = 500;
           response.end("Editor opening failed in the deterministic example.");
@@ -66,12 +73,18 @@ export function exampleFixturePlugin(): Plugin {
           await chmod(server.config.root, 0o500);
           restoreTimer = setTimeout(() => void restore(), 10_000);
           restoreTimer.unref();
-          response.end(JSON.stringify({ message: "Writes are blocked for 10 seconds; permissions auto-restore." }));
+          response.end(
+            JSON.stringify({
+              message: "Writes are blocked for 10 seconds; permissions auto-restore.",
+            }),
+          );
           return;
         }
         if (request.url === "/__qraft-example/fail-open") {
           failSourceOpen = true;
-          response.end(JSON.stringify({ message: "The next source-open request and fallback will fail." }));
+          response.end(
+            JSON.stringify({ message: "The next source-open request and fallback will fail." }),
+          );
           return;
         }
         response.statusCode = 404;

@@ -1,6 +1,6 @@
 # Product requirements
 
-Qraft is an internal, local development review tool for Vite React apps. A tester selects a Markdown checklist, checks the running app, and leaves notes for a coding agent in that same file.
+Qraft is an internal, local development review tool for Vite React and Next.js App Router apps. A tester selects a Markdown checklist, checks the running app, and leaves notes for a coding agent in that same file.
 
 ## Owner-approved workflow — 2026-09-05
 
@@ -25,6 +25,6 @@ Qraft is an internal, local development review tool for Vite React apps. A teste
 
 ## Scope and limits
 
-Vite only; React 19; one private root package; local development only; desktop pointer and keyboard at 768 CSS px and wider. No hosted service, accounts, database, MCP, AI, remote integrations, screenshots/video, mobile support, general Markdown editor, task deletion/reordering, or automatic agent execution. Notes are handoff context, not a second issue tracker.
+Vite and Next.js App Router (Node runtime); React 19; one private root package; local development only; desktop pointer and keyboard at 768 CSS px and wider. No hosted service, accounts, database, MCP, AI, remote integrations, screenshots/video, mobile support, general Markdown editor, task deletion/reordering, or automatic agent execution. Notes are handoff context, not a second issue tracker.
 
-Canonical ownership: [design](design.md), [architecture](architecture.md), [Markdown](markdown-storage.md), [protocol](dev-server-protocol.md), and [acceptance](testing-and-acceptance.md). The owner feedback above supersedes the original findings workflow and the affected visual baseline surfaces.
+Canonical ownership: [design](design.md), [architecture](architecture.md), [Markdown](markdown-storage.md), [protocol](dev-server-protocol.md), and [acceptance](testing-and-acceptance.md). The owner feedback above supersedes the original findings workflow and the original visual mockup.

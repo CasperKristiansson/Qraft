@@ -2,15 +2,60 @@
 
 Qraft is a development-only React QA drawer backed by one local Markdown checklist. A tester and a coding agent share `QA.md`: browser actions become minimal Markdown patches, while external file edits appear in the drawer without a page reload.
 
-Qraft v0.1 supports Vite and React only. It has no accounts, cloud service, database, public server, or production middleware.
+Qraft supports Vite React and Next.js App Router (Node runtime). It has no accounts, cloud service, database, public server, or production middleware.
 
 ## Install an internal build
 
-Qraft is private and has not been published. Build or obtain the approved internal tarball, then install it with its exact v0.1 peers:
+Qraft is private and has not been published. Build or obtain the approved internal tarball, then install it with its exact tested peers:
 
 ```sh
-pnpm add ./qraft-qa-0.1.0.tgz react@19.2.8 react-dom@19.2.8 vite@8.2.2
+pnpm add -D ./vendor/qraft-qa-0.2.0.tgz
 ```
+
+For an existing project, check its React, framework and Node versions before installing; do not
+upgrade the application's peers merely to add Qraft. Vite and Next.js are optional peers, so a
+consumer needs only its own framework. Node 24.19.0 or newer within Node 24 is required.
+
+### Next.js App Router
+
+Create `app/api/qraft/[...path]/route.ts`:
+
+```ts
+import { createQraftRoute } from "@qraft/qa/next";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+const qraft = createQraftRoute({ endpoint: "/api/qraft" });
+export const GET = qraft.GET;
+export const POST = qraft.POST;
+```
+
+In the root layout (let Next.js bundle Qraft normally; do not add the client package to `serverExternalPackages`):
+
+```tsx
+// Inside the existing async root layout, before returning JSX:
+const QA = process.env.NODE_ENV === "development" ? (await import("@qraft/qa")).QA : null;
+
+// Inside the body, beside the application:
+{
+  QA ? <QA endpoint="/api/qraft" editor="manual" /> : null;
+}
+```
+
+The conditional import keeps the picker out of production client chunks. If a production artifact policy also excludes all local server tooling, conditionally import the route factory behind the same development check and export handlers that return 404 when it is absent.
+
+If a trusted local gateway rewrites the Host header, configure `origin` on `createQraftRoute` with the exact browser origin (for example `http://localhost:3060`). Qraft never trusts forwarded headers to authorize writes.
+
+When Next.js has a `basePath`, include it only in the QA client endpoint (for example `/email/api/qraft`). Next.js strips it from the route handler request, so the server endpoint stays `/api/qraft`.
+
+The package declares its client boundary. The route independently returns 404 outside development,
+before accessing files or creating watchers. Keep authentication/proxy middleware from redirecting
+this local development route; any exception must itself be development-only. The trusted `root`
+option defaults to the Next.js working directory. `file` optionally restricts the chooser to a
+project-relative Markdown path. This integration supports App Router on Node, not Edge, Pages Router
+or static export. Next.js source paths are displayed for manual editor navigation.
+
+### Vite
 
 Add the development plugin to `vite.config.ts`:
 
@@ -75,14 +120,14 @@ If no file exists, ask your coding editor to create a Markdown checklist with se
 ## Safe local use
 
 - Run Qraft only on a trusted local development machine.
-- Do not bind a Qraft-enabled Vite server to an untrusted network. The local endpoints intentionally have no authentication.
+- Do not bind a Qraft-enabled development server to an untrusted network. The local endpoints intentionally have no authentication.
 - Keep `<QA />` behind `import.meta.env.DEV`; the `qraft()` plugin itself uses Vite's serve-only boundary and registers nothing in builds or preview servers.
-- Keep the QA file inside the Vite project root. Browser requests contain typed commands, never paths, editor commands, shell commands, or replacement Markdown.
+- Keep the QA file inside the configured project root. Browser requests contain typed commands, never paths, editor commands, shell commands, or replacement Markdown.
 - Commit or back up important checklist changes using your normal project workflow. Qraft detects stale revisions and writes atomically, but it is not a version-control system.
 
-## Known v0.1 limitations
+## Known limitations
 
-- Only Vite, React 19.2.8, desktop pointer input, and layouts at 768 CSS pixels or wider are supported.
+- Tested framework peers are Vite 8.2.2 and Next.js 16.3.3 with React 19.2.8. Review layouts support desktop pointer/keyboard and widths of 768 CSS pixels or wider.
 - The file store has an in-process command queue and a second revision check, but no cross-process lock. A simultaneous external write in the final check-to-rename window remains possible.
 - Element source context depends on React Grab and source-map availability. Attachments also retain bounded tag, identifying attributes, selected visible text, ancestor context, and up to five relevant component/source locations; no form values, full HTML, styles, or screenshots are captured. Selectors and source locations are best-effort identifiers and may change as the application changes. Plain notes remain available when context is partial or unavailable.
 - Picker traversal supports the main document, open Shadow DOM, and same-origin iframes. Closed shadow roots and cross-origin frames are inaccessible.
@@ -99,12 +144,20 @@ corepack pnpm check
 corepack pnpm test:browser
 corepack pnpm audit:release
 corepack pnpm verify:consumer
+corepack pnpm verify:next
 ```
 
-`check` covers formatting, lint, typecheck, unit/integration tests, and the package build. `test:browser` exercises Chromium, Firefox, and WebKit. `audit:release` checks the exact pins, installed transitive licenses, notices, exports, and excluded material. `verify:consumer` packs Qraft, installs that tarball into a clean temporary Vite React app, imports only the two public exports, and builds and checks the production consumer preview. Both scripts retain local evidence under ignored `artifacts/release/`. Run `build` before either artifact check. `scripts/source-fingerprint.mjs` records candidate bytes and file modes, excluding generated/local files and the two evidence-only roadmap/status documents.
+`check` covers formatting, lint, typecheck, unit/integration tests, and the package build. `test:browser` exercises Chromium, Firefox, and WebKit. `audit:release` checks the exact pins, installed transitive licenses, notices, exports, and excluded material. `verify:consumer` packs Qraft, installs that tarball into a clean temporary Vite React app, imports only the two public exports, and builds and checks the production consumer preview. Artifact scripts retain local evidence under ignored `artifacts/release/`. Run `build` before either artifact check. `scripts/source-fingerprint.mjs` records candidate bytes and file modes, excluding generated/local files.
 
-## Project status and documentation
+## Internal distribution and updates
 
-The v0.1 implementation is complete locally when every acceptance item and its current evidence are checked in [the implementation plan](docs/implementation-plan.md). Commits and pushes are separate from local verification; no package publication or deployment is implied.
+Build with `corepack pnpm build`, then run `corepack pnpm pack`. Copy the resulting archive into
+`vendor/` in the consuming private repository and install it with that project's package manager.
+Commit the archive, manifest, lockfile and integration so teammates can pull and install normally.
+Give every update a new version or immutable archive filename; do not overwrite an existing archive.
+Shared checklist changes travel through Git, not live synchronization across machines.
 
-Start with [the documentation index](docs/README.md). Product scope, design, architecture, Markdown, protocol, testing, roadmap evidence, and OSS boundaries each have one canonical owner. Third-party notices ship in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Qraft remains private and has no public distribution license or registry release. The package
+contains built JavaScript, declarations and third-party notices. Its dependencies are installed
+normally by the package manager. See [documentation](docs/README.md) for current contracts and
+[acceptance](docs/testing-and-acceptance.md) for the release checks and evidence requirements.

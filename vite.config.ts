@@ -22,11 +22,15 @@ export default defineConfig({
     lib: {
       entry: {
         index: resolve(import.meta.dirname, "src/index.ts"),
+        next: resolve(import.meta.dirname, "src/next.ts"),
         vite: resolve(import.meta.dirname, "src/vite.ts"),
       },
       formats: ["es"],
     },
-    rollupOptions: { external },
+    rollupOptions: {
+      external,
+      output: { banner: (chunk) => (chunk.name === "index" ? '"use client";' : "") },
+    },
     sourcemap: true,
     emptyOutDir: true,
   },

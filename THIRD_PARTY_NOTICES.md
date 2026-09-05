@@ -19,6 +19,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 - `react@19.2.8` and `react-dom@19.2.8` — Copyright (c) Meta Platforms, Inc. and affiliates.
 - `@radix-ui/react-dialog@1.1.23` and `@radix-ui/react-focus-scope@1.1.16` — Copyright (c) 2022 WorkOS.
 - `zod@4.5.4` — Copyright (c) 2025 Colin McDonnell.
+- `next@16.3.3` — Copyright (c) 2025 Vercel, Inc.
+- `prettier@3.6.2` — Copyright © James Long and contributors (development tooling; not bundled).
 - `vite@8.2.2` — Copyright (c) 2019-present, VoidZero Inc. and Vite contributors.
 
 Each package above is distributed under the MIT License:

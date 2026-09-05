@@ -19,7 +19,15 @@ export interface ElementReference {
   line: number | null;
   column: number | null;
   selector: string | null;
-  context?: { tag: string; attributes: Record<string, string>; text: string; ancestors: string[]; sourceTrail?: SourceLocation[] | undefined } | undefined;
+  context?:
+    | {
+        tag: string;
+        attributes: Record<string, string>;
+        text: string;
+        ancestors: string[];
+        sourceTrail?: SourceLocation[] | undefined;
+      }
+    | undefined;
 }
 
 export interface QANote {
@@ -62,13 +70,20 @@ export interface QAProgress {
 
 export function getProgress(document: QADocument): QAProgress {
   const tasks = document.sections.flatMap((section) => section.tasks);
-  return { passed: tasks.filter((task) => task.checked).length, total: tasks.length, skipped: tasks.filter((task) => task.status === "skipped").length };
+  return {
+    passed: tasks.filter((task) => task.checked).length,
+    total: tasks.length,
+    skipped: tasks.filter((task) => task.status === "skipped").length,
+  };
 }
 
 export function getNextOpenTaskId(document: QADocument, currentTaskId: string): string | null {
   const tasks = document.sections.flatMap((section) => section.tasks);
   if (tasks.length === 0) return null;
-  const currentIndex = Math.max(0, tasks.findIndex((task) => task.id === currentTaskId));
+  const currentIndex = Math.max(
+    0,
+    tasks.findIndex((task) => task.id === currentTaskId),
+  );
   for (let offset = 1; offset <= tasks.length; offset += 1) {
     const candidate = tasks[(currentIndex + offset) % tasks.length];
     if (candidate && candidate.status === "open") return candidate.id;

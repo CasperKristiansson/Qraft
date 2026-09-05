@@ -10,10 +10,15 @@ const source = await sourceFingerprint(repository);
 const consumer = await mkdtemp(join(tmpdir(), "qraft-clean-consumer-"));
 
 function run(command, args, cwd = repository) {
-  const result = spawnSync(command, args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+  const result = spawnSync(command, args, {
+    cwd,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  });
   process.stdout.write(result.stdout);
   process.stderr.write(result.stderr);
-  if (result.status !== 0) throw new Error(`${command} ${args.join(" ")} failed with ${result.status ?? "no status"}`);
+  if (result.status !== 0)
+    throw new Error(`${command} ${args.join(" ")} failed with ${result.status ?? "no status"}`);
   return result.stdout;
 }
 
@@ -22,11 +27,22 @@ const archiveName = (await readdir(consumer)).find((name) => name.endsWith(".tgz
 if (!archiveName) throw new Error("pnpm pack did not create a package archive.");
 const archive = join(consumer, archiveName);
 const archiveFiles = run("tar", ["-tzf", archive]).trim().split("\n");
-for (const expected of ["package/dist/index.js", "package/dist/index.d.ts", "package/dist/vite.js", "package/dist/vite.d.ts", "package/README.md", "package/THIRD_PARTY_NOTICES.md"]) {
+for (const expected of [
+  "package/dist/index.js",
+  "package/dist/index.d.ts",
+  "package/dist/vite.js",
+  "package/dist/vite.d.ts",
+  "package/README.md",
+  "package/THIRD_PARTY_NOTICES.md",
+]) {
   if (!archiveFiles.includes(expected)) throw new Error(`Packed package is missing ${expected}.`);
 }
-if (archiveFiles.some((path) => path.startsWith("package/src/") || path.startsWith("package/tests/"))) {
-  throw new Error("Packed package contains source or test files outside the public artifact boundary.");
+if (
+  archiveFiles.some((path) => path.startsWith("package/src/") || path.startsWith("package/tests/"))
+) {
+  throw new Error(
+    "Packed package contains source or test files outside the public artifact boundary.",
+  );
 }
 
 const packageJson = {
@@ -57,8 +73,10 @@ minimumReleaseAgeExclude:
   - "lucide-react@1.41.0"
   - "zod@4.5.4"
 `,
-  "index.html": "<!doctype html><html><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Qraft clean consumer</title></head><body><div id=\"root\"></div><script type=\"module\" src=\"/src/main.tsx\"></script></body></html>\n",
-  "QA.seed.md": "# QA\n\n## Cart <!-- qraft:id=section_11111111-1111-4111-8111-111111111111 -->\n\n- [ ] Change quantity <!-- qraft:id=task_22222222-2222-4222-8222-222222222222 -->\n- [ ] Remove product <!-- qraft:id=task_33333333-3333-4333-8333-333333333333 -->\n\n## Account <!-- qraft:id=section_44444444-4444-4444-8444-444444444444 -->\n\n- [ ] Expired session <!-- qraft:id=task_55555555-5555-4555-8555-555555555555 -->\n",
+  "index.html":
+    '<!doctype html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Qraft clean consumer</title></head><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>\n',
+  "QA.seed.md":
+    "# QA\n\n## Cart <!-- qraft:id=section_11111111-1111-4111-8111-111111111111 -->\n\n- [ ] Change quantity <!-- qraft:id=task_22222222-2222-4222-8222-222222222222 -->\n- [ ] Remove product <!-- qraft:id=task_33333333-3333-4333-8333-333333333333 -->\n\n## Account <!-- qraft:id=section_44444444-4444-4444-8444-444444444444 -->\n\n- [ ] Expired session <!-- qraft:id=task_55555555-5555-4555-8555-555555555555 -->\n",
   "QA.md": "# QA\n",
   "vite.config.ts": `import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
@@ -133,24 +151,74 @@ for (const [path, content] of Object.entries(files)) {
 }
 
 run("corepack", ["pnpm", "install"], consumer);
-run("node", ["--input-type=module", "-e", "const client=await import('@qraft/qa');const vite=await import('@qraft/qa/vite');if(typeof client.QA!=='function'||typeof client.HttpQAStorage!=='function'||typeof vite.qraft!=='function')process.exit(1)"], consumer);
-run("node", ["--input-type=module", "-e", "try{await import('@qraft/qa/dist/vite.js');process.exit(1)}catch(error){if(error.code!=='ERR_PACKAGE_PATH_NOT_EXPORTED')throw error}"], consumer);
+run(
+  "node",
+  [
+    "--input-type=module",
+    "-e",
+    "const client=await import('@qraft/qa');const vite=await import('@qraft/qa/vite');if(typeof client.QA!=='function'||typeof client.HttpQAStorage!=='function'||typeof vite.qraft!=='function')process.exit(1)",
+  ],
+  consumer,
+);
+run(
+  "node",
+  [
+    "--input-type=module",
+    "-e",
+    "try{await import('@qraft/qa/dist/vite.js');process.exit(1)}catch(error){if(error.code!=='ERR_PACKAGE_PATH_NOT_EXPORTED')throw error}",
+  ],
+  consumer,
+);
 run("corepack", ["pnpm", "build"], consumer);
 
-const { preview } = await import(new URL(`file://${consumer}/node_modules/vite/dist/node/index.js`).href);
-const server = await preview({ root: consumer, preview: { host: "127.0.0.1", port: 0, strictPort: false } });
+const { preview } = await import(
+  new URL(`file://${consumer}/node_modules/vite/dist/node/index.js`).href
+);
+const server = await preview({
+  root: consumer,
+  preview: { host: "127.0.0.1", port: 0, strictPort: false },
+});
 const previewChecks = [];
 try {
   const address = server.httpServer.address();
-  for (const path of ["document", "commands", "events", "files", `files/${"a".repeat(64)}/document`]) {
-    const response = await fetch(`http://127.0.0.1:${address.port}/__qraft/${path}`, { method: path === "commands" ? "POST" : "GET", signal: AbortSignal.timeout(5000) });
+  for (const path of [
+    "document",
+    "commands",
+    "events",
+    "files",
+    `files/${"a".repeat(64)}/document`,
+  ]) {
+    const response = await fetch(`http://127.0.0.1:${address.port}/__qraft/${path}`, {
+      method: path === "commands" ? "POST" : "GET",
+      signal: AbortSignal.timeout(5000),
+    });
     const body = await response.text();
-    if (response.headers.get("content-type")?.includes("application/json") || response.headers.get("content-type")?.includes("text/event-stream") || body.includes('"revision"')) throw new Error(`Production preview exposes ${path}`);
-    previewChecks.push({ path, status: response.status, contentType: response.headers.get("content-type") });
+    if (
+      response.headers.get("content-type")?.includes("application/json") ||
+      response.headers.get("content-type")?.includes("text/event-stream") ||
+      body.includes('"revision"')
+    )
+      throw new Error(`Production preview exposes ${path}`);
+    previewChecks.push({
+      path,
+      status: response.status,
+      contentType: response.headers.get("content-type"),
+    });
   }
-} finally { await server.close(); }
-const digest = createHash("sha256").update(await readFile(archive)).digest("hex");
-const evidence = { consumer, archive, digest, sourceFingerprint: source.fingerprint, archiveFiles: archiveFiles.length, previewChecks };
+} finally {
+  await server.close();
+}
+const digest = createHash("sha256")
+  .update(await readFile(archive))
+  .digest("hex");
+const evidence = {
+  consumer,
+  archive,
+  digest,
+  sourceFingerprint: source.fingerprint,
+  archiveFiles: archiveFiles.length,
+  previewChecks,
+};
 await writeFile(join(consumer, "evidence.json"), JSON.stringify(evidence, null, 2) + "\n");
 await writeFile("artifacts/release/consumer.json", JSON.stringify(evidence, null, 2) + "\n");
 process.stdout.write(`${JSON.stringify(evidence)}\n`);

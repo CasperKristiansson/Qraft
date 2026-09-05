@@ -7,4 +7,8 @@ export interface QAStorage {
   subscribe(onChange: () => void): () => void;
 }
 
-export interface QAFileCatalog { projectId: string; files: { id: string; label: string }[]; truncated: boolean }
+export interface QAFileCatalog {
+  projectId: string;
+  files: { id: string; label: string }[];
+  truncated: boolean;
+}

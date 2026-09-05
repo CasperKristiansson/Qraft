@@ -8,8 +8,12 @@ async function visit(path) {
     if (entry.isDirectory()) await visit(child);
     else if ([".ts", ".tsx"].includes(extname(entry.name))) {
       const text = await readFile(child, "utf8");
-      if (text.includes("dangerouslySetInnerHTML")) failures.push(`${child}: raw HTML rendering is forbidden`);
-      if (/from ["'](?:node:)?(?:fs|path|crypto)["']/.test(text) && child.startsWith("src/client")) {
+      if (text.includes("dangerouslySetInnerHTML"))
+        failures.push(`${child}: raw HTML rendering is forbidden`);
+      if (
+        /from ["'](?:node:)?(?:fs|path|crypto)["']/.test(text) &&
+        child.startsWith("src/client")
+      ) {
         failures.push(`${child}: browser code imports a server module`);
       }
     }

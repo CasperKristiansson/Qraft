@@ -13,7 +13,17 @@
     "resolveJsonModule": true,
     "types": ["node", "vite/client"],
     "skipLibCheck": true,
-    "noEmit": true
+    "noEmit": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
   },
-  "include": ["src", "tests", "examples", "vite.config.ts", "vitest.config.ts", "playwright.config.ts"]
+  "include": [
+    "src",
+    "tests",
+    "examples",
+    "vite.config.ts",
+    "vitest.config.ts",
+    "playwright.config.ts"
+  ],
+  "exclude": ["examples/next-app"]
 }

@@ -4,7 +4,7 @@ This document records the sources inspected for the v0.1 design and the rules ag
 
 Research snapshot: 2026-09-04
 
-The exact implementation allowlist, inspected commits, package pins, source paths, and permitted roles are also embedded in [the Goal-mode implementation plan](implementation-plan.md#exact-open-source-reuse-allowlist), as required for self-contained agent execution. Both files must change together if the allowlist changes.
+This document is the single owner of the dependency and structural-reference allowlist. package.json and pnpm-lock.yaml own the installed versions.
 
 ## Verified upstreams
 
@@ -43,27 +43,25 @@ It is a reference, not a Qraft dependency. Prefer an original implementation aro
 
 The following primary repositories and published packages were verified for the specific v0.1 roles below:
 
-| Repository | Inspected commit | Package pin | Detected/declared license | Boundary |
-| --- | --- | --- | --- | --- |
-| [facebook/react](https://github.com/facebook/react) | `d9f4e76bd6582ef86048fefcedda9d5b041ae62f` | `react@19.2.8`, `react-dom@19.2.8` | MIT | Runtime only; never copy internals. |
-| [vitejs/vite](https://github.com/vitejs/vite) | `8492422b8f110625a90c702f42f30784e8cf19dc` | `vite@8.2.2` | MIT | Public build/plugin/server/watcher APIs and official plugin documentation. |
-| [radix-ui/primitives](https://github.com/radix-ui/primitives) | `f7ecd5ab16f5e1e820eb5786a1419a98a2d594ae` | `@radix-ui/react-dialog@1.1.23`, `@radix-ui/react-focus-scope@1.1.16` | MIT | Published accessible primitives inside Qraft's ShadowRoot; no internal copying. |
-| [colinhacks/zod](https://github.com/colinhacks/zod) | `7a00236683c79000dbab0d92f6faf0b7fba39f59` | `zod@4.5.4` | MIT | Runtime validation; Qraft retains its own domain model. |
-| [npm/write-file-atomic](https://github.com/npm/write-file-atomic) | `23e111d95367e1d987c1b4d7823791eaaf6b21df` | `write-file-atomic@8.0.0` | ISC | Final atomic write mechanics; Qraft retains revision checks and complete transaction queue. |
-| [lucide-icons/lucide](https://github.com/lucide-icons/lucide) | `4dc5b7ebaed733642fae0382238d71a147fb5c7d` | `lucide-react@1.41.0` | ISC, with named Feather-derived icons under MIT | Sole icon family; notices must cover actually distributed icons/license files. |
-| [vitest-dev/vitest](https://github.com/vitest-dev/vitest) | `9e1166959e14bd32298d8a0e85352431c769ec7a` | `vitest@5.0.0` | MIT | Development test dependency. |
-| [microsoft/playwright](https://github.com/microsoft/playwright) | `d1dcd6bc0a138ec0fd943df19e07458dc426ee22` | `@playwright/test@1.62.1` | Apache-2.0 | Development browser-test dependency. |
-| [microsoft/TypeScript](https://github.com/microsoft/TypeScript) | `2bd066d87f5bafd315be9f40889d0a60b9e58e0b` | `typescript@7.0.2` | Apache-2.0 | Development compiler and declaration emitter. |
-| [DefinitelyTyped/DefinitelyTyped](https://github.com/DefinitelyTyped/DefinitelyTyped) | Published tarballs locked by `pnpm-lock.yaml` | `@types/node@26.4.1`, `@types/react@19.2.18`, `@types/react-dom@19.2.7` | MIT | Development-only platform and peer type declarations. |
-| [vitejs/vite-plugin-react](https://github.com/vitejs/vite-plugin-react) | `04cac5020e349f452d76c5a4f6d788ad4b38930a` | `@vitejs/plugin-react@6.1.1` | MIT | Public React transform and refresh integration for the deterministic example. |
+| Repository                                                                            | Inspected commit                              | Package pin                                                             | Detected/declared license                       | Boundary                                                                                    |
+| ------------------------------------------------------------------------------------- | --------------------------------------------- | ----------------------------------------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| [facebook/react](https://github.com/facebook/react)                                   | `d9f4e76bd6582ef86048fefcedda9d5b041ae62f`    | `react@19.2.8`, `react-dom@19.2.8`                                      | MIT                                             | Runtime only; never copy internals.                                                         |
+| [vitejs/vite](https://github.com/vitejs/vite)                                         | `8492422b8f110625a90c702f42f30784e8cf19dc`    | `vite@8.2.2`                                                            | MIT                                             | Public build/plugin/server/watcher APIs and official plugin documentation.                  |
+| [radix-ui/primitives](https://github.com/radix-ui/primitives)                         | `f7ecd5ab16f5e1e820eb5786a1419a98a2d594ae`    | `@radix-ui/react-dialog@1.1.23`, `@radix-ui/react-focus-scope@1.1.16`   | MIT                                             | Published accessible primitives inside Qraft's ShadowRoot; no internal copying.             |
+| [colinhacks/zod](https://github.com/colinhacks/zod)                                   | `7a00236683c79000dbab0d92f6faf0b7fba39f59`    | `zod@4.5.4`                                                             | MIT                                             | Runtime validation; Qraft retains its own domain model.                                     |
+| [npm/write-file-atomic](https://github.com/npm/write-file-atomic)                     | `23e111d95367e1d987c1b4d7823791eaaf6b21df`    | `write-file-atomic@8.0.0`                                               | ISC                                             | Final atomic write mechanics; Qraft retains revision checks and complete transaction queue. |
+| [lucide-icons/lucide](https://github.com/lucide-icons/lucide)                         | `4dc5b7ebaed733642fae0382238d71a147fb5c7d`    | `lucide-react@1.41.0`                                                   | ISC, with named Feather-derived icons under MIT | Sole icon family; notices must cover actually distributed icons/license files.              |
+| [vitest-dev/vitest](https://github.com/vitest-dev/vitest)                             | `9e1166959e14bd32298d8a0e85352431c769ec7a`    | `vitest@5.0.0`                                                          | MIT                                             | Development test dependency.                                                                |
+| [microsoft/playwright](https://github.com/microsoft/playwright)                       | `d1dcd6bc0a138ec0fd943df19e07458dc426ee22`    | `@playwright/test@1.62.1`                                               | Apache-2.0                                      | Development browser-test dependency.                                                        |
+| [microsoft/TypeScript](https://github.com/microsoft/TypeScript)                       | `2bd066d87f5bafd315be9f40889d0a60b9e58e0b`    | `typescript@7.0.2`                                                      | Apache-2.0                                      | Development compiler and declaration emitter.                                               |
+| [DefinitelyTyped/DefinitelyTyped](https://github.com/DefinitelyTyped/DefinitelyTyped) | Published tarballs locked by `pnpm-lock.yaml` | `@types/node@26.4.1`, `@types/react@19.2.18`, `@types/react-dom@19.2.7` | MIT                                             | Development-only platform and peer type declarations.                                       |
+| [vitejs/vite-plugin-react](https://github.com/vitejs/vite-plugin-react)               | `04cac5020e349f452d76c5a4f6d788ad4b38930a`    | `@vitejs/plugin-react@6.1.1`                                            | MIT                                             | Public React transform and refresh integration for the deterministic example.               |
 
-Package pins were checked against their published registry metadata on the research date. The lockfile created in M1 becomes the exact transitive graph authority.
-
-The TypeScript, DefinitelyTyped, and Vite React plugin pins above close an implementation-plan omission discovered in M1: the required TypeScript typecheck and documented React/Vite example cannot be built from the original dependency table alone. They add build-time tooling only and do not expand Qraft's runtime architecture.
+Package pins were checked against their published registry metadata on the research date. The lockfile is the exact transitive graph authority.
 
 ### Additional structural reference
 
-[shadcn-ui/ui](https://github.com/shadcn-ui/ui) at commit `7c9eaba1c0a6404c990c144a654792e3313c650d` is MIT-licensed and may be inspected only at the button, dialog, textarea, progress, and badge source paths named in the implementation plan. Extract component/API patterns into smaller Qraft-owned components. Do not install shadcn, Tailwind, or Vaul and do not copy its Drawer/theme wholesale.
+[shadcn-ui/ui](https://github.com/shadcn-ui/ui) at commit `7c9eaba1c0a6404c990c144a654792e3313c650d` is MIT-licensed and may be inspected only at `apps/v4/registry/bases/radix/ui/{button,dialog,textarea,progress,badge}.tsx`. Extract component/API patterns into smaller Qraft-owned components. Do not install shadcn, Tailwind, or Vaul and do not copy its Drawer/theme wholesale.
 
 ### Agentation
 
@@ -83,8 +81,8 @@ Agentation was consulted only for its publicly documented interaction concepts: 
 7. Implement generic interaction ideas in original Qraft code and an original visual system.
 8. Do not claim Agentation compatibility.
 9. Re-check package exports, versions, transitive license metadata, and upstream notices before dependency upgrades or external distribution.
-10. Use `@Browser` in every implementation milestone to validate the integrated behavior that the reused package or extracted pattern enabled; source resemblance is not evidence that it works inside Qraft's ShadowRoot.
-11. Record structural provenance in the implementation plan's OSS log.
+10. Use `@Browser` for changed integrated behavior to validate the integrated behavior that the reused package or extracted pattern enabled; source resemblance is not evidence that it works inside Qraft's ShadowRoot.
+11. Record structural provenance here when adding or changing a reference.
 
 ## Version policy
 
@@ -114,8 +112,14 @@ Before any public, commercial, or team-wide distribution beyond the internal dev
 4. Confirm no Agentation implementation material entered the repository.
 5. Obtain owner/legal review appropriate to the intended distribution.
 
-## M6 installed graph audit
+## Installed graph audit
 
 The local release audit enumerates all installed pnpm package manifests against the exact lockfile, including build/test packages. MIT, ISC, Apache-2.0, BSD-2-Clause, BSD-3-Clause, 0BSD, and MPL-2.0 are the reviewed transitive license families. `lightningcss` and its platform binary are unmodified MPL-2.0 build tooling delivered with their own license; they are not bundled into Qraft. `@react-grab/cli@0.2.0` omits the manifest license field but ships an MIT `LICENSE` with Aiden Bai's notice, also confirmed against the allowlisted repository's [pinned root license](https://raw.githubusercontent.com/aidenybai/react-grab/ea4bbec9e80f4802e8ae19ad18431edb9ddbb670/LICENSE). Qraft imports only `react-grab/primitives`, never the CLI. The audit records this exact exception and rejects other unknown licenses. Platform-optional binaries not installed on the test host are outside this local artifact audit; external distribution still requires the pre-release check above.
 
 The installed archives for `@rolldown/binding-darwin-arm64@1.2.6`, `react-remove-scroll-bar@2.3.8`, and `stackback@0.0.2` declare MIT in their manifests but omit standalone license files. The binding uses the notice shipped by its matching `rolldown@1.2.6` parent; the scroll-bar README also declares MIT. These exact archive omissions are recorded in the inventory. Qraft does not copy or bundle these packages into its tarball; any external redistribution review must revisit archive notice completeness.
+
+## Next.js and maintenance tooling
+
+Owner-approved additions: Next.js 16.3.3 (MIT), used through public App Router Node route handlers and client components; Prettier 3.6.2 (MIT), a development-only formatter. References: https://nextjs.org/docs/app/getting-started/route-handlers and https://prettier.io/docs/cli. No framework implementation code is copied. Exact artifacts and transitive licenses remain governed by package.json, pnpm-lock.yaml and audit:release.
+
+Next.js brings unmodified framework dependencies that are installed by the consumer, not copied into Qraft's tarball: `caniuse-lite@1.0.30001810` ships CC-BY-4.0 text; `@img/sharp-libvips-darwin-arm64@1.3.3` declares LGPL-3.0-or-later and points to lovell/sharp-libvips. Its platform archive omits a standalone license file. `@next/env@16.3.3`, `@next/swc-darwin-arm64@16.3.3` and `client-only@0.0.1` declare MIT but also omit standalone files; Next's installed license.md carries the Vercel MIT notice. These exact metadata-only exceptions are recorded by the audit, alongside license-file evidence where present. The audit does not claim to clear redistribution of framework binaries; Qraft distributes only its own built modules and notices, with Next an optional consumer-owned peer.

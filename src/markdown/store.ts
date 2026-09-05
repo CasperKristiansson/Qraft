@@ -51,7 +51,11 @@ export class MarkdownDocumentStore {
   readonly #dependencies: StoreDependencies;
   readonly #listeners = new Set<(document: QADocument) => void>();
 
-  constructor(filePath: string, root: string = dirname(filePath), dependencies: StoreDependencies = {}) {
+  constructor(
+    filePath: string,
+    root: string = dirname(filePath),
+    dependencies: StoreDependencies = {},
+  ) {
     this.filePath = resolve(filePath);
     this.root = resolve(root);
     this.#dependencies = dependencies;
@@ -62,7 +66,12 @@ export class MarkdownDocumentStore {
     for (const task of document.sections.flatMap((section) => section.tasks)) {
       for (const finding of task.notes) {
         const element = finding.element;
-        if (element) finding.element = { ...normalizeElement({ ...element, component: null, selector: null }, this.root)!, component: element.component, selector: element.selector };
+        if (element)
+          finding.element = {
+            ...normalizeElement({ ...element, component: null, selector: null }, this.root)!,
+            component: element.component,
+            selector: element.selector,
+          };
       }
     }
     return document;
@@ -74,7 +83,11 @@ export class MarkdownDocumentStore {
       return this.#document(decode(await readExact(this.filePath)));
     } catch (error) {
       if (error instanceof QraftError) throw error;
-      throw new QraftError("io", "Qraft could not read the QA file. Check its permissions and retry.", true);
+      throw new QraftError(
+        "io",
+        "Qraft could not read the QA file. Check its permissions and retry.",
+        true,
+      );
     }
   }
 
@@ -86,9 +99,14 @@ export class MarkdownDocumentStore {
   execute(command: QACommand, baseRevision: string): Promise<QADocument> {
     const previous = queues.get(this.filePath) ?? Promise.resolve();
     const operation = previous.then(() => this.#execute(command, baseRevision));
-    const settled = operation.then(() => undefined, () => undefined);
+    const settled = operation.then(
+      () => undefined,
+      () => undefined,
+    );
     queues.set(this.filePath, settled);
-    void settled.then(() => { if (queues.get(this.filePath) === settled) queues.delete(this.filePath); });
+    void settled.then(() => {
+      if (queues.get(this.filePath) === settled) queues.delete(this.filePath);
+    });
     return operation;
   }
 
@@ -100,7 +118,10 @@ export class MarkdownDocumentStore {
       const initialSource = decode(initialBytes);
       const parsed = parseMarkdown(initialSource);
       if (baseRevision !== parsed.document.revision) {
-        throw conflict("The QA file changed. Review the latest version and retry.", this.#document(initialSource));
+        throw conflict(
+          "The QA file changed. Review the latest version and retry.",
+          this.#document(initialSource),
+        );
       }
       const patchOptions: PatchOptions = { root: this.root };
       if (this.#dependencies.idFactory) patchOptions.idFactory = this.#dependencies.idFactory;
@@ -118,7 +139,10 @@ export class MarkdownDocumentStore {
       const latestBytes = await readExact(this.filePath);
       const latestRevision = sha256(latestBytes);
       if (latestRevision !== parsed.document.revision) {
-        throw conflict("The QA file changed before Qraft could save. Review and retry.", this.#document(decode(latestBytes)));
+        throw conflict(
+          "The QA file changed before Qraft could save. Review and retry.",
+          this.#document(decode(latestBytes)),
+        );
       }
       const atomicWrite = this.#dependencies.atomicWrite ?? writeFileAtomic;
       const document = this.#document(nextSource);
@@ -131,7 +155,11 @@ export class MarkdownDocumentStore {
       if (error && typeof error === "object" && "issues" in error) {
         throw new QraftError("validation", "The command contains invalid or unsupported values.");
       }
-      throw new QraftError("io", "Qraft could not save the QA file. The original was left unchanged.", true);
+      throw new QraftError(
+        "io",
+        "Qraft could not save the QA file. The original was left unchanged.",
+        true,
+      );
     }
   }
 }

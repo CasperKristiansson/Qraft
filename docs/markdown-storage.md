@@ -51,7 +51,7 @@ Qraft is not a general Markdown editor. The parser should be line-oriented and r
 - A task owns its recognized two-space children and their four-space metadata until the next top-level task or H2.
 - A note owns consecutive recognized four-space metadata lines until another two-space child, top-level task, or H2.
 - Notes (including legacy findings) outside a task are diagnostics and remain untouched.
-- Top-level tasks before the first H2 are allowed in an implicit untitled section only if the implementation plan explicitly adds that support. For v0.1, render them as diagnostics and do not mutate them.
+- Top-level tasks before the first H2 are allowed in an implicit untitled section not supported: render them as diagnostics and do not mutate them.
 
 This strictness avoids inventing ownership when hand-authored indentation is ambiguous.
 
@@ -65,7 +65,7 @@ An entity with exactly one valid ID uses it across moves and external edits.
 
 An entity without an ID receives a deterministic session-local locator derived from its type, source line, and content so it can render. The first mutation targeting it must insert a stable ID as part of the same atomic patch.
 
-Starting the Vite server, opening the drawer, parsing, or receiving a watcher event must never rewrite the file just to add IDs.
+Starting the development server, opening the drawer, parsing, or receiving a watcher event must never rewrite the file just to add IDs.
 
 ### Duplicate IDs
 
@@ -84,7 +84,7 @@ Qraft-created sections always have IDs. Creating a task in a legacy section assi
 - Render values as text in the browser.
 - Serialize metadata with an inline-code fence one backtick longer than the longest backtick run in the value.
 - Normalize source path separators to `/`.
-- Resolve source paths against the Vite root and omit paths outside it.
+- Resolve source paths against the project root and omit paths outside it.
 - Store `location.pathname`; omit query strings and hashes.
 - Store selectors as one line and enforce the request-body size limit as the final bound.
 
@@ -147,20 +147,20 @@ For each command:
 
 The atomic-write dependency keeps its temp file beside the target; do not replace it with a system-temp implementation because rename atomicity is only reliable within the same filesystem. Never derive a target path from browser input.
 
-No cross-process file lock is required for v0.1. The immediate second revision check protects against normal external-editor races. Document that simultaneous writes in the final check-to-rename window are a known local-only limitation; do not claim stronger locking semantics than implemented.
+No cross-process file lock is required for the internal package. The immediate second revision check protects against normal external-editor races. Document that simultaneous writes in the final check-to-rename window are a known local-only limitation; do not claim stronger locking semantics than implemented.
 
 ## Error behavior
 
-| Condition | Store result | File result |
-| --- | --- | --- |
-| Missing file read | Empty document | No file created. |
-| Invalid command text | Validation error | Unchanged. |
-| Unknown target | Not found | Unchanged. |
-| Duplicate target ID | Conflict | Unchanged. |
-| Stale base revision | Conflict with latest document | Unchanged. |
-| External change before commit | Conflict with latest document | Unchanged. |
-| Temp write/fsync failure | I/O error | Original unchanged; temp cleaned when possible. |
-| Rename failure | I/O error | Original remains; temp cleaned when possible. |
+| Condition                     | Store result                  | File result                                     |
+| ----------------------------- | ----------------------------- | ----------------------------------------------- |
+| Missing file read             | Empty document                | No file created.                                |
+| Invalid command text          | Validation error              | Unchanged.                                      |
+| Unknown target                | Not found                     | Unchanged.                                      |
+| Duplicate target ID           | Conflict                      | Unchanged.                                      |
+| Stale base revision           | Conflict with latest document | Unchanged.                                      |
+| External change before commit | Conflict with latest document | Unchanged.                                      |
+| Temp write/fsync failure      | I/O error                     | Original unchanged; temp cleaned when possible. |
+| Rename failure                | I/O error                     | Original remains; temp cleaned when possible.   |
 
 ## Required tests
 

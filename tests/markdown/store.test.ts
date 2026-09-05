@@ -19,7 +19,9 @@ async function temporaryFile(initial?: string) {
 }
 
 afterEach(async () => {
-  await Promise.all(directories.splice(0).map((directory) => rm(directory, { recursive: true, force: true })));
+  await Promise.all(
+    directories.splice(0).map((directory) => rm(directory, { recursive: true, force: true })),
+  );
 });
 
 function deterministicIds() {
@@ -40,9 +42,15 @@ describe("MarkdownDocumentStore", () => {
 
     let document = await store.execute({ type: "createSection", title: "Main" }, empty.revision);
     const section = document.sections[0]!;
-    document = await store.execute({ type: "createTask", sectionId: section.id, title: "Task" }, document.revision);
+    document = await store.execute(
+      { type: "createTask", sectionId: section.id, title: "Task" },
+      document.revision,
+    );
     const task = document.sections[0]!.tasks[0]!;
-    document = await store.execute({ type: "addNote", taskId: task.id, body: "Note" }, document.revision);
+    document = await store.execute(
+      { type: "addNote", taskId: task.id, body: "Note" },
+      document.revision,
+    );
     document = await store.execute(
       { type: "addNote", taskId: task.id, body: "Finding", element: null },
       document.revision,
@@ -52,8 +60,14 @@ describe("MarkdownDocumentStore", () => {
       { type: "editNote", noteId: finding.id, body: "Edited observation" },
       document.revision,
     );
-    document = await store.execute({ type: "setTaskChecked", taskId: task.id, checked: true }, document.revision);
-    document = await store.execute({ type: "setTaskChecked", taskId: task.id, checked: false }, document.revision);
+    document = await store.execute(
+      { type: "setTaskChecked", taskId: task.id, checked: true },
+      document.revision,
+    );
+    document = await store.execute(
+      { type: "setTaskChecked", taskId: task.id, checked: false },
+      document.revision,
+    );
 
     const exact = await readFile(file);
     expect(document.revision).toBe(sha256(exact));
@@ -88,7 +102,9 @@ describe("MarkdownDocumentStore", () => {
       idFactory: deterministicIds(),
       beforeCommitCheck: () => writeFile(file, external, "utf8"),
     });
-    await expect(store.execute({ type: "createSection", title: "Nope" }, sha256(initial))).rejects.toMatchObject({
+    await expect(
+      store.execute({ type: "createSection", title: "Nope" }, sha256(initial)),
+    ).rejects.toMatchObject({
       code: "conflict",
     });
     expect(await readFile(file, "utf8")).toBe(external);
@@ -102,7 +118,9 @@ describe("MarkdownDocumentStore", () => {
       { type: "createSection", title: "First" },
       { type: "createSection", title: "Second" },
     ];
-    const results = await Promise.allSettled(commands.map((command) => store.execute(command, sha256(initial))));
+    const results = await Promise.allSettled(
+      commands.map((command) => store.execute(command, sha256(initial))),
+    );
     expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
     expect(results.filter((result) => result.status === "rejected")).toHaveLength(1);
     const source = await readFile(file, "utf8");
@@ -128,8 +146,14 @@ describe("MarkdownDocumentStore", () => {
         throw new Error("injected write failure");
       },
     });
-    await expect(store.execute({ type: "createSection", title: "Main" }, sha256(initial))).rejects.toEqual(
-      new QraftError("io", "Qraft could not save the QA file. The original was left unchanged.", true),
+    await expect(
+      store.execute({ type: "createSection", title: "Main" }, sha256(initial)),
+    ).rejects.toEqual(
+      new QraftError(
+        "io",
+        "Qraft could not save the QA file. The original was left unchanged.",
+        true,
+      ),
     );
     expect(await readFile(file, "utf8")).toBe(initial);
   });
@@ -157,7 +181,11 @@ describe("MarkdownDocumentStore", () => {
     const store = new MarkdownDocumentStore(file, directory);
     await expect(
       store.execute(
-        { type: "setTaskChecked", taskId: "task_22222222-2222-4222-8222-222222222222", checked: true },
+        {
+          type: "setTaskChecked",
+          taskId: "task_22222222-2222-4222-8222-222222222222",
+          checked: true,
+        },
         sha256(duplicate),
       ),
     ).rejects.toMatchObject({ code: "conflict" });
@@ -173,7 +201,8 @@ describe("MarkdownDocumentStore", () => {
     expect((await store.read()).revision).toBe(sha256(Buffer.from(initial)));
     expect((await store.read()).title).toBe("QA");
     const next = await store.execute({ type: "createSection", title: "More" }, sha256(initial));
-    const expected = initial + "\n## More <!-- qraft:id=section_00000000-0000-4000-8000-000000000001 -->\n";
+    const expected =
+      initial + "\n## More <!-- qraft:id=section_00000000-0000-4000-8000-000000000001 -->\n";
     expect(await readFile(file)).toEqual(Buffer.from(expected));
     expect(next.revision).toBe(sha256(expected));
   });
@@ -184,7 +213,9 @@ describe("MarkdownDocumentStore", () => {
     await writeFile(file, bytes);
     const store = new MarkdownDocumentStore(file, directory);
     await expect(store.read()).rejects.toMatchObject({ code: "validation" });
-    await expect(store.execute({ type: "createSection", title: "More" }, sha256(bytes))).rejects.toMatchObject({ code: "validation" });
+    await expect(
+      store.execute({ type: "createSection", title: "More" }, sha256(bytes)),
+    ).rejects.toMatchObject({ code: "validation" });
     expect(await readFile(file)).toEqual(bytes);
     expect(await readdir(directory)).toEqual(["QA.md"]);
   });
@@ -194,10 +225,15 @@ describe("MarkdownDocumentStore", () => {
     const { file, directory } = await temporaryFile(initial);
     const store = new MarkdownDocumentStore(file, directory);
     expect((await store.read()).sections[0]?.tasks[0]?.notes[0]?.element?.source).toBeNull();
-    await expect(store.execute({ type: "createSection", title: "More" }, EMPTY_REVISION)).rejects.toMatchObject({
-      document: { sections: [{ tasks: [{ notes: [{ element: { source: null, line: null, column: null } }] }] }] },
+    await expect(
+      store.execute({ type: "createSection", title: "More" }, EMPTY_REVISION),
+    ).rejects.toMatchObject({
+      document: {
+        sections: [
+          { tasks: [{ notes: [{ element: { source: null, line: null, column: null } }] }] },
+        ],
+      },
     });
     expect(await readFile(file, "utf8")).toBe(initial);
   });
-
 });

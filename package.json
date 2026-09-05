@@ -1,12 +1,12 @@
 {
   "name": "@qraft/qa",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Development-only React QA drawer backed by local Markdown",
   "type": "module",
   "packageManager": "pnpm@11.25.0",
   "engines": {
-    "node": "24.19.0"
+    "node": ">=24.19.0 <25"
   },
   "exports": {
     ".": {
@@ -16,6 +16,10 @@
     "./vite": {
       "types": "./dist/vite.d.ts",
       "import": "./dist/vite.js"
+    },
+    "./next": {
+      "types": "./dist/next.d.ts",
+      "import": "./dist/next.js"
     }
   },
   "files": [
@@ -32,14 +36,17 @@
     "evidence:capture": "node scripts/capture-browser-evidence.mjs",
     "audit:release": "node scripts/audit-release.mjs",
     "verify:consumer": "node scripts/verify-clean-consumer.mjs",
-    "format:check": "node scripts/format-check.mjs",
+    "format:check": "prettier --check .",
     "lint": "node scripts/lint.mjs",
-    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "format": "prettier --write .",
+    "verify:next": "node scripts/verify-next-consumer.mjs"
   },
   "peerDependencies": {
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "vite": "8.2.2"
+    "vite": "8.2.2",
+    "next": "16.3.3"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "1.1.23",
@@ -55,10 +62,19 @@
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.7",
     "@vitejs/plugin-react": "6.1.1",
+    "prettier": "3.6.2",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "typescript": "7.0.2",
     "vite": "8.2.2",
     "vitest": "5.0.0"
+  },
+  "peerDependenciesMeta": {
+    "vite": {
+      "optional": true
+    },
+    "next": {
+      "optional": true
+    }
   }
 }

@@ -44,15 +44,15 @@ Unknown object keys may be rejected to catch client/server drift early.
 
 ### Responses
 
-| Status | Meaning | Body |
-| --- | --- | --- |
-| `200` | Command applied | New `QADocument` |
-| `400` | Invalid JSON, schema, value, or target structure | Safe error object |
-| `404` | Referenced entity no longer exists | Safe error object plus current revision |
-| `409` | Revision conflict or duplicate-ID ambiguity | Safe error and latest document when readable |
-| `413` | Request exceeds 32 KiB | Safe error object |
-| `415` | Wrong content type | Safe error object |
-| `500` | Filesystem/read/write failure | Safe error object without stack |
+| Status | Meaning                                          | Body                                         |
+| ------ | ------------------------------------------------ | -------------------------------------------- |
+| `200`  | Command applied                                  | New `QADocument`                             |
+| `400`  | Invalid JSON, schema, value, or target structure | Safe error object                            |
+| `404`  | Referenced entity no longer exists               | Safe error object plus current revision      |
+| `409`  | Revision conflict or duplicate-ID ambiguity      | Safe error and latest document when readable |
+| `413`  | Request exceeds 32 KiB                           | Safe error object                            |
+| `415`  | Wrong content type                               | Safe error object                            |
+| `500`  | Filesystem/read/write failure                    | Safe error object without stack              |
 
 Error shape:
 
@@ -164,3 +164,9 @@ GET `/__qraft/files` returns `{ projectId, files: [{ id, label }], truncated }`.
 Catalog and file selection do not write Markdown. Each selected file gets its own events and deduplication scope. Changing one browser selection never redirects another browser's pending command. Deleted/replaced/symlinked paths are revalidated before access; symlink escape is rejected. No file chooser or file route is registered in production preview.
 
 Attachment Context may include the bounded optional sourceTrail defined in architecture. Apply the same project-relative source normalization to each entry on commands, document reads and conflicts; omit outside-root/dependency paths. Existing attachments without a trail remain valid. No endpoint or body-size limit changes.
+
+## Next.js adapter
+
+Next.js App Router exposes the same protocol through a Node-runtime route handler. It returns 404 outside development before initializing storage. Origin checks use the request URL/Host, never forwarded headers; no CORS headers are added. Native watchFile polling observes selected files every 750 ms, including atomic replacement, deletion and recreation. Watchers are non-persistent and disposed with their runtime. Client abort closes SSE subscriptions. Source opening remains a Vite-only capability; stored source context is available in both frameworks.
+
+Next.js local gateway setups can configure one exact browser `origin` in the route factory. This participates in the hot-reload project identity; forwarded headers never determine the allowed origin. Without this option, compare the browser origin to the request protocol and Host.

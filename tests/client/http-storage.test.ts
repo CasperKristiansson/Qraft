@@ -48,7 +48,7 @@ describe("HttpQAStorage events", () => {
     expect(first.url).toBe("/__test/events");
     first.open();
     expect(states).toEqual([true]);
-    expect(changed).not.toHaveBeenCalled();
+    expect(changed).toHaveBeenCalledTimes(1);
 
     first.fail();
     expect(first.closed).toBe(true);
@@ -59,7 +59,7 @@ describe("HttpQAStorage events", () => {
     const second = FakeEventSource.instances[1]!;
     second.open();
     expect(states).toEqual([true, false, true]);
-    expect(changed).toHaveBeenCalledTimes(1);
+    expect(changed).toHaveBeenCalledTimes(2);
 
     unsubscribe();
     expect(second.closed).toBe(true);
@@ -78,16 +78,35 @@ describe("HttpQAStorage events", () => {
 
 it("ignores malformed and already-confirmed revision events", async () => {
   vi.stubGlobal("EventSource", FakeEventSource);
-  vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ revision: "a".repeat(64), sections: [] }))));
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => new Response(JSON.stringify({ revision: "a".repeat(64), sections: [] }))),
+  );
   const storage = new HttpQAStorage();
   await storage.getDocument();
   const changed = vi.fn();
   const unsubscribe = storage.subscribe(changed);
   const listener = FakeEventSource.instances[0]!.listeners.get("document-changed")!;
   listener(new MessageEvent("document-changed", { data: "{" }));
-  listener(new MessageEvent("document-changed", { data: JSON.stringify({ revision: "a".repeat(64) }) }));
+  listener(
+    new MessageEvent("document-changed", { data: JSON.stringify({ revision: "a".repeat(64) }) }),
+  );
   expect(changed).not.toHaveBeenCalled();
-  listener(new MessageEvent("document-changed", { data: JSON.stringify({ revision: "b".repeat(64) }) }));
+  listener(
+    new MessageEvent("document-changed", { data: JSON.stringify({ revision: "b".repeat(64) }) }),
+  );
   expect(changed).toHaveBeenCalledTimes(1);
   unsubscribe();
+});
+
+it("refetches after the initial connection failed before ever opening", () => {
+  vi.useFakeTimers();
+  vi.stubGlobal("EventSource", FakeEventSource);
+  const changed = vi.fn();
+  const stop = new HttpQAStorage().subscribe(changed);
+  FakeEventSource.instances[0]!.fail();
+  vi.advanceTimersByTime(500);
+  FakeEventSource.instances[1]!.open();
+  expect(changed).toHaveBeenCalledTimes(1);
+  stop();
 });

@@ -34,7 +34,10 @@ async function dev(root: string, discover = false) {
   return { server, url: `http://127.0.0.1:${address.port}` };
 }
 
-async function command(url: string, request: { commandId: string; baseRevision: string; command: QACommand }) {
+async function command(
+  url: string,
+  request: { commandId: string; baseRevision: string; command: QACommand },
+) {
   return fetch(`${url}/__qraft/commands`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -44,7 +47,9 @@ async function command(url: string, request: { commandId: string; baseRevision: 
 
 afterEach(async () => {
   await Promise.all(servers.splice(0).map((server) => server.close()));
-  await Promise.all(directories.splice(0).map((directory) => rm(directory, { recursive: true, force: true })));
+  await Promise.all(
+    directories.splice(0).map((directory) => rm(directory, { recursive: true, force: true })),
+  );
 });
 
 describe("Qraft Vite protocol", () => {
@@ -70,8 +75,13 @@ describe("Qraft Vite protocol", () => {
     const source = "# QA\n";
     const { url } = await dev(await fixtureRoot(source));
     expect((await fetch(`${url}/__qraft/document`, { method: "POST" })).status).toBe(405);
-    expect((await fetch(`${url}/__qraft/document`, { headers: { Origin: "http://evil.invalid" } })).status).toBe(403);
-    expect((await fetch(`${url}/__qraft/commands`, { method: "POST", body: "{}" })).status).toBe(415);
+    expect(
+      (await fetch(`${url}/__qraft/document`, { headers: { Origin: "http://evil.invalid" } }))
+        .status,
+    ).toBe(403);
+    expect((await fetch(`${url}/__qraft/commands`, { method: "POST", body: "{}" })).status).toBe(
+      415,
+    );
     expect(
       (
         await fetch(`${url}/__qraft/commands`, {
@@ -102,7 +112,11 @@ describe("Qraft Vite protocol", () => {
     const missing = await command(url, {
       commandId: "missing",
       baseRevision: sha256(source),
-      command: { type: "setTaskChecked", taskId: "task_00000000-0000-4000-8000-000000000000", checked: true },
+      command: {
+        type: "setTaskChecked",
+        taskId: "task_00000000-0000-4000-8000-000000000000",
+        checked: true,
+      },
     });
     expect(missing.status).toBe(404);
     expect((await missing.json()) as object).toMatchObject({ revision: sha256(source) });
@@ -112,7 +126,9 @@ describe("Qraft Vite protocol", () => {
       command: { type: "createSection", title: "Stale" },
     });
     expect(stale.status).toBe(409);
-    expect((await stale.json()) as object).toMatchObject({ document: { revision: sha256(source) } });
+    expect((await stale.json()) as object).toMatchObject({
+      document: { revision: sha256(source) },
+    });
   });
 
   it("deduplicates a successful command ID and conflicts on different reuse", async () => {
@@ -130,7 +146,10 @@ describe("Qraft Vite protocol", () => {
     const retry = await command(url, request);
     expect(retry.status).toBe(200);
     expect(await retry.json()).toEqual(firstDocument);
-    const different = await command(url, { ...request, command: { type: "createSection", title: "Twice" } });
+    const different = await command(url, {
+      ...request,
+      command: { type: "createSection", title: "Twice" },
+    });
     expect(different.status).toBe(409);
     expect((await readFile(join(root, "QA.md"), "utf8")).match(/^## Once/gmu)).toHaveLength(1);
   });
@@ -154,7 +173,9 @@ describe("Qraft Vite protocol", () => {
             value += decoder.decode(chunk.value);
           }
         })(),
-        new Promise((_, reject) => setTimeout(() => reject(new Error(`SSE timeout: ${needle}`)), 5_000)),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error(`SSE timeout: ${needle}`)), 5_000),
+        ),
       ]);
       return value;
     };
@@ -179,16 +200,32 @@ describe("Qraft Vite protocol", () => {
   it("rejects invalid or escaping plugin paths at startup", async () => {
     const root = await fixtureRoot();
     await expect(
-      createServer({ root, configFile: false, logLevel: "silent", plugins: [qraft({ file: "QA.txt" })] }),
+      createServer({
+        root,
+        configFile: false,
+        logLevel: "silent",
+        plugins: [qraft({ file: "QA.txt" })],
+      }),
     ).rejects.toThrow(".md or .markdown");
     await expect(
-      createServer({ root, configFile: false, logLevel: "silent", plugins: [qraft({ file: "../QA.md" })] }),
-    ).rejects.toThrow("inside the Vite project root");
+      createServer({
+        root,
+        configFile: false,
+        logLevel: "silent",
+        plugins: [qraft({ file: "../QA.md" })],
+      }),
+    ).rejects.toThrow("outside the project");
   });
 
   it("builds and previews without registering a Qraft endpoint", async () => {
     const root = await fixtureRoot();
-    await build({ root, configFile: false, logLevel: "silent", plugins: [qraft()], build: { outDir: "dist" } });
+    await build({
+      root,
+      configFile: false,
+      logLevel: "silent",
+      plugins: [qraft()],
+      build: { outDir: "dist" },
+    });
     const server = await preview({
       root,
       configFile: false,
@@ -209,15 +246,30 @@ it("discovers project Markdown without a default and isolates selected-file comm
   await writeFile(join(root, "Review.md"), "# Two\n");
   const { url } = await dev(root, true);
   const catalogResponse = await fetch(`${url}/__qraft/files`);
-  const catalog = await catalogResponse.json() as { projectId: string; files: { id: string; label: string }[] };
+  const catalog = (await catalogResponse.json()) as {
+    projectId: string;
+    files: { id: string; label: string }[];
+  };
   expect(catalog.files.map((file) => file.label)).toEqual(["QA.md", "Review.md"]);
   expect(catalogResponse.headers.get("cache-control")).toBe("no-store");
   expect((await fetch(`${url}/__qraft/files`, { method: "POST" })).status).toBe(405);
-  expect((await fetch(`${url}/__qraft/files`, { headers: { Origin: "http://evil.invalid" } })).status).toBe(403);
+  expect(
+    (await fetch(`${url}/__qraft/files`, { headers: { Origin: "http://evil.invalid" } })).status,
+  ).toBe(403);
   expect((await fetch(`${url}/__qraft/files/${"a".repeat(64)}/document`)).status).toBe(404);
-  expect((await fetch(`${url}/__qraft/document`)).headers.get("content-type")).not.toContain("application/json");
+  expect((await fetch(`${url}/__qraft/document`)).headers.get("content-type")).not.toContain(
+    "application/json",
+  );
   const id = catalog.files.find((file) => file.label === "Review.md")!.id;
-  const response = await fetch(`${url}/__qraft/files/${id}/commands`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ commandId: "chosen", baseRevision: sha256("# Two\n"), command: { type: "createSection", title: "Selected" } }) });
+  const response = await fetch(`${url}/__qraft/files/${id}/commands`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      commandId: "chosen",
+      baseRevision: sha256("# Two\n"),
+      command: { type: "createSection", title: "Selected" },
+    }),
+  });
   expect(response.status).toBe(200);
   expect(await readFile(join(root, "QA.md"), "utf8")).toBe("# One\n");
   expect(await readFile(join(root, "Review.md"), "utf8")).toContain("## Selected");

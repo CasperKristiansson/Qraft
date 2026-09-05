@@ -27,9 +27,12 @@ export class HttpQAStorage implements QAStorage {
   ) {}
 
   async getFiles(signal?: AbortSignal): Promise<QAFileCatalog> {
-    const response = await fetch(`${this.endpoint}/files`, { cache: "no-store", ...(signal ? { signal } : {}) });
+    const response = await fetch(`${this.endpoint}/files`, {
+      cache: "no-store",
+      ...(signal ? { signal } : {}),
+    });
     if (!response.ok) throw await this.#error(response);
-    return await response.json() as QAFileCatalog;
+    return (await response.json()) as QAFileCatalog;
   }
 
   forFile(id: string): HttpQAStorage {
@@ -38,7 +41,10 @@ export class HttpQAStorage implements QAStorage {
   }
 
   async getDocument(signal?: AbortSignal): Promise<QADocument> {
-    const response = await fetch(`${this.endpoint}/document`, { cache: "no-store", ...(signal ? { signal } : {}) });
+    const response = await fetch(`${this.endpoint}/document`, {
+      cache: "no-store",
+      ...(signal ? { signal } : {}),
+    });
     if (!response.ok) throw await this.#error(response);
     const document = (await response.json()) as QADocument;
     this.revision = document.revision;
@@ -62,7 +68,6 @@ export class HttpQAStorage implements QAStorage {
     let timer: ReturnType<typeof setTimeout> | null = null;
     let stopped = false;
     let delay = 500;
-    let opened = false;
 
     const connect = () => {
       if (stopped) return;
@@ -71,12 +76,14 @@ export class HttpQAStorage implements QAStorage {
         try {
           const data = JSON.parse((event as MessageEvent<string>).data) as { revision?: string };
           if (data.revision && data.revision !== this.revision) onChange();
-        } catch { /* Ignore malformed invalidations; reconnect still refetches. */ }
+        } catch {
+          /* Ignore malformed invalidations; reconnect still refetches. */
+        }
       });
       source.onopen = () => {
         this.onConnectionState?.(true);
-        if (opened) onChange();
-        opened = true;
+        // A first successful connection can follow failed attempts or race the initial read.
+        onChange();
         delay = 500;
       };
       source.onerror = () => {

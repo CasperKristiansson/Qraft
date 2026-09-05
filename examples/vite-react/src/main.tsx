@@ -17,26 +17,51 @@ function Example() {
   return (
     <StrictMode>
       <main className="shop" data-testid="host-layout">
-        <nav><strong>Northstar</strong><span>Home</span><span>Shop</span><span>Deals</span></nav>
+        <nav>
+          <strong>Northstar</strong>
+          <span>Home</span>
+          <span>Shop</span>
+          <span>Deals</span>
+        </nav>
         <div className="shop-grid">
           <section>
             <p className="eyebrow">Deterministic example</p>
             <h1>Shopping cart</h1>
             <article className="product">
-              <div className="product-image" aria-hidden="true">Q</div>
-              <div><strong>Lounge Chair</strong><p>$249.00</p></div>
-              <div className="quantity"><button onClick={() => setQuantity((value) => Math.max(0, value - 1))}>−</button><span data-testid="quantity-value">{quantity}</span><button onClick={() => setQuantity((value) => value + 1)}>+</button></div>
+              <div className="product-image" aria-hidden="true">
+                Q
+              </div>
+              <div>
+                <strong>Lounge Chair</strong>
+                <p>$249.00</p>
+              </div>
+              <div className="quantity">
+                <button onClick={() => setQuantity((value) => Math.max(0, value - 1))}>−</button>
+                <span data-testid="quantity-value">{quantity}</span>
+                <button onClick={() => setQuantity((value) => value + 1)}>+</button>
+              </div>
             </article>
           </section>
           <aside>
-            <h2>Summary</h2><p>Subtotal <strong>$249.00</strong></p><p>Shipping <strong>$19.00</strong></p>
-            <hr /><p>Total <strong>$268.00</strong></p><button className="checkout">Checkout</button>
+            <h2>Summary</h2>
+            <p>
+              Subtotal <strong>$249.00</strong>
+            </p>
+            <p>
+              Shipping <strong>$19.00</strong>
+            </p>
+            <hr />
+            <p>
+              Total <strong>$268.00</strong>
+            </p>
+            <button className="checkout">Checkout</button>
           </aside>
         </div>
       </main>
       {parameters.has("picker") ? <PickerTargets /> : null}
       {parameters.has("protocol") ? <ProtocolControls storage={exampleStorage} /> : null}
-      {import.meta.env.DEV && (parameters.has("protocol") ? <QA storage={exampleStorage} /> : <QA />)}
+      {import.meta.env.DEV &&
+        (parameters.has("protocol") ? <QA storage={exampleStorage} /> : <QA />)}
     </StrictMode>
   );
 }
@@ -44,8 +69,12 @@ function Example() {
 class ExampleQAStorage implements QAStorage {
   readonly #delegate = new HttpQAStorage();
   forceStale = false;
-  getDocument(signal?: AbortSignal) { return this.#delegate.getDocument(signal); }
-  subscribe(onChange: () => void) { return this.#delegate.subscribe(onChange); }
+  getDocument(signal?: AbortSignal) {
+    return this.#delegate.getDocument(signal);
+  }
+  subscribe(onChange: () => void) {
+    return this.#delegate.subscribe(onChange);
+  }
   execute(command: QACommand, baseRevision: string): Promise<QADocument> {
     const revision = this.forceStale ? "0".repeat(64) : baseRevision;
     this.forceStale = false;
@@ -75,7 +104,14 @@ function ProtocolControls({ storage }: { storage: ExampleQAStorage }) {
       <button onClick={() => void invoke("delete")}>Delete QA file</button>
       <button onClick={() => void invoke("recreate")}>Recreate QA file</button>
       <button onClick={() => void invoke("fail-next")}>Fail next write</button>
-      <button onClick={() => { storage.forceStale = true; setMessage("The next Qraft command will use a stale revision."); }}>Stale next command</button>
+      <button
+        onClick={() => {
+          storage.forceStale = true;
+          setMessage("The next Qraft command will use a stale revision.");
+        }}
+      >
+        Stale next command
+      </button>
       <button onClick={() => void failSourceOpen()}>Fail next source open</button>
       <span role="status">{message}</span>
     </aside>
@@ -96,12 +132,16 @@ function PickerTargets() {
     <aside className="picker-targets" aria-label="Picker compatibility targets">
       <strong>Picker targets</strong>
       <div ref={shadowHost} />
-      <iframe title="Same-origin picker target" srcDoc="<!doctype html><button data-testid='iframe-quantity'>Iframe quantity</button>" />
+      <iframe
+        title="Same-origin picker target"
+        srcDoc="<!doctype html><button data-testid='iframe-quantity'>Iframe quantity</button>"
+      />
     </aside>
   );
 }
 
 const container = document.getElementById("root")!;
-const applicationRoot = (import.meta.hot?.data.applicationRoot as Root | undefined) ?? createRoot(container);
+const applicationRoot =
+  (import.meta.hot?.data.applicationRoot as Root | undefined) ?? createRoot(container);
 if (import.meta.hot) import.meta.hot.data.applicationRoot = applicationRoot;
 applicationRoot.render(<Example />);
