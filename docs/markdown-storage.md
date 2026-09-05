@@ -38,7 +38,7 @@ Example IDs are shortened for readability. The writer generates a type prefix fo
 - A GitHub-style checkbox beginning in column 1 is a QA task.
 - A checkbox indented by exactly two spaces beneath a task is a legacy note. Its marker and ID are preserved; its old completion state has no workflow effect.
 - A bullet beginning `  - Note:` beneath a task is a note.
-- Four-space-indented labeled bullets beneath a note can be `Component`, `Source`, `Route`, `Selector`, or `Context` metadata. `Context` is a single inline-code JSON object with bounded tag/attributes/text/ancestors defined in architecture.
+- Four-space-indented labeled bullets beneath a note can be `Component`, `Source`, `Route`, `Selector`, or `Context` metadata. `Context` is a single inline-code JSON object with bounded tag/attributes/text/ancestors and optional sourceTrail defined in architecture.
 - Top-level markers `[ ]`, `[x]`, `[X]`, and `[-]` mean open, completed, completed, and skipped. A touched marker uses space, lowercase x, or hyphen.
 - A Qraft ID comment appears on the entity's first line and matches `<!-- qraft:id=... -->`.
 - All unrecognized Markdown is retained but absent from the domain read model.

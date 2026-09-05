@@ -44,15 +44,31 @@ function codeFence(value: string): string {
   return `${fence}${value}${fence}`;
 }
 
+function normalizeSource(value: string | null, root?: string): string | null {
+  let source = value?.replaceAll("\\", "/").split(/[?#]/u)[0] ?? null;
+  if (!source || /^[A-Za-z]:|^[a-z]+:\/\//iu.test(source) || /[\x00-\x1f\x7f]/u.test(source)) return null;
+  if (root) {
+    const absolute = isAbsolute(source) ? resolve(source) : resolve(root, source);
+    const fromRoot = relative(root, absolute).replaceAll("\\", "/");
+    source = fromRoot === "" || fromRoot === ".." || fromRoot.startsWith("../") || isAbsolute(fromRoot) ? null : fromRoot;
+  }
+  return source;
+}
+
 export function normalizeElement(element: ElementReference | null, root?: string): ElementReference | null {
   if (!element) return null;
   const route = element.route.split(/[?#]/u)[0] ?? "";
-  let source = element.source?.replaceAll("\\", "/") ?? null;
-  if (source && root) {
-    const absolute = isAbsolute(source) ? resolve(source) : resolve(root, source);
-    const fromRoot = relative(root, absolute).replaceAll("\\", "/");
-    source = /^[A-Za-z]:|^[a-z]+:\/\//iu.test(source) || /[\x00-\x1f\x7f]/u.test(source) || fromRoot === "" || fromRoot === ".." || fromRoot.startsWith("../") || isAbsolute(fromRoot) ? null : fromRoot;
-  }
+  const source = normalizeSource(element.source, root);
+  const seen = new Set<string>();
+  const sourceTrail = element.context?.sourceTrail?.flatMap((frame) => {
+    const path = normalizeSource(frame.source, root);
+    if (!path || /(?:^|\/)node_modules(?:\/|$)/u.test(path)) return [];
+    const normalized = { ...frame, component: frame.component?.trim().replace(/\s+/gu, " ") ?? null, source: path };
+    const key = JSON.stringify(normalized);
+    if (seen.has(key)) return [];
+    seen.add(key);
+    return [normalized];
+  }).slice(0, 5);
   return {
     route,
     component: element.component ? normalizeEntityText(element.component) : null,
@@ -60,7 +76,7 @@ export function normalizeElement(element: ElementReference | null, root?: string
     line: source ? element.line : null,
     column: source ? element.column : null,
     selector: element.selector ? element.selector.trim().replace(/\s+/gu, " ") : null,
-    ...(element.context ? { context: element.context } : {}),
+    ...(element.context ? { context: { ...element.context, ...(sourceTrail ? { sourceTrail } : {}) } } : {}),
   };
 }
 

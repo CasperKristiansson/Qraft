@@ -45,6 +45,8 @@ The drawer first asks you to choose a Markdown checklist inside the Vite project
 
 Drag the small six-dot grip up or down the right edge; its position survives reload. Keyboard arrows and Home/End move it too. Click QA to open the checklist. Change status directly in a task row: not completed → completed → skipped → not completed. Double-click the status to skip. Open the title for explicit status buttons and notes.
 
+While picking an element, use ↑/↓ or Parent/Child to choose its container, and Enter or click to attach. Parent navigation holds the target until Resume picking. The element trail shows your selection; Guides toggles faint edge lines. The outline follows moving elements and shows their dimensions.
+
 Notes are observations for your coding agent, without their own completion state. The composer is always available: Enter submits, Shift+Enter inserts a line break. Attach an element while retaining your draft, add multiple notes, and edit earlier notes. Task completion never depends on notes and never auto-advances. Skipped tasks remain in the total and are counted separately from completed tasks.
 
 ## Markdown dialect
@@ -82,7 +84,7 @@ If no file exists, ask your coding editor to create a Markdown checklist with se
 
 - Only Vite, React 19.2.8, desktop pointer input, and layouts at 768 CSS pixels or wider are supported.
 - The file store has an in-process command queue and a second revision check, but no cross-process lock. A simultaneous external write in the final check-to-rename window remains possible.
-- Element source context depends on React Grab and source-map availability. Attachments also retain bounded tag, identifying attributes, selected visible text, and ancestor context; no form values, full HTML, styles, or screenshots are captured. Selectors and source locations are best-effort identifiers and may change as the application changes. Plain notes remain available when context is partial or unavailable.
+- Element source context depends on React Grab and source-map availability. Attachments also retain bounded tag, identifying attributes, selected visible text, ancestor context, and up to five relevant component/source locations; no form values, full HTML, styles, or screenshots are captured. Selectors and source locations are best-effort identifiers and may change as the application changes. Plain notes remain available when context is partial or unavailable.
 - Picker traversal supports the main document, open Shadow DOM, and same-origin iframes. Closed shadow roots and cross-origin frames are inaccessible.
 - Editor opening depends on the local Vite/editor integration and can fail; Qraft keeps the stored path visible for manual use.
 - IDs and selector strings are implementation metadata, not a public automation API.

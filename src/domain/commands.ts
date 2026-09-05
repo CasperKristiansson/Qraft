@@ -8,6 +8,12 @@ export const elementContextSchema = z.strictObject({
   attributes: z.record(z.string().regex(/^(id|class|role|aria-label|name|type|title|data-testid|data-test|data-cy)$/u), z.string().max(300)).refine((value) => Object.keys(value).length <= 12),
   text: z.string().max(300),
   ancestors: z.array(z.string().max(300)).max(5),
+  sourceTrail: z.array(z.strictObject({
+    component: z.string().max(200).nullable(),
+    source: z.string().min(1).max(2_000),
+    line: z.number().int().positive().nullable(),
+    column: z.number().int().positive().nullable(),
+  })).max(5).optional(),
 });
 
 export const elementReferenceSchema = z.strictObject({

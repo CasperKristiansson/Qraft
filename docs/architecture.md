@@ -125,11 +125,11 @@ export interface ElementReference {
   line: number | null;
   column: number | null;
   selector: string | null;
-  context?: { tag: string; attributes: Record<string, string>; text: string; ancestors: string[] };
+  context?: { tag: string; attributes: Record<string, string>; text: string; ancestors: string[]; sourceTrail?: { component: string | null; source: string; line: number | null; column: number | null }[] };
 }
 ```
 
-`route` is `location.pathname` only. `source` is a repository-relative path normalized to `/`; the server omits it if it resolves outside the Vite root. The optional context contains tag (80 chars), at most 12 identifying attributes (80-char keys/300-char values), selected visible text (300 chars), and up to 5 ancestor descriptions (300 chars each). Never persist query strings, hashes, DOM/Fiber objects, stacks, HTML previews, styles, form values, or unrestricted page content.
+`route` is `location.pathname` only. `source` is a repository-relative path normalized to `/`; the server omits it if it resolves outside the Vite root. The optional context contains tag (80 chars), at most 12 identifying attributes (80-char keys/300-char values), selected visible text (300 chars), and up to 5 ancestor descriptions (300 chars each). The optional sourceTrail holds at most five deduplicated application source locations (component 200 chars, source 2,000 chars, positive nullable line/column). Derive it from the published structured React Grab context, excluding ignore-listed/dependency frames; normalize every path inside the Vite root on reads and writes and omit invalid/outside paths. Never persist raw stacks, stack arguments, query strings, hashes, DOM/Fiber objects, HTML previews, styles, form values, or unrestricted page content.
 
 `revision` is the SHA-256 hash of the exact file bytes returned by the server.
 

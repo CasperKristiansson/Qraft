@@ -5,6 +5,13 @@ export interface QADiagnostic {
   entityId?: string;
 }
 
+export interface SourceLocation {
+  component: string | null;
+  source: string;
+  line: number | null;
+  column: number | null;
+}
+
 export interface ElementReference {
   route: string;
   component: string | null;
@@ -12,7 +19,7 @@ export interface ElementReference {
   line: number | null;
   column: number | null;
   selector: string | null;
-  context?: { tag: string; attributes: Record<string, string>; text: string; ancestors: string[] } | undefined;
+  context?: { tag: string; attributes: Record<string, string>; text: string; ancestors: string[]; sourceTrail?: SourceLocation[] | undefined } | undefined;
 }
 
 export interface QANote {

@@ -56,10 +56,23 @@ button:disabled { cursor: not-allowed; opacity: .48; }
 .qraft-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 .qraft-picker { position: fixed; inset: 0; z-index: 2147483647; pointer-events: none; font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
 .qraft-picker-outline { position: fixed; border: 1px solid var(--qraft-purple); background: rgb(109 75 210 / 10%); box-shadow: 0 0 0 2px white, 0 0 0 3px rgb(109 75 210 / 45%); pointer-events: none; }
-.qraft-picker-label { position: fixed; max-width: 180px; overflow: hidden; padding: 3px 7px; border-radius: 6px; background: var(--qraft-purple); color: white; box-shadow: 0 2px 8px rgb(31 20 64 / 22%); font: 700 11px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; text-overflow: ellipsis; white-space: nowrap; pointer-events: none; }
-.qraft-picker-toolbar { position: fixed; left: 50%; bottom: 20px; display: grid; grid-template-columns: 22px 1fr 38px; align-items: center; gap: 9px; min-width: 290px; padding: 8px 8px 8px 13px; transform: translateX(-50%); border: 1px solid #d9cff5; border-radius: 14px; background: white; color: var(--qraft-ink); box-shadow: 0 12px 36px rgb(31 20 64 / 22%); pointer-events: auto; }
-.qraft-picker-toolbar > svg { color: var(--qraft-purple); } .qraft-picker-toolbar span { display: grid; } .qraft-picker-toolbar strong { font-size: 13px; } .qraft-picker-toolbar small { color: var(--qraft-muted); font-size: 10px; }
-.qraft-picker-toolbar button { display: grid; place-items: center; width: 38px; height: 38px; padding: 0; border: 0; border-radius: 9px; background: transparent; cursor: pointer; } .qraft-picker-toolbar button:hover { background: var(--qraft-purple-pale); }
+.qraft-picker-label { position: fixed; max-width: min(300px, calc(100vw - 8px)); overflow: hidden; padding: 3px 7px; border-radius: 6px; background: var(--qraft-purple); color: white; box-shadow: 0 2px 8px rgb(31 20 64 / 22%); font: 700 11px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; text-overflow: ellipsis; white-space: nowrap; pointer-events: none; }
+.qraft-picker-outline.selected { border-width: 2px; background: rgb(109 75 210 / 16%); }
+.qraft-picker-guides i, .qraft-picker-guides b { position: fixed; display: block; opacity: .24; }
+.qraft-picker-guides i { top: 0; bottom: 0; border-left: 1px dashed var(--qraft-purple); }
+.qraft-picker-guides b { left: 0; right: 0; border-top: 1px dashed var(--qraft-purple); }
+.qraft-picker-toolbar { position: fixed; left: 50%; bottom: 16px; width: min(560px, calc(100vw - 24px)); max-height: calc(100dvh - 32px); overflow: auto; padding: 10px; transform: translateX(-50%); border: 1px solid #d9cff5; border-radius: 14px; background: white; color: var(--qraft-ink); box-shadow: 0 5px 20px rgb(31 20 64 / 12%); pointer-events: auto; }
+.qraft-picker-toolbar-head { display: grid; grid-template-columns: 22px 1fr 38px; align-items: center; gap: 8px; }
+.qraft-picker-toolbar-head > svg { color: var(--qraft-purple); } .qraft-picker-toolbar span { display: grid; } .qraft-picker-toolbar strong { font-size: 13px; } .qraft-picker-toolbar small { color: var(--qraft-muted); font-size: 11px; }
+.qraft-picker-toolbar button { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-height: 32px; padding: 4px 8px; border: 0; border-radius: 6px; background: transparent; cursor: pointer; font-size: 12px; }
+.qraft-picker-toolbar button:hover { background: var(--qraft-purple-pale); }
+.qraft-picker-trail { display: flex; align-items: center; overflow: auto; margin-top: 8px; padding-bottom: 3px; }
+.qraft-picker-trail button { flex-shrink: 0; max-width: 150px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.qraft-picker-trail button + button::before { content: "›"; color: var(--qraft-muted); margin-right: 3px; }
+.qraft-picker-toolbar button[aria-current="true"], .qraft-picker-toolbar button[aria-pressed="true"] { background: var(--qraft-purple-pale); color: var(--qraft-purple-strong); }
+.qraft-picker-actions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--qraft-soft-border); }
+.qraft-picker-actions > button:last-child { margin-left: auto; background: var(--qraft-purple); color: white; }
+@media (prefers-reduced-motion: no-preference) { .qraft-picker-outline { transition: background-color 120ms ease; } }
 @media (max-width: 767px) { .qraft-drawer { width: 100vw; border-left: 0; } }
 @media (prefers-reduced-motion: no-preference) { .qraft-drawer { animation: qraft-enter 140ms ease-out; } @keyframes qraft-enter { from { transform: translateX(12px); opacity: .75; } } }
 
@@ -107,3 +120,6 @@ button:disabled { cursor: not-allowed; opacity: .48; }
 .qraft-file:hover { background: var(--qraft-purple-pale); }
 .qraft-change-file { min-height: 32px; padding: 0 4px; border: 0; border-radius: 5px; background: transparent; color: var(--qraft-muted); font-size: 11px; cursor: pointer; }
 .qraft-change-file:hover { color: var(--qraft-purple-strong); background: var(--qraft-purple-pale); }
+
+.qraft-context dd li > strong, .qraft-context dd li > code { display: block; }
+.qraft-context dd li + li { margin-top: 6px; }

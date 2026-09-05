@@ -233,3 +233,16 @@ it("adds bounded identifying context to a canonical note with an exact full-file
   const after = patchMarkdown(parseMarkdown(before), { type: "addNote", taskId: stable.task, body: "Move this", element }, { idFactory: ids(created.note) });
   expect(after).toBe(before + "  - Note: Move this <!-- qraft:id=" + created.note + " -->\n    - Route: `/cart`\n    - Selector: `#save`\n    - Context: `" + JSON.stringify(element.context) + "`\n");
 });
+
+it.each(["\n", "\r\n"])("round-trips source trails and edits only note text with %j", (newline) => {
+  for (const final of [true, false]) {
+    const context = { tag: "button", attributes: { id: "save" }, text: "Save", ancestors: ["form#cart"], sourceTrail: [{ component: "Checkout", source: "src/Checkout.tsx", line: 18, column: 3 }] };
+    const before = ["\uFEFF# Review", "## Cart", "- [ ] Task <!-- qraft:id=" + stable.task + " -->", "", "Owner text with `unknown` bytes."].join(newline) + (final ? newline : "");
+    const element = { route: "/cart", component: null, source: null, line: null, column: null, selector: "#save", context: { ...context, sourceTrail: [{ ...context.sourceTrail[0]!, source: "/project/src/Checkout.tsx?private=yes" }] } };
+    const appended = ["  - Note: Move this <!-- qraft:id=" + created.note + " -->", "    - Route: `/cart`", "    - Selector: `#save`", "    - Context: `" + JSON.stringify(context) + "`"].join(newline);
+    const after = patchMarkdown(parseMarkdown(before), { type: "addNote", taskId: stable.task, body: "Move this", element }, { idFactory: ids(created.note), root: "/project" });
+    expect(after).toBe(before + (final ? "" : newline) + appended + (final ? newline : ""));
+    expect(parseMarkdown(after).document.sections[0]!.tasks[0]!.notes[0]!.element?.context).toEqual(context);
+    expect(patchMarkdown(parseMarkdown(after), { type: "editNote", noteId: created.note, body: "Move this left" })).toBe(after.replace("Note: Move this <!--", "Note: Move this left <!--"));
+  }
+});

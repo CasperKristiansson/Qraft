@@ -29,7 +29,7 @@ test("M5 picker highlights a host control, suppresses its click, persists only a
   await expect(quantity).toHaveText("2");
 
   const drawer = page.getByRole("dialog");
-  await expect(drawer.getByText(/main\.tsx/u)).toBeVisible();
+  await expect(drawer.locator(".qraft-context > code").filter({ hasText: /main\.tsx/u })).toBeVisible();
   await expect(page.locator("[data-qraft-root]").locator(".qraft-tab")).toBeHidden();
   await drawer.getByLabel("Write a note").fill("Increment alignment is wrong.");
   await drawer.getByRole("button", { name: "Submit", exact: true }).click();
