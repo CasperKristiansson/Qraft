@@ -26,7 +26,7 @@ Retain neutral typography, restrained purple accents, list-first hierarchy, and 
 
 ### Closed tab
 
-Rotate the compact grip, QA and completed/total group 90 degrees clockwise so it runs vertically down the right edge, as clarified by the owner on 2026-09-05. Keep the tab 26 px wide with 11 px sideways text and a rotated six-dot grip. Use concave junctions where the tab meets the viewport edge. The grip moves the tab only vertically; pointer capture prevents losing drag outside its bounds. Dragging does not open the drawer. Persist a normalized vertical position, clamp using the rendered tab height on resize or count changes, and tolerate unavailable browser storage. Arrow keys move the focused grip; Home/End reach the limits. The separate QA button opens the drawer and receives focus on close.
+Rotate the compact grip, QA and completed/total group 90 degrees clockwise so it runs vertically down the right edge, as clarified by the owner on 2026-09-05. Keep the tab 26 px wide with 11 px sideways text and a rotated six-dot grip. The grip target is at least 24 × 24 CSS pixels to meet WCAG 2.2 target-size requirements. Use concave junctions where the tab meets the viewport edge. The grip moves the tab only vertically; pointer capture prevents losing drag outside its bounds. Dragging does not open the drawer. Persist a normalized vertical position, clamp using the rendered tab height on resize or count changes, and tolerate unavailable browser storage. Arrow keys move the focused grip; Home/End reach the limits. The separate QA button opens the drawer and receives focus on close.
 
 ### Checklist
 

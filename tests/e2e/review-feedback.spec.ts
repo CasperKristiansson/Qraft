@@ -69,6 +69,8 @@ test("compact vertical tab drags and remembers position without opening", async 
   expect(box.height).toBeGreaterThan(26);
   expect(box.height).toBeLessThan(95);
   const handle = (await grip.boundingBox())!;
+  expect(handle.width).toBeGreaterThanOrEqual(24);
+  expect(handle.height).toBeGreaterThanOrEqual(24);
   await page.mouse.move(handle.x + 8, handle.y + 10);
   await page.mouse.down();
   await page.mouse.move(handle.x + 8, handle.y + 140, { steps: 5 });

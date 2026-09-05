@@ -101,7 +101,7 @@ button:disabled {
 .qraft-grip {
   cursor: ns-resize;
   touch-action: none;
-  height: 20px;
+  height: 24px;
 }
 .qraft-grip svg {
   transform: rotate(90deg);

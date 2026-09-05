@@ -9,7 +9,7 @@ Qraft supports Vite React and Next.js App Router (Node runtime). It has no accou
 Qraft is private and has not been published. Build or obtain the approved internal tarball, then install it with its exact tested peers:
 
 ```sh
-pnpm add -D ./vendor/qraft-qa-0.2.0.tgz
+pnpm add -D ./vendor/qraft-qa-0.2.1.tgz
 ```
 
 For an existing project, check its React, framework and Node versions before installing; do not
