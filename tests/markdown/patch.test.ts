@@ -43,7 +43,12 @@ async function expectGolden(
 ): Promise<void> {
   const before = await golden(beforeName);
   const after = await golden(afterName);
-  expect(patchMarkdown(parseMarkdown(before), command, { idFactory, root: "/project" })).toBe(after);
+  const allocated: string[] = [];
+  expect(patchMarkdown(parseMarkdown(before), command, { idFactory: (kind) => { const id = idFactory(kind); allocated.push(id); return id; }, root: "/project" })).toBe(after);
+  for (const newline of ["\n", "\r\n"]) for (const final of [true, false]) {
+    const variant = (source: string) => (final ? source : source.replace(/\n$/u, "")).replaceAll("\n", newline);
+    expect(patchMarkdown(parseMarkdown(variant(before)), command, { idFactory: ids(...allocated), root: "/project" })).toBe(variant(after));
+  }
 }
 
 describe("minimal Markdown patches", () => {
@@ -184,4 +189,23 @@ describe("minimal Markdown patches", () => {
     expect(result).toContain("\r\n  - [ ] Outside source");
     expect(result.endsWith("\r\n")).toBe(false);
   });
+  it("uses the first newline for insertions and preserves all existing mixed bytes", () => {
+    const before = "## Main\n\n- [ ] Task\r\n\r\nUnknown owner text.\r\n";
+    expect(patchMarkdown(parseMarkdown(before), { type: "createSection", title: "More" }, { idFactory: ids(created.section) })).toBe(
+      before + "\n## More <!-- qraft:id=" + created.section + " -->\n",
+    );
+  });
+
+  it("does not expose tasks inside longer fences and rejects ambiguous identity", () => {
+    const before = "## Main\n````md\n```\n- [ ] Example\n````\n- [ ] Real\n";
+    const parsed = parseMarkdown(before);
+    expect(parsed.document.sections[0]?.tasks.map((task) => task.title)).toEqual(["Real"]);
+    const task = parsed.document.sections[0]!.tasks[0]!;
+    expect(patchMarkdown(parsed, { type: "setTaskChecked", taskId: task.id, checked: true }, { idFactory: ids(created.task) })).toBe(
+      "## Main\n````md\n```\n- [ ] Example\n````\n- [x] Real <!-- qraft:id=" + created.task + " -->\n",
+    );
+    const ambiguous = parseMarkdown("## Main\n- [ ] Task <!-- qraft:id=" + stable.task + " --> <!-- qraft:id=" + created.task + " -->\n");
+    expect(() => patchMarkdown(ambiguous, { type: "setTaskChecked", taskId: ambiguous.document.sections[0]!.tasks[0]!.id, checked: true })).toThrow("duplicate ID");
+  });
+
 });

@@ -113,3 +113,9 @@ Before any public, commercial, or team-wide distribution beyond the internal dev
 3. Confirm required notices ship with the relevant distribution.
 4. Confirm no Agentation implementation material entered the repository.
 5. Obtain owner/legal review appropriate to the intended distribution.
+
+## M6 installed graph audit
+
+The local release audit enumerates all installed pnpm package manifests against the exact lockfile, including build/test packages. MIT, ISC, Apache-2.0, BSD-2-Clause, BSD-3-Clause, 0BSD, and MPL-2.0 are the reviewed transitive license families. `lightningcss` and its platform binary are unmodified MPL-2.0 build tooling delivered with their own license; they are not bundled into Qraft. `@react-grab/cli@0.2.0` omits the manifest license field but ships an MIT `LICENSE` with Aiden Bai's notice, also confirmed against the allowlisted repository's [pinned root license](https://raw.githubusercontent.com/aidenybai/react-grab/ea4bbec9e80f4802e8ae19ad18431edb9ddbb670/LICENSE). Qraft imports only `react-grab/primitives`, never the CLI. The audit records this exact exception and rejects other unknown licenses. Platform-optional binaries not installed on the test host are outside this local artifact audit; external distribution still requires the pre-release check above.
+
+The installed archives for `@rolldown/binding-darwin-arm64@1.2.6`, `react-remove-scroll-bar@2.3.8`, and `stackback@0.0.2` declare MIT in their manifests but omit standalone license files. The binding uses the notice shipped by its matching `rolldown@1.2.6` parent; the scroll-bar README also declares MIT. These exact archive omissions are recorded in the inventory. Qraft does not copy or bundle these packages into its tarball; any external redistribution review must revisit archive notice completeness.

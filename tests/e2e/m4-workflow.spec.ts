@@ -86,6 +86,8 @@ test("M4 drawer preserves host geometry and keyboard focus at desktop and suppor
 });
 
 test("M4 missing and malformed files remain recoverable", async ({ page }) => {
+  const duplicateKeyErrors: string[] = [];
+  page.on("console", (message) => { if (message.type() === "error" && message.text().includes("same key")) duplicateKeyErrors.push(message.text()); });
   await reset(page, "/?protocol=1");
   let drawer = page.getByRole("dialog");
   await page.request.post("/__qraft-example/delete");
@@ -98,6 +100,7 @@ test("M4 missing and malformed files remain recoverable", async ({ page }) => {
   await page.request.post("/__qraft-example/malformed");
   await expect(drawer.getByText(/Duplicate Qraft ID/u).first()).toBeVisible();
   await expect(drawer.getByText(/Lines/u).first()).toBeVisible();
-  await drawer.getByRole("button", { name: "First duplicate" }).click();
-  await expect(drawer.getByRole("button", { name: "Pass" })).toBeDisabled();
+  await expect(drawer.getByRole("button", { name: "First duplicate" })).toBeDisabled();
+  await expect(drawer.getByRole("button", { name: "Second duplicate" })).toBeDisabled();
+  expect(duplicateKeyErrors).toEqual([]);
 });

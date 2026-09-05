@@ -123,7 +123,7 @@ Every supported mutation must preserve:
 - whitespace outside the insertion boundary;
 - LF or CRLF newline convention;
 - presence or absence of a final newline;
-- UTF-8 content;
+- UTF-8 content, including a leading BOM without changing its exact-byte revision;
 - existing file mode.
 
 Mixed newline documents produce a diagnostic. Use the first encountered newline for inserted content while leaving existing bytes unchanged.

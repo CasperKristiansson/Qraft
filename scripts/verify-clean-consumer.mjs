@@ -1,3 +1,4 @@
+import { sourceFingerprint } from "./source-fingerprint.mjs";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { mkdtemp, readFile, readdir, writeFile } from "node:fs/promises";
@@ -5,6 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const repository = process.cwd();
+const source = await sourceFingerprint(repository);
 const consumer = await mkdtemp(join(tmpdir(), "qraft-clean-consumer-"));
 
 function run(command, args, cwd = repository) {
@@ -151,5 +153,20 @@ run("node", ["--input-type=module", "-e", "const client=await import('@qraft/qa'
 run("node", ["--input-type=module", "-e", "try{await import('@qraft/qa/dist/vite.js');process.exit(1)}catch(error){if(error.code!=='ERR_PACKAGE_PATH_NOT_EXPORTED')throw error}"], consumer);
 run("corepack", ["pnpm", "build"], consumer);
 
+const { preview } = await import(new URL(`file://${consumer}/node_modules/vite/dist/node/index.js`).href);
+const server = await preview({ root: consumer, preview: { host: "127.0.0.1", port: 0, strictPort: false } });
+const previewChecks = [];
+try {
+  const address = server.httpServer.address();
+  for (const path of ["document", "commands", "events"]) {
+    const response = await fetch(`http://127.0.0.1:${address.port}/__qraft/${path}`, { method: path === "commands" ? "POST" : "GET", signal: AbortSignal.timeout(5000) });
+    const body = await response.text();
+    if (response.headers.get("content-type")?.includes("application/json") || response.headers.get("content-type")?.includes("text/event-stream") || body.includes('"revision"')) throw new Error(`Production preview exposes ${path}`);
+    previewChecks.push({ path, status: response.status, contentType: response.headers.get("content-type") });
+  }
+} finally { await server.close(); }
 const digest = createHash("sha256").update(await readFile(archive)).digest("hex");
-process.stdout.write(`${JSON.stringify({ consumer, archive, digest, archiveFiles: archiveFiles.length })}\n`);
+const evidence = { consumer, archive, digest, sourceFingerprint: source.fingerprint, archiveFiles: archiveFiles.length, previewChecks };
+await writeFile(join(consumer, "evidence.json"), JSON.stringify(evidence, null, 2) + "\n");
+await writeFile("artifacts/release/consumer.json", JSON.stringify(evidence, null, 2) + "\n");
+process.stdout.write(`${JSON.stringify(evidence)}\n`);

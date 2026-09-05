@@ -124,7 +124,8 @@ describe("Qraft Vite protocol", () => {
       baseRevision: sha256(source),
       command: { type: "createSection", title: "Once" } as QACommand,
     };
-    const first = await command(url, request);
+    const [first, concurrent] = await Promise.all([command(url, request), command(url, request)]);
+    expect(concurrent.status).toBe(200);
     const firstDocument = (await first.json()) as QADocument;
     const retry = await command(url, request);
     expect(retry.status).toBe(200);

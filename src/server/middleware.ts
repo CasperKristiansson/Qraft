@@ -55,6 +55,7 @@ async function readJsonBody(request: IncomingMessage): Promise<unknown> {
 
 export function createQraftMiddleware(options: MiddlewareOptions) {
   const recent = new Map<string, SuccessfulCommand>();
+  const inFlight = new Map<string, { fingerprint: string; operation: Promise<QADocument> }>();
   const now = options.now ?? Date.now;
   const documentPath = `${options.endpoint}/document`;
   const commandPath = `${options.endpoint}/commands`;
@@ -104,7 +105,7 @@ export function createQraftMiddleware(options: MiddlewareOptions) {
       safeError(response, 405, "method_not_allowed", "Use POST for the Qraft command endpoint.", false);
       return;
     }
-    if (!request.headers["content-type"]?.toLowerCase().startsWith("application/json")) {
+    if (request.headers["content-type"]?.split(";", 1)[0]?.trim().toLowerCase() !== "application/json") {
       safeError(response, 415, "unsupported_media_type", "Send Qraft commands as application/json.", false);
       return;
     }
@@ -146,8 +147,15 @@ export function createQraftMiddleware(options: MiddlewareOptions) {
       return;
     }
 
+    const active = inFlight.get(parsed.commandId);
+    if (active && active.fingerprint !== fingerprint) {
+      safeError(response, 409, "duplicate_command", "This command ID is already in use for a different request.", false);
+      return;
+    }
     try {
-      const document = await options.store.execute(parsed.command, parsed.baseRevision);
+      const operation = active?.operation ?? options.store.execute(parsed.command, parsed.baseRevision);
+      if (!active) inFlight.set(parsed.commandId, { fingerprint, operation });
+      const document = await operation;
       recent.set(parsed.commandId, { fingerprint, document, expires: now() + 5 * 60_000 });
       options.events.publish(document.revision);
       json(response, 200, document, document.revision);
@@ -165,6 +173,8 @@ export function createQraftMiddleware(options: MiddlewareOptions) {
       } else {
         safeError(response, 500, "write_failed", "Qraft could not save the QA file. The original was left unchanged.", true);
       }
+    } finally {
+      if (!active) inFlight.delete(parsed.commandId);
     }
   };
 }

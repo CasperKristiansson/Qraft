@@ -6,7 +6,7 @@ import { qaCommandSchema } from "../domain/commands";
 import type { QADocument } from "../domain/model";
 import { QraftError } from "../domain/validation";
 import type { IdFactory } from "./ids";
-import { patchMarkdown, type PatchOptions } from "./patch";
+import { normalizeElement, patchMarkdown, type PatchOptions } from "./patch";
 import { parseMarkdown, sha256 } from "./parse";
 
 export interface StoreDependencies {
@@ -32,7 +32,7 @@ async function readExact(path: string): Promise<Buffer> {
 
 function decode(bytes: Buffer): string {
   try {
-    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    return new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
   } catch {
     throw new QraftError("validation", "QA.md is not valid UTF-8.");
   }
@@ -56,9 +56,20 @@ export class MarkdownDocumentStore {
     this.#dependencies = dependencies;
   }
 
+  #document(source: string): QADocument {
+    const document = parseMarkdown(source).document;
+    for (const task of document.sections.flatMap((section) => section.tasks)) {
+      for (const finding of task.findings) {
+        const element = finding.element;
+        if (element) finding.element = { ...normalizeElement({ ...element, component: null, selector: null }, this.root)!, component: element.component, selector: element.selector };
+      }
+    }
+    return document;
+  }
+
   async read(): Promise<QADocument> {
     try {
-      return parseMarkdown(decode(await readExact(this.filePath))).document;
+      return this.#document(decode(await readExact(this.filePath)));
     } catch (error) {
       if (error instanceof QraftError) throw error;
       throw new QraftError("io", "Qraft could not read the QA file. Check its permissions and retry.", true);
@@ -73,7 +84,9 @@ export class MarkdownDocumentStore {
   execute(command: QACommand, baseRevision: string): Promise<QADocument> {
     const previous = queues.get(this.filePath) ?? Promise.resolve();
     const operation = previous.then(() => this.#execute(command, baseRevision));
-    queues.set(this.filePath, operation.then(() => undefined, () => undefined));
+    const settled = operation.then(() => undefined, () => undefined);
+    queues.set(this.filePath, settled);
+    void settled.then(() => { if (queues.get(this.filePath) === settled) queues.delete(this.filePath); });
     return operation;
   }
 
@@ -84,7 +97,7 @@ export class MarkdownDocumentStore {
       const initialSource = decode(initialBytes);
       const parsed = parseMarkdown(initialSource);
       if (baseRevision !== parsed.document.revision) {
-        throw conflict("The QA file changed. Review the latest version and retry.", parsed.document);
+        throw conflict("The QA file changed. Review the latest version and retry.", this.#document(initialSource));
       }
       const patchOptions: PatchOptions = { root: this.root };
       if (this.#dependencies.idFactory) patchOptions.idFactory = this.#dependencies.idFactory;
@@ -101,11 +114,11 @@ export class MarkdownDocumentStore {
       const latestBytes = await readExact(this.filePath);
       const latestRevision = sha256(latestBytes);
       if (latestRevision !== parsed.document.revision) {
-        throw conflict("The QA file changed before Qraft could save. Review and retry.", parseMarkdown(decode(latestBytes)).document);
+        throw conflict("The QA file changed before Qraft could save. Review and retry.", this.#document(decode(latestBytes)));
       }
       const atomicWrite = this.#dependencies.atomicWrite ?? writeFileAtomic;
+      const document = this.#document(nextSource);
       await atomicWrite(this.filePath, Buffer.from(nextSource, "utf8"));
-      const document = parseMarkdown(nextSource).document;
       for (const listener of this.#listeners) listener(document);
       return document;
     } catch (error) {

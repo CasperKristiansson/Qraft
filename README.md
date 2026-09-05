@@ -86,10 +86,11 @@ Use the pinned Node and pnpm versions, then run:
 corepack pnpm install
 corepack pnpm check
 corepack pnpm test:browser
+corepack pnpm audit:release
 corepack pnpm verify:consumer
 ```
 
-`check` covers formatting, lint, typecheck, unit/integration tests, and the package build. `test:browser` exercises Chromium, Firefox, and WebKit. `verify:consumer` packs Qraft, installs that tarball into a clean temporary Vite React app, imports only the two public exports, and builds the production consumer.
+`check` covers formatting, lint, typecheck, unit/integration tests, and the package build. `test:browser` exercises Chromium, Firefox, and WebKit. `audit:release` checks the exact pins, installed transitive licenses, notices, exports, and excluded material. `verify:consumer` packs Qraft, installs that tarball into a clean temporary Vite React app, imports only the two public exports, and builds and checks the production consumer preview. Both scripts retain local evidence under ignored `artifacts/release/`. Run `build` before either artifact check. `scripts/source-fingerprint.mjs` records candidate bytes and file modes, excluding generated/local files and the two evidence-only roadmap/status documents.
 
 ## Project status and documentation
 

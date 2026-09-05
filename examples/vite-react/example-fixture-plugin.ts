@@ -1,4 +1,4 @@
-import { appendFile, chmod, copyFile, rm, stat } from "node:fs/promises";
+import { appendFile, chmod, copyFile, rm, stat, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import type { Plugin } from "vite";
 
@@ -9,6 +9,10 @@ export function exampleFixturePlugin(): Plugin {
     name: "qraft-example-fixture",
     apply: "serve",
     async configureServer(server) {
+      const originalMode = (await stat(server.config.root)).mode & 0o777;
+      let restoreTimer: ReturnType<typeof setTimeout> | undefined;
+      const restore = async () => { clearTimeout(restoreTimer); await chmod(server.config.root, originalMode); };
+      server.httpServer?.once("close", () => void restore());
       const fixture = resolve(server.config.root, "QA.md");
       const malformed = resolve(server.config.root, "QA.malformed.md");
       const local = resolve(server.config.root, "QA.local.md");
@@ -37,9 +41,20 @@ export function exampleFixturePlugin(): Plugin {
           response.end(JSON.stringify({ message: "Local fixture deleted." }));
           return;
         }
+        if (request.url === "/__qraft-example/restore-writes") {
+          await restore();
+          response.end("{}");
+          return;
+        }
         if (request.url === "/__qraft-example/recreate") {
+          await restore();
           await copyFile(fixture, local);
           response.end(JSON.stringify({ message: "Local fixture recreated." }));
+          return;
+        }
+        if (request.url === "/__qraft-example/legacy") {
+          await writeFile(local, "## Main\n- [ ] Legacy task\n- [ ] Next task\n");
+          response.end("{}");
           return;
         }
         if (request.url === "/__qraft-example/malformed") {
@@ -48,9 +63,9 @@ export function exampleFixturePlugin(): Plugin {
           return;
         }
         if (request.url === "/__qraft-example/fail-next") {
-          const mode = (await stat(server.config.root)).mode & 0o777;
           await chmod(server.config.root, 0o500);
-          setTimeout(() => void chmod(server.config.root, mode), 10_000).unref();
+          restoreTimer = setTimeout(() => void restore(), 10_000);
+          restoreTimer.unref();
           response.end(JSON.stringify({ message: "Writes are blocked for 10 seconds; permissions auto-restore." }));
           return;
         }

@@ -75,3 +75,19 @@ describe("HttpQAStorage events", () => {
     expect(FakeEventSource.instances).toHaveLength(1);
   });
 });
+
+it("ignores malformed and already-confirmed revision events", async () => {
+  vi.stubGlobal("EventSource", FakeEventSource);
+  vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ revision: "a".repeat(64), sections: [] }))));
+  const storage = new HttpQAStorage();
+  await storage.getDocument();
+  const changed = vi.fn();
+  const unsubscribe = storage.subscribe(changed);
+  const listener = FakeEventSource.instances[0]!.listeners.get("document-changed")!;
+  listener(new MessageEvent("document-changed", { data: "{" }));
+  listener(new MessageEvent("document-changed", { data: JSON.stringify({ revision: "a".repeat(64) }) }));
+  expect(changed).not.toHaveBeenCalled();
+  listener(new MessageEvent("document-changed", { data: JSON.stringify({ revision: "b".repeat(64) }) }));
+  expect(changed).toHaveBeenCalledTimes(1);
+  unsubscribe();
+});

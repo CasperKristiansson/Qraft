@@ -65,7 +65,8 @@ function sourceLines(source: string): SourceLine[] {
     const end = lf === -1 ? source.length : lf + 1;
     const raw = source.slice(start, end);
     const newline = raw.endsWith("\r\n") ? "\r\n" : raw.endsWith("\n") ? "\n" : "";
-    lines.push({ content: raw.slice(0, raw.length - newline.length), newline, number, start, end });
+    const bom = start === 0 && raw.startsWith("\uFEFF") ? 1 : 0;
+    lines.push({ content: raw.slice(bom, raw.length - newline.length), newline, number, start: start + bom, end });
     start = end;
     number += 1;
   }
@@ -74,7 +75,8 @@ function sourceLines(source: string): SourceLine[] {
 
 function splitId(text: string, kind: EntityKind): IdResult {
   const match = text.match(/^(.*?)(?:\s*<!--\s*qraft:id=([^\s>]+)\s*-->)\s*$/u);
-  if (!match) return { text: text.trim(), id: null, malformedId: null };
+  if (!match) return { text: text.trim(), id: null, malformedId: text.includes("<!-- qraft:id=") ? "ambiguous" : null };
+  if ((text.match(/<!--\s*qraft:id=/gu) ?? []).length !== 1) return { text: text.trim(), id: null, malformedId: "ambiguous" };
   const candidate = match[2] ?? "";
   return {
     text: (match[1] ?? "").trim(),
@@ -109,6 +111,7 @@ export function parseMarkdown(source: string): ParsedMarkdown {
   const sections: QASection[] = [];
   const spans = new Map<string, SourceSpan>();
   const idLines = new Map<string, number[]>();
+  const ambiguousIds = new Set<string>();
   let title = "QA";
   let sawTitle = false;
   let section: QASection | null = null;
@@ -133,6 +136,7 @@ export function parseMarkdown(source: string): ParsedMarkdown {
       });
     }
     const id = result.id ?? legacyId(kind, line.number, result.text);
+    if (result.malformedId) ambiguousIds.add(id);
     if (result.id) idLines.set(id, [...(idLines.get(id) ?? []), line.number]);
     const span: SourceSpan = {
       kind,
@@ -153,8 +157,8 @@ export function parseMarkdown(source: string): ParsedMarkdown {
     const fenceMatch = line.content.match(/^ {0,3}(`{3,}|~{3,})/u);
     if (fenceMatch) {
       const marker = fenceMatch[1] ?? "";
-      if (!fence) fence = marker[0] ?? null;
-      else if (marker[0] === fence) fence = null;
+      if (!fence) fence = marker;
+      else if (marker[0] === fence[0] && marker.length >= fence.length && /^ {0,3}(`+|~+)\s*$/u.test(line.content)) fence = null;
       if (sectionSpan) sectionSpan.end = line.end;
       if (taskSpan) taskSpan.end = line.end;
       continue;
@@ -307,7 +311,7 @@ export function parseMarkdown(source: string): ParsedMarkdown {
   if (taskSpan) taskSpan.end = source.length;
   if (findingSpan) findingSpan.end = source.length;
 
-  const duplicateIds = new Set<string>();
+  const duplicateIds = new Set<string>(ambiguousIds);
   for (const [id, duplicateLines] of idLines) {
     if (duplicateLines.length < 2) continue;
     duplicateIds.add(id);
@@ -330,7 +334,7 @@ export function parseMarkdown(source: string): ParsedMarkdown {
   return {
     document: { title, revision: sha256(source), sections, diagnostics },
     source,
-    newline: newlineKinds.has("\r\n") ? "\r\n" : "\n",
+    newline: lines.find((line) => line.newline)?.newline === "\r\n" ? "\r\n" : "\n",
     hasFinalNewline: source.endsWith("\n"),
     spans,
     duplicateIds,

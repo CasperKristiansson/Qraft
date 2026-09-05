@@ -2,7 +2,7 @@
 
 These documents collectively define Qraft v0.1. Each concern has one canonical owner so agents can work without reconciling duplicated specifications.
 
-Status: v0.1 locally implemented; final evidence is owned by the implementation plan
+Status: v0.1 locally complete; M1–M6 and all 16 acceptance criteria verified on 2026-09-05
 
 Audience: maintainers and coding agents
 
@@ -12,7 +12,7 @@ Specification snapshot: 2026-09-04
 
 - The root package, deterministic Vite React example, local Markdown store/protocol, Shadow DOM drawer, and React Grab picker are implemented for v0.1.
 - The six-surface [visual direction](visuals/qraft-v0.1-visual-direction.png) is owner-approved and locked for v0.1.
-- Local verification and each evidence tier are recorded in the [implementation plan](implementation-plan.md); a checked criterion means its required evidence exists on the recorded source fingerprint.
+- Final isolated checks and packed-consumer Browser acceptance passed. Local verification and each evidence tier are recorded in the [implementation plan](implementation-plan.md); a checked criterion means its required evidence exists on the recorded source fingerprint.
 - Qraft remains private and internal. Local completion does not imply a push, package publication, deployment, hosted CI result, or external owner acceptance.
 
 ## Source-of-truth map

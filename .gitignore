@@ -24,3 +24,6 @@ QA.local.md
 .DS_Store
 .idea/
 .vscode/
+
+# Local candidate evidence
+artifacts/release/

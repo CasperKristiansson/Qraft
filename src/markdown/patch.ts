@@ -44,14 +44,14 @@ function codeFence(value: string): string {
   return `${fence}${value}${fence}`;
 }
 
-function normalizeElement(element: ElementReference | null, root?: string): ElementReference | null {
+export function normalizeElement(element: ElementReference | null, root?: string): ElementReference | null {
   if (!element) return null;
   const route = element.route.split(/[?#]/u)[0] ?? "";
   let source = element.source?.replaceAll("\\", "/") ?? null;
   if (source && root) {
     const absolute = isAbsolute(source) ? resolve(source) : resolve(root, source);
     const fromRoot = relative(root, absolute).replaceAll("\\", "/");
-    source = fromRoot === "" || fromRoot === ".." || fromRoot.startsWith("../") || isAbsolute(fromRoot) ? null : fromRoot;
+    source = /^[A-Za-z]:|^[a-z]+:\/\//iu.test(source) || /[\x00-\x1f\x7f]/u.test(source) || fromRoot === "" || fromRoot === ".." || fromRoot.startsWith("../") || isAbsolute(fromRoot) ? null : fromRoot;
   }
   return {
     route,

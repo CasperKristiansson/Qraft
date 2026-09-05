@@ -2,10 +2,10 @@
 
 ## Status
 
-- Current state: specifications are complete and the six-surface visual direction is owner-approved; implementation has not started.
-- Active milestone: M1 — establish the package, read model, and browser-visible foundation.
-- Branch/worktree: `main` in `/Users/casperkristiansson/programming/Qraft`; preserve the existing uncommitted documentation preparation.
-- Last validation: documentation links/code fences passed locally; approved visual PNG verified as 1536×1024 with SHA-256 `ba14d7f37f19b257c521b31c5b2293f2f40a2dd69e817f65fd66d46b11315850`.
+- Current state: M1–M6 and all 16 acceptance criteria are complete for the local internal v0.1 candidate, with final evidence below.
+- Active milestone: none — local roadmap complete; no external delivery is authorized or claimed.
+- Branch/worktree: `main` at `d2fb66d50db8413c00ad4893bb987e1e0c319e36`; clean at the start of the 2026-09-05 resumption. Preserve all subsequent uncommitted work.
+- Last validation: 2026-09-05 final isolated `check`, `test:browser`, `audit:release`, and `verify:consumer` passed; final packed `@Browser` acceptance passed at all three required viewports.
 - Requested delivery boundary: complete local internal v0.1 candidate. Commit, push, package publication, deployment, or public release requires separate authority.
 
 ## Background and context
@@ -175,7 +175,7 @@ Discovery rule: if a command is missing or the toolchain changes, inspect `AGENT
 - [x] M3: Deliver Vite bridge and live synchronization
 - [x] M4: Build the approved drawer workflow
 - [x] M5: Integrate React Grab element attachment
-- [ ] M6: Harden and prove the complete local candidate
+- [x] M6: Harden and prove the complete local candidate
 
 ## Primary goal command
 
@@ -525,15 +525,15 @@ Evidence inheritance:
 
 Tasks:
 
-- [ ] Complete malformed-file, filesystem-failure, connection, duplicate-command, race, and cleanup fixtures.
-- [ ] Complete keyboard, focus, reduced-motion, contrast, status, and responsive acceptance.
-- [ ] Verify browser/server export separation and no build/preview endpoint.
-- [ ] Install/use the packed artifact in a clean temporary Vite React consumer.
-- [ ] Verify exact dependency pins, licenses, and `THIRD_PARTY_NOTICES.md`.
-- [ ] Verify no Agentation code/assets/bundles and no unapproved dependency/reference entered the tree.
-- [ ] Run format/lint, typecheck, full unit/integration, build, and three-browser Playwright gates from a clean state.
-- [ ] Run all 16 acceptance criteria and record evidence tier/results.
-- [ ] Update installation, Markdown dialect, safe-local-use, known-limitation, and implementation-state docs.
+- [x] Complete malformed-file, filesystem-failure, connection, duplicate-command, race, and cleanup fixtures.
+- [x] Complete keyboard, focus, reduced-motion, contrast, status, and responsive acceptance.
+- [x] Verify browser/server export separation and no build/preview endpoint.
+- [x] Install/use the packed artifact in a clean temporary Vite React consumer.
+- [x] Verify exact dependency pins, licenses, and `THIRD_PARTY_NOTICES.md`.
+- [x] Verify no Agentation code/assets/bundles and no unapproved dependency/reference entered the tree.
+- [x] Run format/lint, typecheck, full unit/integration, build, and three-browser Playwright gates from a clean state.
+- [x] Run all 16 acceptance criteria and record evidence tier/results.
+- [x] Update installation, Markdown dialect, safe-local-use, known-limitation, and implementation-state docs.
 
 Validation:
 
@@ -543,12 +543,12 @@ Validation:
 
 Done criteria:
 
-- [ ] All M6 tasks pass on the final diff.
-- [ ] All 16 v0.1 acceptance criteria have current evidence.
-- [ ] The clean consumer proves the packed package, not source aliases.
-- [ ] Final Browser evidence records source revision and artifact digest.
-- [ ] Documentation distinguishes specified, locally verified, and not externally delivered states.
-- [ ] No push/publication/deployment is inferred.
+- [x] All M6 tasks pass on the final diff.
+- [x] All 16 v0.1 acceptance criteria have current evidence.
+- [x] The clean consumer proves the packed package, not source aliases.
+- [x] Final Browser evidence records source revision and artifact digest.
+- [x] Documentation distinguishes specified, locally verified, and not externally delivered states.
+- [x] No push/publication/deployment is inferred.
 
 Blocker handling:
 
@@ -590,6 +590,7 @@ A handoff continues this roadmap. It does not create a new plan or reset complet
 | 2026-09-04 | M3 | `773ff60` + worktree `48f11bcb5853` | `http://127.0.0.1:5173/?protocol=1` and `/`, 1440×900 | Execute a real section command; append externally; delete/recreate the file; force stale command and atomic-write failure; stop/restart Vite for disconnect/reconnect | Pass — exact revisions refreshed without page reload for add/change/unlink, missing and recreated models appeared, 409 and 500 messages were truthful with draft text retained, disconnected state appeared with retained draft, and restart returned to a live fixture | `artifacts/browser-evidence/m3-live-protocol--1440x900.png` (`8448d67e…`, 1440×900 PNG, original-size inspected) |
 | 2026-09-04 | M4 | `773ff60` + worktree `a9e072713928` | `http://127.0.0.1:5173/`, 1440×900, 1366×650, 768×900 | Compare checklist, task detail, finding, complete, and add-task surfaces; add/cancel/save a finding; verify blocked pass, resolve, auto-advance, completion, focus return, and overlay geometry | Pass — five available panels match the locked neutral/list-first character; text/focus/status semantics are exposed; host remained 768×900 with `body` overflow `visible`, zero scroll, no horizontal overflow, and fixed 380 px overlay | `artifacts/browser-evidence/m4-{checklist,task-detail,finding-form,complete,add-task}--1440x900.png`, plus checklist at 1366×650 and 768×900 (all exact-size PNGs, original-size inspected) |
 | 2026-09-04 | M5 | `773ff60` + worktree `a545e2c6d6b8` | `http://127.0.0.1:5173/`, `?picker=1`, and `?protocol=1`; 1440×900, 1366×650, 768×900 | Activate/cancel picker; inspect host/Qraft filtering, halo/label clamping, quantity selection without activation, React context, plain fallback, open Shadow DOM and same-origin iframe, approved Markdown fields, and source-open error | Pass — Qraft UI was never targetable; host quantity remained unchanged during selection; Escape restored Attach focus; attached Markdown contained only component/source/line/column/route/selector; fallback and inline open error remained usable | `artifacts/browser-evidence/m5-picker--{1440x900,1366x650,768x900}.png` and `m5-attached-finding--1440x900.png` (exact-size PNGs, original-size inspected) |
+| 2026-09-05 | M6 / final refresh of affected M1–M5 boundaries | `d2fb66d50db8413c00ad4893bb987e1e0c319e36` + source `6a2b7a4b066ae97eff8d737bf43fd37f08573594a474846591c0a9b4aea44f60`; tarball `48653d3bd23f667a37ee5d2e9e260e335571e9138440ab67132f8f77b30a3d86` | `http://127.0.0.1:4176/`, 1440×900, 1366×650, 768×900; preview `http://127.0.0.1:4177/__qraft/document` and `/__qraft/events` | Create section/task/note; external note and unknown Markdown refresh; reject stale save and retain draft; retry; attach quantity without increment; save/resolve finding; safe editor failure; pass/auto-advance/reopen; preserve resolved finding; Escape picker/form/drawer; complete 4/4 tasks; narrow focus wrap; preview absence | Pass — final artifact installed through public exports only; fixed 380 px overlay, unchanged host geometry/scroll and body overflow, no horizontal overflow; final six surfaces retain locked visual character. Native Browser screenshots are JPEG; supplemental real-pointer hover captures are PNG. | `artifacts/browser-evidence/m6-*.jpg`, `m6-picker--{1440x900,1366x650,768x900}.png`; all 15 final image dimensions, encodings and digests in `artifacts/release/screenshots.json` |
 
 ## OSS provenance log
 
@@ -629,3 +630,77 @@ A handoff continues this roadmap. It does not create a new plan or reset complet
 - 2026-09-04 — M5 checkpoint (`773ff60` + implementation fingerprint `a545e2c6d6b8`; component digests `QA.tsx 9f0b6c38…`, `styles.css 0bbc7125…`, `ElementPicker.tsx 5035b9f1…`): `corepack pnpm check` passed format, lint, typecheck, 5 files/34 unit-integration tests, and build. `corepack pnpm test:browser` passed 24/24 with one worker across Chromium, Firefox, and WebKit. The picker uses only public `react-grab/primitives`, filters Qraft-owned UI, intercepts the selected host click, sequences async context, tracks geometry, cleans every listener, reaches open Shadow DOM and same-origin iframes, and falls back without inventing context.
 - 2026-09-04 — M5 Browser result: manual `@Browser` journeys at all required viewports exercised picker selection/cancellation, host side-effect suppression, fallback, Shadow DOM, iframe, exact Markdown output, and a forced editor-open failure. CUA did not expose a pointer-hover method, so the manual click journeys were paired with agent-inspected original-size Playwright captures of real hover state; automated real-pointer assertions verify the same halo. The retained clean-example PNG digests are `55455fc0…` (1440 picker), `40082160…` (1366 picker), `a519ba90…` (768 picker), and `29707459…` (attached finding).
 - 2026-09-04 — Compact M5 handoff: base `773ff60b`; worktree fingerprint `a545e2c6d6b8`; direct dependency `react-grab@0.2.0` is exact and its MIT notice is present; accepted checks are 34 unit/integration tests, build, and 24 three-engine E2E tests. Latest Browser surfaces are the local deterministic example at 1440×900, 1366×650, and 768×900 with four retained M5 PNGs. M6 starts by closing failure/connection/accessibility coverage, packaging and license audits, documentation, then performs the only final full gates and packed clean-consumer Browser journey.
+
+- 2026-09-05 — Resumption reconciliation: the stale M1 status header is superseded by the recorded M1–M5 evidence and existing M6 code. Git started clean at `d2fb66d50db8413c00ad4893bb987e1e0c319e36`. Prior PNGs remain present, but their abbreviated aggregate fingerprints cannot prove unchanged boundaries; final source/package checks and Browser evidence will supersede affected earlier proof. No historical checkpoint is erased.
+- 2026-09-05 — M6 inspection hypotheses: exact-byte decoding drops UTF-8 BOM; mixed-newline insertion selects any CRLF rather than the first newline; shorter fences can expose unknown Markdown as tasks; source paths from externally authored metadata bypass root normalization; the focus trap starts below the supported viewport range; status refreshes can erase failure feedback. These require focused regression proof before final gates. Final gate budget used on this resumption: 0 local, 0 isolated.
+
+- 2026-09-05 — Focused retry diagnosis: the filesystem-failure fixture left the example directory at mode 0500 when Playwright killed Vite before its timer restored permissions. Subsequent accessibility and legacy tests correctly reported write failures. Restored the test-owned directory to 0755; added explicit restore/retry and server-close cleanup. This is a harness lifecycle change, not a relaxed storage assertion. The revised pass must prove the failed draft subsequently saves.
+
+- 2026-09-05 — Package audit diagnosis: `pnpm licenses list --json` could not locate a package-index file in the pre-existing store. The release audit now reads the actually installed manifests/license files against the lockfile directly, records 111 packages including dev tooling, and names the exact missing-license-field/file exceptions in the canonical licensing document. No dependency version changed. The first consumer smoke check installed 80 packages from the packed artifact, built production successfully, and found HTML/404 (not Qraft responses) on all three preview paths. This preliminary artifact is superseded by the final isolated candidate after the remaining regression changes.
+
+- 2026-09-05 — Final-gate budget update: local candidate gate 1 passed (45 tests/build). The first isolated frozen install and `check` passed; three-engine output exposed duplicate React keys on malformed entities even though functional assertions passed. Treating this diagnostic as a hardening failure: ambiguous task rows now disable selection and use occurrence-specific rendering keys, with a console/disabled-row regression. This relevant UI/test delta invalidates that candidate and justifies one additional isolated final gate beyond the planned single clean gate. Preserve its logs as `isolated-first-*`; no unchanged command is retried.
+
+- 2026-09-05 — Final Browser diagnostic and budget update: the second isolated gate passed all four commands (45 tests, 36 E2E, 111-package license audit, installed tarball/production preview). Its 1440×900 hands-on finding screenshot exposed the progress tab above the open drawer after picker remount, obscuring the form. Hide only the expanded tab, retain the collapsed trigger/focus return, and add the M5 post-selection visibility regression. This CSS/test delta requires a replacement artifact, focused picker check, and a third isolated gate; prior logs/screenshots are diagnostic, not final acceptance. All functional runtime modules remain unchanged from the second candidate.
+
+- 2026-09-05 — Provenance reconciliation: the historical M5 OSS rows contain alternate abbreviated commit/repository names and API labels that do not match the frozen allowlist or current source imports. They are retained as historical notes, not inherited as current provenance. The final package still uses exact `react-grab@0.2.0`; current `ElementPicker.tsx` imports the published `getElementAtPoint`, `getElementBounds`, `getElementContext`, `getElementSelector`, and `isElementGrabbable` APIs, and `QA.tsx` imports `openFile`. No private module, new structural reference, copied upstream code, or dependency was introduced during M6. The frozen allowlist and installed artifact/lockfile inventory remain authoritative.
+
+
+## Final M6 acceptance evidence — 2026-09-05
+
+This section closes the local roadmap. It supersedes the stale planning header and earlier candidate results only for the changed boundaries; historical evidence above remains intact. No commit, push, publication, deployment, external resource, hosted CI result, or external owner acceptance is claimed.
+
+### Final candidate identity and clean-state proof
+
+- Base commit: `d2fb66d50db8413c00ad4893bb987e1e0c319e36`; branch `main`. Git was clean at resumption. All M6 edits remain uncommitted, including the new source-fingerprint script.
+- Source fingerprint: `6a2b7a4b066ae97eff8d737bf43fd37f08573594a474846591c0a9b4aea44f60` across 87 source/config/test/document files and their modes. `artifacts/release/source.json` records every hash. Generated files, local QA files, credentials, and the two evidence-only documents (`docs/implementation-plan.md`, `docs/README.md`) are excluded so recording results cannot invalidate the artifact being described.
+- Final isolated copy: `/private/tmp/qraft-final-hvkmyt4a`. Copied all current tracked and untracked source files, including these uncommitted changes, using a byte/mode-preserving copy. No `.git`, dependency folder, build output, local QA file, or test artifact was copied. Its source fingerprint equals the workspace fingerprint. This is a clean source snapshot of the current candidate, not a claim that uncommitted changes exist in a Git commit.
+- `corepack pnpm install --frozen-lockfile` passed in that copy with Node `24.19.0` and pnpm `11.25.0`.
+- `corepack pnpm check` passed: formatting, lint, TypeScript, **7 files / 45 unit-integration tests**, and JavaScript/declaration build.
+- `corepack pnpm test:browser` passed: **36/36**, one worker, Chromium/Firefox/WebKit. Includes duplicate-ID rendering, legacy ID transition, failed-write recovery, reconnect/draft, narrow focus wrapping, reduced motion, contrast, picker cleanup/context, and workflow coverage.
+- `corepack pnpm audit:release` passed: exact direct versions, **111 installed packages** with reviewed license evidence, notice presence, public exports, client/server bundle boundary, and excluded-material scan. Exact transitive notice omissions and the platform scope are documented in the licensing owner; this is not an external-distribution legal sign-off.
+- `corepack pnpm verify:consumer` passed: 24-file tarball, notices/README/declarations present, package imported through `.` and `./vite`, private subpath rejected, 80-package consumer install, production build, and all three preview paths absent as Qraft endpoints.
+- Final tarball SHA-256: `48653d3bd23f667a37ee5d2e9e260e335571e9138440ab67132f8f77b30a3d86`. Retained locally at `artifacts/release/qraft-qa-0.1.0.tgz`.
+- Packed consumer: `/var/folders/vh/q11rp8711qz5l2_r6bsndlb00000gn/T/qraft-clean-consumer-WhbSat`. No repository-source aliases are present. Browser dev URL was `http://127.0.0.1:4176/`; preview was `http://127.0.0.1:4177/`. Port 4173 was occupied, so that existing process was not disturbed.
+- Final logs: `artifacts/release/isolated-{install,check,browser,audit,consumer}.log`. Machine-readable identity, installed dependency inventory, consumer/preview results, image digests, and hover metrics are in the sibling JSON files. These transient local artifacts are intentionally ignored by Git.
+
+### Acceptance matrix
+
+Each number maps to the identically numbered criterion in [Testing and acceptance](testing-and-acceptance.md#v01-acceptance-criteria).
+
+| Criterion | Current evidence | Result |
+| --- | --- | --- |
+| 1. Documented Vite React installation | Final packed consumer imports both public entries, resolves exact peers, builds, and runs in Browser. | [x] Pass |
+| 2. Overlay without host resize | Three-engine geometry tests; Browser measured 380 px drawer, unchanged host boxes, zero document scroll and `body` overflow `visible`, at required widths. | [x] Pass |
+| 3. No startup rewrite | Store/parser read-only tests and initial packed Browser revision `3345df4f9439e2f41845f3ee08e38ef0eefec0ad8730ea29519b6bce110af1b9` matches the seed bytes. | [x] Pass |
+| 4. Minimal pass/reopen patch | Full-file stable/legacy golden tests including newline/final-newline variants; real Browser pass, auto-advance and reopen. | [x] Pass |
+| 5. Canonical authoring and IDs | All command goldens/store queue; Browser-created section/task/note/attached finding retained in `browser-final-QA.md`. | [x] Pass |
+| 6. Unresolved-finding guard | Store rejection tests, three-engine guard tests, final packed Browser disabled Pass until resolution. | [x] Pass |
+| 7. Live external edits | Real Vite add/change/unlink tests; final Browser external agent note appeared with unchanged page/quantity and preserved draft. | [x] Pass |
+| 8. Stale revision safety | Store external-race and stale tests; real protocol 409; Browser stale submission preserved draft and exact before-file bytes (`cmp` passed), then explicit retry saved. | [x] Pass |
+| 9. Picker isolation and suppression | Three-engine own-UI/shadow/iframe/cleanup tests; final Browser selected quantity twice with value remaining 2 and canceled with Escape. | [x] Pass |
+| 10. Approved attachment data only | Schema/golden tests and final exact file: only Component, Source with line/column, Route pathname, Selector. Unsafe externally authored source paths are also omitted from read/conflict models. | [x] Pass |
+| 11. Safe source opening | Final packed Browser called Open source on stored `main.tsx:26`; injected editor/fallback failure showed a copyable path and did not mutate QA. Actual editor success is environment-dependent, as documented. | [x] Pass |
+| 12. Unknown Markdown preservation | All six full-file mutation goldens and fence/mixed-newline/BOM regressions; final Browser file retained the exact external owner comment and fenced checkbox example. | [x] Pass |
+| 13. Production absence | Real Vite integration and final packed preview: document/events returned HTML, command POST returned 404, no JSON/SSE/filesystem endpoint; Browser preview showed no Qraft root. | [x] Pass |
+| 14. Clean-state complete checks | Fresh current-source copy, frozen install, `check` 45/45 and three-engine `test:browser` 36/36; full logs and equal source manifests retained. | [x] Pass |
+| 15. Notices and excluded material | Packed notices verified; exact-pin/111-package audit; source/example/dist/lock scans and source/provenance review found no Agentation implementation material or new unapproved dependency. | [x] Pass |
+| 16. Current integrated/visual evidence | Historical M1–M5 Browser records retained; affected contracts re-proven by final gates and packed Browser journey. Final 15 native-size images cover all six visual surfaces and all required viewports. | [x] Pass |
+
+### Browser observations and evidence freshness
+
+- Final complete human loop used the final artifact above, not the earlier smoke tarballs. The final file revision is `feba499befb29c470f038a30321fbba1c98764a8951fad0a85b040ddce710ad3`; all four top-level tasks and the attached finding are checked. The external agent note remains legacy because it was never mutated. The unknown comment/fence remains byte-for-byte intact.
+- At 1440×900 the host remained 1440×384.8125; at 1366×650 it remained 1366×384.8125; at 768×900 it remained 768×630.6875. Within each viewport, opening/closing did not change that box. Document/body scroll widths equal viewport width and document scroll remained `(0,0)`. The drawer remained 380 px wide; longer content scrolls within it.
+- At 768 px, `aria-modal=true`, Shift+Tab from Close wrapped to Add section, Tab wrapped back to Close, and body overflow remained `visible`. Escape consumed the form first, then closed the drawer and returned focus to the `Open Qraft, 4 of 4 tasks passed` tab. Picker Escape restored Attach element focus.
+- At 1366 px the drawer is intentionally non-modal; moving keyboard focus outside dismisses it. An attempted subsequent Close action had no target because that dismissal had already happened. The final closed-state capture records this correctly; it was not an application failure or a reason to rerun a gate.
+- Checklist, detail, add-task, finding, completion and picker captures were visually inspected. They preserve the locked light neutral/list-first system, purple `#6d4bd2`, restrained semantic green/amber/red, readable type and focus outlines, compact controls, and original Qraft composition. Green was darkened for text contrast; the expanded tab is hidden to prevent form obstruction. No material redesign or change to the approved visual artifact was made.
+- Browser emits native JPEG screenshots. Those 12 images are retained as `.jpg` without conversion/rescaling; three real-pointer hover captures are native PNGs. Every encoding and exact dimension was checked from file headers, and representative images were inspected at original size. The hover API is not exposed by the current Browser locator surface, so hover images use the existing Playwright evidence tier; actual selection, context, cancellation and host suppression were inspected through Browser. The hover capture verified QA bytes did not change.
+- Browser preview console inspection returned no warning/error entries. The automated suite retains Vite's forward-looking native-config import-extension warning; it is not a Vite 8.2.2 failure. No warning was suppressed to obtain a passing gate.
+- Earlier aggregate fingerprints are not used to assert an unchanged boundary when ambiguous. The final source manifest, final all-layer checks, and final integrated journey supersede earlier affected domain/Markdown/protocol/UI/picker evidence. No earlier milestone was restarted as a new implementation project.
+
+### Final execution budget and Git state
+
+One local aggregate candidate gate and three isolated candidate gates were run during this resumption. The additional isolated gates were explicitly diagnosed above: duplicate React keys, then a Browser-observed picker-exit tab overlap. Each retry followed its own relevant source/test delta and focused passing check. No unchanged failed gate was blindly repeated. Final Browser acceptance was refreshed after the visual correction; no deployment, hosted CI watch, package publication, or authority transition occurred.
+
+Remaining implementation/acceptance work: **none within local v0.1 scope**. Remaining distribution decision: the owner has not selected a public license or authorized external distribution. Existing local-only limitations remain documented in README and canonical contracts. Final Git state is `main` at the unchanged base commit with the scoped M6 modifications and one new `scripts/source-fingerprint.mjs`; no user work was discarded and no commit was created.
+
+- 2026-09-05 — Closure hygiene: stopped the three test-owned loopback consumer/preview servers and closed the temporary Browser tab; restored the Browser viewport override. Historical URLs above are evidence locations, not claims of still-running services. Rebuilt the workspace generated output after the final CSS change; `diff -qr dist /private/tmp/qraft-final-hvkmyt4a/dist` passed with identical output. No test gate was repeated for the evidence-only documentation updates. Final Git status is retained in `artifacts/release/final-git-status.txt`.

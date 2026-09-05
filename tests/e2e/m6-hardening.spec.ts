@@ -46,7 +46,12 @@ test("M6 reduced motion, contrast, live status, focus containment, and narrow la
   await drawer.getByRole("button", { name: "Save" }).click();
   await expect(drawer.getByRole("status")).toContainText("Section saved to QA.md.");
 
+  await drawer.getByRole("button", { name: "Close Qraft" }).focus();
   await page.keyboard.press("Shift+Tab");
+  await expect(drawer.getByRole("button", { name: "Add section", exact: true })).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(drawer.getByRole("button", { name: "Close Qraft" })).toBeFocused();
+  expect(await page.evaluate(() => getComputedStyle(document.body).overflow)).toBe("visible");
   const focusIsInsideQraft = await page.evaluate(() => {
     const root = document.querySelector("[data-qraft-root]")?.shadowRoot;
     return Boolean(root?.activeElement && root.activeElement !== root.host);
@@ -67,4 +72,39 @@ test("M6 filesystem failure is recoverable and preserves the unsaved draft", asy
   await drawer.getByRole("button", { name: "Save" }).click();
   await expect(drawer.getByRole("alert")).toContainText("original was left unchanged");
   await expect(drawer.getByLabel("Details")).toHaveValue("Keep this draft after a failed write.");
+  await page.request.post("/__qraft-example/restore-writes");
+  await drawer.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(drawer.getByRole("checkbox", { name: /Keep this draft/u })).toBeVisible();
+});
+
+test("M6 legacy task remains selected when first mutation assigns an ID", async ({ page }) => {
+  await page.goto("/");
+  await page.request.post("/__qraft-example/legacy");
+  await page.reload();
+  await page.getByRole("button", { name: /Open Qraft/u }).click();
+  const drawer = page.getByRole("dialog");
+  await drawer.getByRole("button", { name: "Legacy task", exact: true }).click();
+  await drawer.getByRole("button", { name: "Note", exact: true }).click();
+  await drawer.getByLabel("Details").fill("First mutation");
+  await drawer.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(drawer.getByRole("heading", { name: "Legacy task" })).toBeVisible();
+  await expect(drawer.getByText("First mutation", { exact: true })).toBeVisible();
+  await drawer.getByRole("button", { name: "Pass", exact: true }).click();
+  await expect(drawer.getByRole("heading", { name: "Next task" })).toBeVisible();
+});
+
+test("M6 disconnected stream reconnects and refetches while preserving a draft", async ({ page }) => {
+  await page.route("**/__qraft/events", (route) => route.abort());
+  await reset(page);
+  const drawer = page.getByRole("dialog");
+  await drawer.getByRole("button", { name: "Add section", exact: true }).click();
+  await drawer.getByLabel("Title").fill("Reconnect draft");
+  await expect(drawer.getByText(/Disconnected/u)).toBeVisible();
+  await page.request.post("/__qraft-example/external-edit");
+  const response = await page.request.get("/__qraft/document");
+  const latest = await response.json();
+  await page.unroute("**/__qraft/events");
+  await expect(drawer.getByText(/Disconnected/u)).toHaveCount(0);
+  await expect(drawer.getByLabel("Title")).toHaveValue("Reconnect draft");
+  await expect(drawer.getByText(new RegExp(latest.revision.slice(0, 8)))).toBeVisible();
 });

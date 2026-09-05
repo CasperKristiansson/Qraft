@@ -267,3 +267,10 @@ The exact repository commits, approved source paths, reuse mode, and licenses ar
 ## Production boundary
 
 The Vite plugin exists only during `serve`. The consumer is responsible for mounting `<QA />` behind `import.meta.env.DEV`. Tests must separately prove that a production build and preview server expose no Qraft endpoint. Static client code remaining in an unused production chunk is not a filesystem exposure, but the documented integration should allow normal bundler dead-code elimination.
+
+## M6 boundary clarifications
+
+- The drawer uses non-modal Radix composition to avoid global scroll changes. At 768–800 px Qraft adds modal semantics, FocusScope, and explicit keyboard wrapping within its ShadowRoot; see the owning design contract.
+- Confirmed mutations invalidate older in-flight UI reads. Background synchronization preserves actionable save/conflict errors and drafts. Legacy task identity is remapped only after Qraft's own successful append/status command, whose preserved order is known.
+- The store normalizes attachment source paths for reads and conflict documents as well as new writes. External Markdown bytes remain unchanged.
+- Candidate and package provenance is recorded by `scripts/source-fingerprint.mjs`, `audit:release`, and `verify:consumer`; these local tools do not publish packages.

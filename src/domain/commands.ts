@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const text = z.string().transform((value) => value.trim().replace(/\s+/gu, " ")).pipe(z.string().min(1).max(2_000));
+const text = z.string().transform((value) => value.trim().replace(/\s+/gu, " ")).refine((value) => Array.from(value).length > 0 && Array.from(value).length <= 2_000 && !/[\x00-\x08\x0e-\x1f\x7f]/u.test(value), "Use 1 to 2,000 Unicode characters without control characters");
 const id = z.string().min(1).max(200);
 
 export const elementReferenceSchema = z.strictObject({

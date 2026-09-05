@@ -86,6 +86,7 @@ export function QA({ storage: providedStorage }: QAProps = {}) {
   const headingId = useId();
   const heading = useRef<HTMLHeadingElement>(null);
   const formControl = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
+  const refreshSequence = useRef(0);
   const formTrigger = useRef<string | null>(null);
   const defaultStorage = useMemo(() => new HttpQAStorage("/__qraft", setConnected), []);
   const storage = providedStorage ?? defaultStorage;
@@ -94,7 +95,7 @@ export function QA({ storage: providedStorage }: QAProps = {}) {
   const completed = progress.total > 0 && progress.passed === progress.total;
 
   useEffect(() => {
-    const media = matchMedia("(max-width: 767px)");
+    const media = matchMedia("(max-width: 800px)");
     const update = () => setNarrow(media.matches);
     update();
     media.addEventListener("change", update);
@@ -104,12 +105,14 @@ export function QA({ storage: providedStorage }: QAProps = {}) {
   useEffect(() => {
     const controller = new AbortController();
     const refresh = async () => {
+      const sequence = ++refreshSequence.current;
       try {
         const next = await storage.getDocument(controller.signal);
+        if (controller.signal.aborted || sequence !== refreshSequence.current) return;
         setDocument(next);
-        setFeedback({ tone: "neutral", text: "QA.md is synchronized." });
+        setFeedback((current) => current.tone === "neutral" ? { tone: "neutral", text: "QA.md is synchronized." } : current);
       } catch (error) {
-        if (!controller.signal.aborted) {
+        if (!controller.signal.aborted && sequence === refreshSequence.current) {
           setFeedback({ tone: "error", text: error instanceof Error ? error.message : "Qraft could not load QA.md." });
         }
       }
@@ -143,9 +146,15 @@ export function QA({ storage: providedStorage }: QAProps = {}) {
 
   const execute = async (command: QACommand, success: string): Promise<QADocument | null> => {
     if (!document || pending) return null;
+    refreshSequence.current += 1;
     setPending(true);
     try {
       const next = await storage.execute(command, document.revision);
+      refreshSequence.current += 1;
+      if (selectedTaskId?.startsWith("legacy:") && document) {
+        const index = document.sections.flatMap((section) => section.tasks).findIndex((task) => task.id === selectedTaskId);
+        setSelectedTaskId(next.sections.flatMap((section) => section.tasks)[index]?.id ?? selectedTaskId);
+      }
       setDocument(next);
       setFeedback({ tone: "success", text: success });
       return next;
@@ -181,8 +190,10 @@ export function QA({ storage: providedStorage }: QAProps = {}) {
       checked ? "Task passed." : "Task reopened.",
     );
     if (next && checked) {
-      const nextId = getNextOpenTaskId(next, task.id);
-      setSelectedTaskId(nextId ?? task.id);
+      const index = document?.sections.flatMap((section) => section.tasks).findIndex((current) => current.id === task.id) ?? -1;
+      const savedId = next.sections.flatMap((section) => section.tasks)[index]?.id ?? task.id;
+      const nextId = getNextOpenTaskId(next, savedId);
+      setSelectedTaskId(nextId ?? savedId);
     }
   };
 
@@ -225,7 +236,7 @@ export function QA({ storage: providedStorage }: QAProps = {}) {
   const bodyForm = form?.kind === "note" || form?.kind === "finding";
 
   return createPortal(
-    picking ? <ElementPicker onCancel={cancelPicker} onSelect={selectPicker} /> : <Dialog.Root open={open} onOpenChange={setOpen} modal={narrow}>
+    picking ? <ElementPicker onCancel={cancelPicker} onSelect={selectPicker} /> : <Dialog.Root open={open} onOpenChange={setOpen} modal={false}>
       <Dialog.Trigger asChild>
         <button className="qraft-tab" aria-label={`Open Qraft, ${progress.passed} of ${progress.total} tasks passed`}>
           <span>QA</span><strong>{progress.passed}/{progress.total}</strong>
@@ -236,6 +247,17 @@ export function QA({ storage: providedStorage }: QAProps = {}) {
           <Dialog.Content
             className="qraft-drawer"
             aria-labelledby={headingId}
+            aria-modal={narrow || undefined}
+            onInteractOutside={(event) => { if (narrow) event.preventDefault(); }}
+            onKeyDown={(event) => {
+              if (!narrow || event.key !== "Tab") return;
+              const controls = Array.from(event.currentTarget.querySelectorAll<HTMLElement>("button:not(:disabled), input, textarea, summary, [tabindex='0']"));
+              const active = mount.getRootNode() instanceof ShadowRoot ? (mount.getRootNode() as ShadowRoot).activeElement : null;
+              const first = controls[0];
+              const last = controls.at(-1);
+              if (event.shiftKey && (active === first || active === heading.current)) { event.preventDefault(); last?.focus(); }
+              else if (!event.shiftKey && active === last) { event.preventDefault(); first?.focus(); }
+            }}
             onOpenAutoFocus={(event) => { event.preventDefault(); heading.current?.focus(); }}
             onEscapeKeyDown={(event) => { if (form) { event.preventDefault(); cancelForm(); } }}
           >
@@ -253,7 +275,7 @@ export function QA({ storage: providedStorage }: QAProps = {}) {
               </div>
 
               {!connected ? <p className="qraft-banner warning" role="status">Disconnected. Qraft is reconnecting automatically.</p> : null}
-              {feedback.tone !== "neutral" ? <p className={`qraft-banner ${feedback.tone}`} role={feedback.tone === "error" ? "alert" : "status"}>{feedback.text}</p> : null}
+              {feedback.tone !== "neutral" ? <p className={`qraft-banner ${feedback.tone}`} aria-live="polite" role={feedback.tone === "error" ? "alert" : "status"}>{feedback.text}</p> : null}
               {feedback.tone === "neutral" ? <p className="qraft-sr-only" aria-live="polite">{feedback.text}</p> : null}
 
               {selected ? (
@@ -387,14 +409,14 @@ function Checklist(props: ChecklistProps) {
       {document?.diagnostics.map((diagnostic) => <p className="qraft-banner warning" key={`${diagnostic.code}-${diagnostic.lines.join("-")}`}>{diagnostic.message} Lines {diagnostic.lines.join(", ")}.</p>)}
       {!document ? <div className="qraft-loading" role="status">Loading checklist…</div> : null}
       {document && document.sections.length === 0 ? <div className="qraft-empty"><strong>No QA tasks yet</strong><p>Add the first section when you are ready to start testing.</p></div> : null}
-      {document?.sections.map((section) => (
-        <section className="qraft-section" key={section.id}>
+      {document?.sections.map((section, sectionIndex) => (
+        <section className="qraft-section" key={section.readOnly ? `${section.id}-${sectionIndex}` : section.id}>
           <h3>{section.title}</h3>
           <div className="qraft-task-list">
-            {section.tasks.map((task) => {
+            {section.tasks.map((task, taskIndex) => {
               const unresolved = task.findings.filter((finding) => !finding.checked).length;
               return (
-                <button className="qraft-task" key={task.id} type="button" aria-current={selectedTaskId === task.id ? "true" : undefined} onClick={() => onSelectTask(task.id)}>
+                <button className="qraft-task" key={task.readOnly ? `${task.id}-${taskIndex}` : task.id} type="button" disabled={task.readOnly} aria-current={selectedTaskId === task.id ? "true" : undefined} onClick={() => onSelectTask(task.id)}>
                   <span className={task.checked ? "qraft-status passed" : "qraft-status"}>{task.checked ? <Check size={13} /> : <Circle size={13} />}</span>
                   <span className="qraft-task-copy"><span>{task.title}</span>{unresolved ? <small>{unresolved} open finding{unresolved === 1 ? "" : "s"}</small> : null}</span>
                   {unresolved ? <span className="qraft-count" aria-label={`${unresolved} unresolved findings`}>{unresolved}</span> : <ChevronRight aria-hidden="true" size={16} />}
@@ -454,16 +476,16 @@ function TaskDetail(props: TaskDetailProps) {
 
       <section className="qraft-detail-section">
         <h3><StickyNote size={14} /> Notes</h3>
-        {task.notes.length ? <ul className="qraft-notes">{task.notes.map((note) => <li key={note.id}>{note.body}</li>)}</ul> : <p className="qraft-empty-copy">No notes yet.</p>}
+        {task.notes.length ? <ul className="qraft-notes">{task.notes.map((note, index) => <li key={note.readOnly ? `${note.id}-${index}` : note.id}>{note.body}</li>)}</ul> : <p className="qraft-empty-copy">No notes yet.</p>}
         {activeForm?.kind === "note" && activeForm.taskId === task.id ? (
           <InlineForm title={formTitle} body={bodyForm} value={draft} pending={pending} controlRef={formControl} onValue={onDraft} onCancel={onCancelForm} onSubmit={onSubmitForm} />
-        ) : <button className="qraft-add" type="button" data-form-trigger={`note-${task.id}`} onClick={(event) => onBeginForm({ kind: "note", taskId: task.id }, event.currentTarget)}><Plus size={15} /> Note</button>}
+        ) : <button className="qraft-add" type="button" data-form-trigger={`note-${task.id}`} disabled={pending || task.readOnly} onClick={(event) => onBeginForm({ kind: "note", taskId: task.id }, event.currentTarget)}><Plus size={15} /> Note</button>}
       </section>
 
       <section className="qraft-detail-section">
         <h3><Flag size={14} /> Findings</h3>
-        {task.findings.length ? <ul className="qraft-findings">{task.findings.map((finding) => (
-          <li key={finding.id}>
+        {task.findings.length ? <ul className="qraft-findings">{task.findings.map((finding, index) => (
+          <li key={finding.readOnly ? `${finding.id}-${index}` : finding.id}>
             <button type="button" role="checkbox" aria-checked={finding.checked} aria-label={`${finding.checked ? "Reopen" : "Resolve"} finding: ${finding.body}`} disabled={pending || finding.readOnly} onClick={() => onFindingChecked(finding.id, !finding.checked)}>{finding.checked ? <Check size={13} /> : null}</button>
             <div>
               <span>{finding.body}</span>
@@ -484,8 +506,8 @@ function TaskDetail(props: TaskDetailProps) {
           <InlineForm title={formTitle} body={bodyForm} value={draft} pending={pending} controlRef={formControl} onValue={onDraft} onCancel={onCancelForm} onSubmit={onSubmitForm} onUsePlain={onUsePlainFinding} {...(activeForm.context ? { context: activeForm.context } : {})} />
         ) : (
           <div className="qraft-inline-actions">
-            <button className="qraft-add" type="button" data-form-trigger={`finding-${task.id}`} onClick={(event) => onBeginForm({ kind: "finding", taskId: task.id }, event.currentTarget)}><Plus size={15} /> Finding</button>
-            <button className="qraft-add" type="button" data-form-trigger={`attach-${task.id}`} onClick={(event) => onAttachElement(event.currentTarget)}><Target size={15} /> Attach element</button>
+            <button className="qraft-add" type="button" data-form-trigger={`finding-${task.id}`} disabled={pending || task.readOnly} onClick={(event) => onBeginForm({ kind: "finding", taskId: task.id }, event.currentTarget)}><Plus size={15} /> Finding</button>
+            <button className="qraft-add" type="button" data-form-trigger={`attach-${task.id}`} disabled={pending || task.readOnly} onClick={(event) => onAttachElement(event.currentTarget)}><Target size={15} /> Attach element</button>
           </div>
         )}
       </section>

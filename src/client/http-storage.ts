@@ -20,6 +20,7 @@ export class QAStorageError extends Error {
 }
 
 export class HttpQAStorage implements QAStorage {
+  private revision: string | null = null;
   constructor(
     private readonly endpoint = "/__qraft",
     private readonly onConnectionState?: (connected: boolean) => void,
@@ -28,7 +29,9 @@ export class HttpQAStorage implements QAStorage {
   async getDocument(signal?: AbortSignal): Promise<QADocument> {
     const response = await fetch(`${this.endpoint}/document`, { cache: "no-store", ...(signal ? { signal } : {}) });
     if (!response.ok) throw await this.#error(response);
-    return (await response.json()) as QADocument;
+    const document = (await response.json()) as QADocument;
+    this.revision = document.revision;
+    return document;
   }
 
   async execute(command: QACommand, baseRevision: string): Promise<QADocument> {
@@ -38,7 +41,9 @@ export class HttpQAStorage implements QAStorage {
       body: JSON.stringify({ commandId: crypto.randomUUID(), baseRevision, command }),
     });
     if (!response.ok) throw await this.#error(response);
-    return (await response.json()) as QADocument;
+    const document = (await response.json()) as QADocument;
+    this.revision = document.revision;
+    return document;
   }
 
   subscribe(onChange: () => void): () => void {
@@ -51,7 +56,12 @@ export class HttpQAStorage implements QAStorage {
     const connect = () => {
       if (stopped) return;
       source = new EventSource(`${this.endpoint}/events`);
-      source.addEventListener("document-changed", onChange);
+      source.addEventListener("document-changed", (event) => {
+        try {
+          const data = JSON.parse((event as MessageEvent<string>).data) as { revision?: string };
+          if (data.revision && data.revision !== this.revision) onChange();
+        } catch { /* Ignore malformed invalidations; reconnect still refetches. */ }
+      });
       source.onopen = () => {
         this.onConnectionState?.(true);
         if (opened) onChange();

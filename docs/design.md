@@ -81,7 +81,7 @@ Qraft mounts within a Shadow DOM whose host is marked `data-qraft-root` and `dat
 - inherit host typography or box sizing accidentally;
 - modify the host application's width, scroll position, or focus styles.
 
-The drawer supports desktop viewports at 768 px and above. At narrow supported widths it behaves as a modal overlay and traps focus.
+The drawer supports desktop viewports at 768 px and above. At supported widths from 768 through 800 px it exposes modal dialog semantics and traps focus within the fixed 380 px overlay. Qraft uses non-modal Radix composition with its own ShadowRoot keyboard containment to avoid global body scroll locking.
 
 ## Checklist view
 

@@ -1,3 +1,4 @@
+import { qaCommandSchema } from "../../src/domain/commands";
 import { describe, expect, it } from "vitest";
 import { getNextOpenTaskId, getProgress, type QADocument } from "../../src/domain/model";
 
@@ -27,4 +28,10 @@ describe("read model helpers", () => {
     expect(getNextOpenTaskId(document, "one")).toBe("three");
     expect(getNextOpenTaskId(document, "three")).toBe("one");
   });
+});
+
+ it("validates entity length by Unicode code points at the command boundary", () => {
+  expect(qaCommandSchema.safeParse({ type: "createSection", title: "😀".repeat(2_000) }).success).toBe(true);
+  expect(qaCommandSchema.safeParse({ type: "createSection", title: "😀".repeat(2_001) }).success).toBe(false);
+  expect(qaCommandSchema.safeParse({ type: "createSection", title: "bad\0text" }).success).toBe(false);
 });

@@ -166,4 +166,38 @@ describe("MarkdownDocumentStore", () => {
     ).rejects.toMatchObject({ code: "validation" });
     expect(await readFile(file, "utf8")).toBe(duplicate);
   });
+  it("preserves BOM bytes and hashes the exact file on read and mutation", async () => {
+    const initial = "\uFEFF# QA\n\n## Main\n";
+    const { file, directory } = await temporaryFile(initial);
+    const store = new MarkdownDocumentStore(file, directory, { idFactory: deterministicIds() });
+    expect((await store.read()).revision).toBe(sha256(Buffer.from(initial)));
+    expect((await store.read()).title).toBe("QA");
+    const next = await store.execute({ type: "createSection", title: "More" }, sha256(initial));
+    const expected = initial + "\n## More <!-- qraft:id=section_00000000-0000-4000-8000-000000000001 -->\n";
+    expect(await readFile(file)).toEqual(Buffer.from(expected));
+    expect(next.revision).toBe(sha256(expected));
+  });
+
+  it("rejects invalid UTF-8 without writing or leaving temp files", async () => {
+    const { file, directory } = await temporaryFile();
+    const bytes = Buffer.from([0xff, 0xfe, 0x23]);
+    await writeFile(file, bytes);
+    const store = new MarkdownDocumentStore(file, directory);
+    await expect(store.read()).rejects.toMatchObject({ code: "validation" });
+    await expect(store.execute({ type: "createSection", title: "More" }, sha256(bytes))).rejects.toMatchObject({ code: "validation" });
+    expect(await readFile(file)).toEqual(bytes);
+    expect(await readdir(directory)).toEqual(["QA.md"]);
+  });
+
+  it("omits external source paths from read and conflict responses without rewriting metadata", async () => {
+    const initial = "## Main\n- [ ] Task\n  - [ ] Finding\n    - Source: `../private.ts:8:2`\n";
+    const { file, directory } = await temporaryFile(initial);
+    const store = new MarkdownDocumentStore(file, directory);
+    expect((await store.read()).sections[0]?.tasks[0]?.findings[0]?.element?.source).toBeNull();
+    await expect(store.execute({ type: "createSection", title: "More" }, EMPTY_REVISION)).rejects.toMatchObject({
+      document: { sections: [{ tasks: [{ findings: [{ element: { source: null, line: null, column: null } }] }] }] },
+    });
+    expect(await readFile(file, "utf8")).toBe(initial);
+  });
+
 });

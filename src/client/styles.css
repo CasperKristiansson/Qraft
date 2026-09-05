@@ -1,7 +1,7 @@
 :host, *, *::before, *::after { box-sizing: border-box; }
 :host {
   --qraft-purple: #6d4bd2; --qraft-purple-strong: #5b36b3; --qraft-purple-pale: #f4f1ff; --qraft-purple-hover: #ece7ff;
-  --qraft-focus: #7c5ce7; --qraft-green: #1c9b57; --qraft-amber: #a96408; --qraft-red: #a12b2b;
+  --qraft-focus: #7c5ce7; --qraft-green: #168047; --qraft-amber: #a96408; --qraft-red: #a12b2b;
   --qraft-ink: #17151c; --qraft-muted: #65616d; --qraft-border: #dcd9e2; --qraft-soft-border: #ebe9ef; --qraft-surface: #ffffff;
   color: var(--qraft-ink); font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 14px; line-height: 1.45;
 }
@@ -60,3 +60,7 @@ button:disabled { cursor: not-allowed; opacity: .48; }
 .qraft-picker-toolbar button { display: grid; place-items: center; width: 38px; height: 38px; padding: 0; border: 0; border-radius: 9px; background: transparent; cursor: pointer; } .qraft-picker-toolbar button:hover { background: var(--qraft-purple-pale); }
 @media (max-width: 767px) { .qraft-drawer { width: 100vw; border-left: 0; } }
 @media (prefers-reduced-motion: no-preference) { .qraft-drawer { animation: qraft-enter 140ms ease-out; } @keyframes qraft-enter { from { transform: translateX(12px); opacity: .75; } } }
+
+.qraft-content { overflow-wrap: anywhere; } .qraft-findings li > div { min-width: 0; }
+
+.qraft-tab[aria-expanded="true"] { visibility: hidden; }
