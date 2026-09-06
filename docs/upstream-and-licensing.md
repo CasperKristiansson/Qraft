@@ -98,9 +98,13 @@ Do not silently float to a newer React Grab version during unrelated work.
 
 ## Project distribution status
 
-Qraft is currently private and internal. No project-wide public distribution license has been selected. Agents must not add a public license, npm publish configuration, or public registry release without an explicit owner decision.
+The owner selected the [MIT license](../LICENSE) on 2026-09-06 for Qraft's code, documentation,
+and bundled skill. The package declares `MIT` and includes the license and third-party notices.
+Dependencies retain their own licenses; Qraft's license does not replace those obligations.
 
-The absence of a Qraft public license does not remove third-party notice obligations for incorporated dependencies or copied MIT-licensed material.
+The repository remains private and the package unpublished. Changing repository visibility,
+adding npm publish configuration, or publishing a registry release requires separate explicit
+owner authorization.
 
 ## Agent workflow and repository tooling references
 

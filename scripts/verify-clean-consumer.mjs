@@ -39,6 +39,7 @@ for (const expected of [
   "package/dist/vite.js",
   "package/dist/vite.d.ts",
   "package/README.md",
+  "package/LICENSE",
   "package/THIRD_PARTY_NOTICES.md",
   "package/skills/qraft-review/SKILL.md",
   "package/docs/agent-skill.md",

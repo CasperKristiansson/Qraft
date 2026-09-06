@@ -9,6 +9,8 @@ Works with **Vite** and **Next.js App Router**. Development only. No account, cl
 
 [Try it](#try-the-workflow) · [Install](docs/getting-started.md) · [Create a checklist](docs/creating-checklists.md) · [Agent skill](docs/agent-skill.md)
 
+![Qraft beside a sample cart, showing four review checks and a completed task with one note](docs/assets/checklist.jpg)
+
 ## From checklist to feedback
 
 1. Ask your coding agent for a focused QA checklist, or write one yourself.
@@ -18,6 +20,10 @@ Works with **Vite** and **Next.js App Router**. Development only. No account, cl
 
 Qraft keeps the human in the review loop. A completed task records review progress; it can still
 have feedback that needs attention. Notes stay with the task and have no separate resolved state.
+
+![A saved observation about an incorrect cart total, with the selected element's component and source context](docs/assets/attached-note.jpg)
+
+These screenshots show a local sample app. [See the compact mobile review](docs/assets/mobile-review.jpg).
 
 ## Try the workflow
 
@@ -49,7 +55,7 @@ To use Qraft in your own app, follow the [Vite or Next.js setup](docs/getting-st
 
 - [ ] Change quantity and verify the total
   Increase and decrease quantity. The line and order totals should follow the quantity.
-  - Note: The order total does not update when I increase quantity.
+  - Note: The total stays at $268 when quantity increases to 3. Recalculate it when quantity changes.
 - [x] Remove a product
 - [-] Review an unsupported payment method
 ```
@@ -91,6 +97,6 @@ and physical-phone access over a network is outside the local-only scope. See
 [Documentation](docs/README.md) · [Troubleshooting](docs/troubleshooting.md) · [Report a bug](https://github.com/CasperKristiansson/Qraft/issues/new/choose) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
 
 A small reproduction and a description of the expected behavior are useful contributions.
-[Third-party notices](THIRD_PARTY_NOTICES.md) cover Qraft's dependencies.
+Qraft is [MIT licensed](LICENSE). [Third-party notices](THIRD_PARTY_NOTICES.md) cover its dependencies.
 
 If Qraft makes your review loop easier, a star helps other developers find it.

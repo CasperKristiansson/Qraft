@@ -9,8 +9,9 @@ visibility or authorize publication. The owner must explicitly approve those act
 Follow [testing and acceptance](testing-and-acceptance.md), including a clean source copy containing
 the intended uncommitted changes, frozen installation, packed consumers, production exclusion,
 removal, and a hands-on browser pass. Retain source fingerprints and package digests with receipts.
-Keep generated archives, screenshots and evidence out of source control unless an internal consumer
-intentionally vendors a verified archive.
+Keep generated archives and test evidence out of source control unless an internal consumer
+intentionally vendors a verified archive. The approved README screenshots in `docs/assets` are
+tracked documentation assets; their capture notes distinguish them from test receipts.
 
 The GitHub Checks workflow runs the current Node profile on Ubuntu: formatting, boundaries, types,
 unit/integration tests, build, three browsers and packed Vite/Next consumers. It has read-only token
@@ -20,14 +21,14 @@ for other platforms or for the locally installed dependency-license inventory.
 
 ## Before the first public release
 
-- Confirm the owner's license choice and include the license in the repository and package, with
-  third-party notices intact. Revisit upstream archive notice exceptions for the intended distribution.
+- Verify the owner-approved MIT license and third-party notices are present in the final archive.
+  Revisit upstream archive notice exceptions for the intended distribution.
 - Inspect source and reachable Git history for credentials, private fixtures, internal project
   details and committed generated artifacts. Resolve actual findings before making history public.
 - Verify the GitHub description, topics, links, issue forms and private security-reporting route.
   GitHub private vulnerability reporting may require a public repository; enable and verify it as
   part of the explicitly authorized visibility change before directing public users to that route.
-- Add the separately approved demonstration media. The README currently works without a placeholder.
+- Check that the README screenshots still match the released UI and its documented workflow.
 - Confirm npm namespace access and choose the release version. Remove `private: true` only in the
   approved publication change, add the intended scoped-package access setting, update the release
   audit's current private-distribution assertion for that approved boundary, and rerun artifact

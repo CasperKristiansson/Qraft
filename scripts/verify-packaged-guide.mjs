@@ -6,6 +6,12 @@ import { join } from "node:path";
 
 export async function verifyPackagedGuide(consumer) {
   const packaged = join(consumer, "node_modules/@qraft/qa");
+  const metadata = JSON.parse(await readFile(join(packaged, "package.json"), "utf8"));
+  assert.equal(metadata.license, "MIT");
+  assert.equal(
+    await readFile(join(packaged, "LICENSE"), "utf8"),
+    await readFile("LICENSE", "utf8"),
+  );
   const skill = join(packaged, "skills/qraft-review");
   const expected = await readFile(join(skill, "SKILL.md"), "utf8");
   const root = await mkdtemp(join(tmpdir(), "qraft-guide-project-"));

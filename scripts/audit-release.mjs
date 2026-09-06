@@ -36,8 +36,16 @@ const expected = {
 };
 
 const failures = [];
-if (!packageJson.private || packageJson.license || packageJson.publishConfig)
+if (!packageJson.private || packageJson.publishConfig)
   failures.push("private distribution boundary changed");
+if (packageJson.license !== "MIT") failures.push("package license differs from owner-approved MIT");
+const projectLicense = await readFile("LICENSE", "utf8");
+if (
+  !projectLicense.startsWith("MIT License\n\nCopyright (c) 2026 Casper Kristiansson\n") ||
+  !projectLicense.includes("The above copyright notice and this permission notice") ||
+  !projectLicense.includes('THE SOFTWARE IS PROVIDED "AS IS"')
+)
+  failures.push("project MIT license is missing its notice, permission condition or disclaimer");
 for (const hook of ["preinstall", "install", "postinstall", "prepare"]) {
   if (packageJson.scripts?.[hook]) failures.push(`unexpected package lifecycle hook: ${hook}`);
 }

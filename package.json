@@ -50,7 +50,8 @@
     "CONTRIBUTING.md",
     "SECURITY.md",
     "CHANGELOG.md",
-    "THIRD_PARTY_NOTICES.md"
+    "THIRD_PARTY_NOTICES.md",
+    "LICENSE"
   ],
   "scripts": {
     "demo": "vite --config examples/vite-react/review.config.ts",
@@ -117,5 +118,6 @@
         "dist/next.d.ts"
       ]
     }
-  }
+  },
+  "license": "MIT"
 }

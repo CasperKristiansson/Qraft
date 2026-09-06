@@ -12,3 +12,4 @@ Qraft is currently private and has no public npm release.
 - Plan initial, regression, focused and retest reviews with the bundled qraft-review skill and
   read-only `qraft guide` command.
 - Try a five-check local demo that preserves feedback across restarts.
+- Use Qraft's code, documentation and portable skill under the MIT license.

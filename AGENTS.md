@@ -117,4 +117,4 @@ Every user-visible change also requires a hands-on `@Browser` pass. Playwright p
 - Never discard or rewrite user-authored changes without explicit permission.
 - Do not use destructive Git commands.
 - Keep secrets, local QA working files, dependency folders, test reports, and build output out of Git.
-- Do not add a public package license or publish configuration until the owner explicitly chooses a distribution model.
+- Qraft uses the owner-approved MIT license. Keep its license and third-party notices in the package. Publishing and repository visibility changes still require explicit owner authorization.

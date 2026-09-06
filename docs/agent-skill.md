@@ -47,6 +47,16 @@ file. Then try a separate fresh session with a natural request such as “Make a
 checkout changes.” Explicit invocation and natural discovery are separate checks; installing the
 files alone does not prove either works in your agent version.
 
+On 2026-09-06, separate fresh Codex CLI 0.153.2 sessions passed explicit invocation and natural
+discovery in isolated projects. The focused review respected a four-check user limit over a larger
+project preference. The retest added two unchecked tasks while preserving existing notes, IDs,
+attachment bytes, BOM, CRLF, file mode and the missing final newline. Both outputs parsed with
+Qraft's real parser and exposed their instructions in task details.
+
+Claude Code 2.1.251 installation was checked, but fresh activation remains **unverified** because
+the test host was not signed in. The owner accepted this limitation for the preparation PR. Its
+documented installation layout is verified separately; that does not establish native discovery.
+
 If a project already has `AGENTS.md` or `CLAUDE.md`, an optional short routing line can help:
 
 ```text

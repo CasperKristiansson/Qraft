@@ -34,7 +34,8 @@ Run `pnpm format` to format owned code and documentation. Markdown preservation 
 checklists, dependency locks and generated output are excluded. `pnpm check` enforces formatting,
 source boundaries, unused-code checks, strict types, unit/integration behavior and the build.
 See acceptance for the complete package and browser gates. Local receipts live in ignored
-`artifacts/release`; screenshots live in ignored `artifacts/browser-evidence`.
+`artifacts/release`; test screenshots live in ignored `artifacts/browser-evidence`. Approved README
+media and its capture notes live in [docs/assets](assets/README.md).
 
 The package remains private and unpublished. Passing local checks does not authorize a release.
 See [release preparation](releasing.md) for the separate owner-controlled visibility and publication

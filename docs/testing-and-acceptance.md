@@ -173,6 +173,9 @@ feature whose basics already work, retesting rich existing feedback, explicit us
 incomplete or unsafe environment. Record the type of evaluation. A manual walkthrough is not a fresh
 agent trial. Before claiming native agent behavior was tested, use separate fresh sessions for explicit
 invocation and natural discovery, and inspect their generated files and preservation diffs.
+Record the host version, fresh session IDs, exact skill digest, observed skill read/activation,
+prompt, generated document, parser result and full preservation diff. Keep any unavailable host
+explicitly unverified; an owner-accepted limitation is not a passing test.
 
 The first-review example must start with five unchecked tasks and instructions, preserve all existing
 review bytes across restarts, and use a different local file from automated fixture resets. Exercise
