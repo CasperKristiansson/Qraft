@@ -24,10 +24,19 @@ function run(args, cwd = root) {
 }
 const packageVersion = JSON.parse(await readFile("package.json", "utf8")).version;
 const packageSpec = `@qraft-dev/qa@${packageVersion}`;
+// Download only this exact Qraft release immediately after publication. npm pack
+// does not install dependencies; the consumer install retains its age policy.
 if (registry) {
   const result = spawnSync(
     "npm",
-    ["pack", packageSpec, "--registry=https://registry.npmjs.org/", "--pack-destination", root],
+    [
+      "pack",
+      packageSpec,
+      "--min-release-age=0",
+      "--registry=https://registry.npmjs.org/",
+      "--pack-destination",
+      root,
+    ],
     { encoding: "utf8" },
   );
   if (result.status !== 0) throw new Error(result.stderr);
