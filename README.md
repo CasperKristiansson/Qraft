@@ -9,21 +9,26 @@ Works with **Vite** and **Next.js App Router**. Development only. No account, cl
 
 [Try it](#try-the-workflow) · [Install](docs/getting-started.md) · [Create a checklist](docs/creating-checklists.md) · [Agent skill](docs/agent-skill.md)
 
-![Qraft beside a sample cart, showing four review checks and a completed task with one note](docs/assets/checklist.jpg)
+![Qraft’s checklist beside a fictional headphone storefront, with two completed checks and a task with feedback](docs/assets/checklist.png)
 
 ## From checklist to feedback
 
-1. Ask your coding agent for a focused QA checklist, or write one yourself.
-2. Open your app and select that Markdown file in Qraft.
-3. Review each task. Mark it complete, skip it, or add notes with an attached element.
-4. Ask your coding agent to read the same file and work through your observations.
+Ask your coding agent for a QA checklist, or write one yourself. Select the Markdown file in
+Qraft, then work through the tasks inside your app. Complete a check, skip it, or open it to leave
+notes before moving to the next one.
 
-Qraft keeps the human in the review loop. A completed task records review progress; it can still
-have feedback that needs attention. Notes stay with the task and have no separate resolved state.
+When something looks off, choose **Attach element** and point to the part of the page you mean.
+Qraft highlights the element and captures identifying context, including its React component and
+source location when available. Your note draft stays intact while the drawer steps aside for selection.
 
-![A saved observation about an incorrect cart total, with the selected element's component and source context](docs/assets/attached-note.jpg)
+![Qraft’s element picker highlighting the product headline, with its component label, alignment guides and selection toolbar](docs/assets/element-picker.png)
 
-These screenshots show a local sample app. [See the compact mobile review](docs/assets/mobile-review.jpg).
+Your feedback goes back into the same Markdown file, ready for your coding agent to read. Completing
+a task records review progress; it does not mean every observation has been fixed. Notes stay with
+the task, so review progress and feedback remain together.
+
+_Shown in a fictional local storefront. The runnable demo below uses a smaller cart example.
+[See the compact mobile review](docs/assets/mobile-review.jpg)._
 
 ## Try the workflow
 
