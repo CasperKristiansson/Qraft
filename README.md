@@ -1,6 +1,10 @@
-# Qraft
+<h3 align="center">Qraft</h3>
 
-**Review your app without leaving it.**
+<p align="center">Review your app without leaving it.</p>
+
+<p align="center">
+  <img src="docs/assets/checklist.png" alt="Qraft’s checklist beside a fictional headphone storefront, with two completed checks and a task with feedback" width="80%" />
+</p>
 
 Turn a Markdown QA checklist into an in-app review drawer. Check your React app, attach feedback
 to elements, and keep the results in a local file your coding agent can read.
@@ -8,12 +12,6 @@ to elements, and keep the results in a local file your coding agent can read.
 Works with **Vite** and **Next.js App Router**. Development only. No account, cloud service, or API key.
 
 [Try it](#try-the-workflow) · [Install](docs/getting-started.md) · [Create a checklist](docs/creating-checklists.md) · [Agent skill](docs/agent-skill.md)
-
-<p align="center">
-  <img src="docs/assets/checklist.png" alt="Qraft’s checklist beside a fictional headphone storefront, with two completed checks and a task with feedback" width="80%" />
-</p>
-
-## From checklist to feedback
 
 Ask your coding agent for a QA checklist, or write one yourself. Select the Markdown file in
 Qraft, then work through the tasks inside your app. Complete a check, skip it, or open it to leave
