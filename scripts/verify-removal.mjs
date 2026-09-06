@@ -12,7 +12,7 @@ export async function verifyRemoval(consumer, framework, run) {
   });
   const before = await readFile(join(root, "QA.md"));
   const manifest = JSON.parse(await readFile(join(root, "package.json"), "utf8"));
-  delete manifest.dependencies["@qraft/qa"];
+  delete manifest.dependencies["@qraft-dev/qa"];
   await writeFile(join(root, "package.json"), JSON.stringify(manifest, null, 2) + "\n");
 
   if (framework === "vite") {
@@ -20,14 +20,14 @@ export async function verifyRemoval(consumer, framework, run) {
     await writeFile(
       config,
       (await readFile(config, "utf8"))
-        .replace('import { qraft } from "@qraft/qa/vite";\n', "")
+        .replace('import { qraft } from "@qraft-dev/qa/vite";\n', "")
         .replace(", qraft()", ""),
     );
     const entry = join(root, "src/main.tsx");
     await writeFile(
       entry,
       (await readFile(entry, "utf8"))
-        .replace('import { QA } from "@qraft/qa";\n', "")
+        .replace('import { QA } from "@qraft-dev/qa";\n', "")
         .replace("{import.meta.env.DEV ? <QA /> : null}", ""),
     );
   } else {
@@ -55,7 +55,7 @@ export async function verifyRemoval(consumer, framework, run) {
   if (!(await readFile(join(root, "QA.md"))).equals(before))
     throw new Error("Removal changed review Markdown.");
   try {
-    await readFile(join(root, "node_modules/@qraft/qa/package.json"));
+    await readFile(join(root, "node_modules/@qraft-dev/qa/package.json"));
     throw new Error("Removal retained the Qraft dependency.");
   } catch (error) {
     if (error.code !== "ENOENT") throw error;

@@ -36,8 +36,13 @@ const expected = {
 };
 
 const failures = [];
-if (!packageJson.private || packageJson.publishConfig)
-  failures.push("private distribution boundary changed");
+if (
+  packageJson.name !== "@qraft-dev/qa" ||
+  packageJson.private === true ||
+  packageJson.publishConfig?.access !== "public" ||
+  packageJson.publishConfig?.registry !== "https://registry.npmjs.org/"
+)
+  failures.push("public npm distribution metadata differs from the approved release");
 if (packageJson.license !== "MIT") failures.push("package license differs from owner-approved MIT");
 const projectLicense = await readFile("LICENSE", "utf8");
 if (

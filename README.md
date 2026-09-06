@@ -47,10 +47,16 @@ corepack pnpm demo
 Open `http://127.0.0.1:5173`, click **QA**, and choose **review.local.md**. Five checks walk you
 through changing quantity, attaching feedback, keyboard review, a narrow viewport, and reading the
 result in your editor. The toy cart's fixed summary gives you something concrete to report.
-Restarting the demo preserves your notes. Repository access is currently limited to collaborators.
+Restarting the demo preserves your notes.
 
 To use Qraft in your own app, follow the [Vite or Next.js setup](docs/getting-started.md).
-**Qraft is still private and unpublished**; installation currently uses a verified package archive.
+
+```sh
+pnpm add -D @qraft-dev/qa
+pnpm exec qraft setup
+```
+
+`setup` prints the integration steps for your app; it does not edit files.
 
 ## Start with ordinary Markdown
 

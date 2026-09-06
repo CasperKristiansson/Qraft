@@ -1,7 +1,6 @@
 {
-  "name": "@qraft/qa",
+  "name": "@qraft-dev/qa",
   "version": "0.3.0",
-  "private": true,
   "description": "Review your React app with a Markdown QA checklist. Local feedback for you and your coding agent.",
   "repository": {
     "type": "git",
@@ -119,5 +118,9 @@
       ]
     }
   },
-  "license": "MIT"
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
 }

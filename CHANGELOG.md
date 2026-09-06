@@ -1,8 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 — 2026-09-06
 
-Qraft is currently private and has no public npm release.
+First public release, published as `@qraft-dev/qa`.
 
 - Review a user-selected Markdown checklist inside Vite React or Next.js App Router applications.
 - Add optional task descriptions for concrete review instructions, separate from feedback notes.

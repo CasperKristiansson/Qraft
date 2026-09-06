@@ -7,6 +7,7 @@ import { mkdir, mkdtemp, readFile, readdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+const registry = process.argv.includes("--registry");
 const maintenance = process.argv.includes("--maintenance");
 const profile = maintenance ? "maintenance" : "current";
 const repository = process.cwd();
@@ -26,7 +27,17 @@ function run(command, args, cwd = repository) {
   return result.stdout;
 }
 
-run("corepack", ["pnpm", "pack", "--pack-destination", consumer]);
+const packageVersion = JSON.parse(await readFile("package.json", "utf8")).version;
+const packageSpec = `@qraft-dev/qa@${packageVersion}`;
+if (registry)
+  run("npm", [
+    "pack",
+    packageSpec,
+    "--registry=https://registry.npmjs.org/",
+    "--pack-destination",
+    consumer,
+  ]);
+else run("corepack", ["pnpm", "pack", "--pack-destination", consumer]);
 const archiveName = (await readdir(consumer)).find((name) => name.endsWith(".tgz"));
 if (!archiveName) throw new Error("pnpm pack did not create a package archive.");
 const archive = join(consumer, archiveName);
@@ -65,7 +76,7 @@ const packageJson = {
     preview: "vite preview --host 127.0.0.1 --port 4174 --strictPort",
   },
   dependencies: {
-    "@qraft/qa": `file:${archive}`,
+    "@qraft-dev/qa": registry ? packageVersion : `file:${archive}`,
     "@vitejs/plugin-react": maintenance ? "5.2.0" : "6.1.1",
     react: "19.2.8",
     "react-dom": "19.2.8",
@@ -79,6 +90,7 @@ const files = {
   - "."
 minimumReleaseAge: 10080
 ${maintenance ? 'allowBuilds:\n  "esbuild@0.28.2": true\n' : ""}minimumReleaseAgeExclude:
+  - "${packageSpec}"
   - "lucide-react@1.41.0"
   - "zod@4.5.4"
 `,
@@ -89,7 +101,7 @@ ${maintenance ? 'allowBuilds:\n  "esbuild@0.28.2": true\n' : ""}minimumReleaseAg
   "QA.md": "# QA\n",
   "vite.config.ts": `import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
-import { qraft } from "@qraft/qa/vite";
+import { qraft } from "@qraft-dev/qa/vite";
 import { fixturePlugin } from "./fixture-plugin.ts";
 
 export default defineConfig({ plugins: [react(), fixturePlugin(), qraft()] });
@@ -133,7 +145,7 @@ export function fixturePlugin(): Plugin {
 `,
   "src/main.tsx": `import { useState } from "react";
 import { createRoot } from "react-dom/client";
-import { QA } from "@qraft/qa";
+import { QA } from "@qraft-dev/qa";
 import "./style.css";
 
 function App() {
@@ -165,7 +177,7 @@ run(
   [
     "--input-type=module",
     "-e",
-    "const client=await import('@qraft/qa');const vite=await import('@qraft/qa/vite');if(typeof client.QA!=='function'||typeof client.HttpQAStorage!=='function'||typeof vite.qraft!=='function')process.exit(1)",
+    "const client=await import('@qraft-dev/qa');const vite=await import('@qraft-dev/qa/vite');if(typeof client.QA!=='function'||typeof client.HttpQAStorage!=='function'||typeof vite.qraft!=='function')process.exit(1)",
   ],
   consumer,
 );
@@ -174,7 +186,7 @@ run(
   [
     "--input-type=module",
     "-e",
-    "try{await import('@qraft/qa/dist/vite.js');process.exit(1)}catch(error){if(error.code!=='ERR_PACKAGE_PATH_NOT_EXPORTED')throw error}",
+    "try{await import('@qraft-dev/qa/dist/vite.js');process.exit(1)}catch(error){if(error.code!=='ERR_PACKAGE_PATH_NOT_EXPORTED')throw error}",
   ],
   consumer,
 );
@@ -228,6 +240,7 @@ const digest = createHash("sha256")
   .digest("hex");
 const evidence = {
   consumer,
+  distribution: registry ? "npm" : "archive",
   profile,
   runtime: process.version,
   versions: packageJson.dependencies,
@@ -242,7 +255,7 @@ const evidence = {
 await writeFile(join(consumer, "evidence.json"), JSON.stringify(evidence, null, 2) + "\n");
 await mkdir("artifacts/release", { recursive: true });
 await writeFile(
-  `artifacts/release/consumer-${profile}.json`,
+  `artifacts/release/consumer-${profile}${registry ? "-registry" : ""}.json`,
   JSON.stringify(evidence, null, 2) + "\n",
 );
 process.stdout.write(`${JSON.stringify(evidence)}\n`);

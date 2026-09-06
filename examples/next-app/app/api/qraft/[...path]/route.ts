@@ -1,4 +1,4 @@
-import { createQraftRoute } from "@qraft/qa/next";
+import { createQraftRoute } from "@qraft-dev/qa/next";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

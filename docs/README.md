@@ -37,6 +37,6 @@ See acceptance for the complete package and browser gates. Local receipts live i
 `artifacts/release`; test screenshots live in ignored `artifacts/browser-evidence`. Approved README
 media and its capture and presentation notes live in [docs/assets](assets/README.md).
 
-The package remains private and unpublished. Passing local checks does not authorize a release.
+Passing local checks does not publish a release.
 See [release preparation](releasing.md) for the separate owner-controlled visibility and publication
 steps, and [contributing](../CONTRIBUTING.md) for the normal development workflow.

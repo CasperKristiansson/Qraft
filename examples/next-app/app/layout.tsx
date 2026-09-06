@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
-  const QA = process.env.NODE_ENV === "development" ? (await import("@qraft/qa")).QA : null;
+  const QA = process.env.NODE_ENV === "development" ? (await import("@qraft-dev/qa")).QA : null;
   return (
     <html lang="en">
       <body>

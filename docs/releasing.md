@@ -1,40 +1,50 @@
-# Release preparation
+# Release Qraft
 
-The repository is private and `package.json` deliberately retains `private: true`. There is no
-publish script, release workflow, registry release, or deployment. Passing checks does not change
-visibility or authorize publication. The owner must explicitly approve those actions separately.
+The public package is `@qraft-dev/qa`. The owner authorized the first GitHub and npm release on
+2026-09-06. Publication is a separate action from merging code; the Checks workflow never publishes.
+Future releases require explicit owner authorization.
 
-## Verify a candidate
+## Prepare a candidate
 
-Follow [testing and acceptance](testing-and-acceptance.md), including a clean source copy containing
-the intended uncommitted changes, frozen installation, packed consumers, production exclusion,
-removal, and a hands-on browser pass. Retain source fingerprints and package digests with receipts.
-Keep generated archives and test evidence out of source control unless an internal consumer
-intentionally vendors a verified archive. The approved README screenshots in `docs/assets` are
-tracked documentation assets; their capture notes distinguish them from test receipts.
+1. Start from a clean branch and review its complete diff. Choose an unused version, update
+   package.json and CHANGELOG.md, and confirm npm scope permissions with the authenticated account.
+2. Verify the MIT license, third-party notices and archive contents. Review source and reachable
+   Git history for credentials, private fixtures, internal project data and generated artifacts
+   before exposing any previously private history.
+3. Verify README screenshots, install instructions, repository metadata, issue forms and security
+   reporting. Keep public access in publishConfig; do not add installation hooks.
+4. Follow [testing and acceptance](testing-and-acceptance.md) in a clean source copy containing the
+   final candidate, with a frozen install. Run check, test:browser, audit:release, verify:consumer
+   and verify:next. Run both consumer scripts with --maintenance under the documented Node 22
+   runtime. Preserve source fingerprints, package digests, logs and browser evidence locally.
+5. Merge the reviewed candidate after CI passes. Verify that the tested source matches the merge
+   and publish the exact tested archive, not a new unverified working-directory build.
 
-The GitHub Checks workflow runs the current Node profile on Ubuntu: formatting, boundaries, types,
-unit/integration tests, build, three browsers and packed Vite/Next consumers. It has read-only token
-permissions, pinned actions, and no publishing step. The local dependency/license audit and the
-maintenance Node/framework profile remain separate release gates. A Linux CI pass is not evidence
-for other platforms or for the locally installed dependency-license inventory.
+The GitHub Checks workflow runs the current Node profile on Ubuntu with pinned actions and
+read-only permissions. The local license inventory and maintenance profile are separate gates.
+A Linux CI pass does not establish other platforms or native coding-agent activation.
 
-## Before the first public release
+## Publish and verify
 
-- Verify the owner-approved MIT license and third-party notices are present in the final archive.
-  Revisit upstream archive notice exceptions for the intended distribution.
-- Inspect source and reachable Git history for credentials, private fixtures, internal project
-  details and committed generated artifacts. Resolve actual findings before making history public.
-- Verify the GitHub description, topics, links, issue forms and private security-reporting route.
-  GitHub private vulnerability reporting may require a public repository; enable and verify it as
-  part of the explicitly authorized visibility change before directing public users to that route.
-- Check that the README screenshots still match the released UI and its documented workflow.
-- Confirm npm namespace access and choose the release version. Remove `private: true` only in the
-  approved publication change, add the intended scoped-package access setting, update the release
-  audit's current private-distribution assertion for that approved boundary, and rerun artifact
-  checks against the exact final manifest. Do not claim an npm install works before publication.
-- After an authorized release succeeds, replace archive-only setup with the verified registry install
-  command, move Unreleased notes into the actual version entry, and verify all public links while signed out.
+Authenticate locally with `npm login --auth-type=web`. Complete npm's browser authentication and
+publishing verification directly; never place credentials in release notes, commits or logs.
 
-Do not treat this checklist as authorization to create public resources, change repository visibility,
-publish a package or send promotional messages.
+```sh
+npm publish /absolute/path/to/tested-package.tgz --access public --registry=https://registry.npmjs.org/
+```
+
+For the initial launch, make GitHub public after the history review and before npm publication;
+enable private vulnerability reporting and verify the source, README and assets while signed out.
+Do not rewrite history or bypass branch protections to release.
+
+After publication, run `corepack pnpm verify:consumer --registry` and
+`corepack pnpm verify:next --registry`. These download the exact registry version and install it by
+version in fresh projects, exercise setup/doctor/guide, production exclusion and removal, and record
+the downloaded archive digest. Compare that digest with the published candidate. Inspect both
+running integrations using the integrated browser. Verify the public npm listing and instructions,
+then create the GitHub release and matching v-prefixed tag at the verified main commit.
+
+Keep generated archives, fingerprints and test evidence in ignored artifacts/release. Approved
+README assets remain tracked documentation. A successful publish is immutable for that name and
+version; fixes use a new version. If any step fails, record the exact registry and Git state before
+continuing. Do not claim a release is usable until fresh registry installations pass.

@@ -10,11 +10,11 @@ not call an LLM. Your agent's own data handling applies when you give it project
 
 ## Install for a project
 
-Run from the consuming project after installing `@qraft/qa`. The optional external
+Run from the consuming project after installing `@qraft-dev/qa`. The optional external
 [skills CLI](https://github.com/vercel-labs/skills) can install the bundled directory:
 
 ```sh
-npx skills add ./node_modules/@qraft/qa/skills --skill qraft-review --agent codex
+npx skills add ./node_modules/@qraft-dev/qa/skills --skill qraft-review --agent codex
 ```
 
 For Claude Code, use `--agent claude-code`. Select only agents your project uses, keep project scope,
@@ -27,7 +27,7 @@ Alternatively, copy the skill manually without running another package. For a ne
 ```sh
 mkdir -p .agents/skills
 test ! -e .agents/skills/qraft-review && test ! -L .agents/skills/qraft-review && \
-  cp -R node_modules/@qraft/qa/skills/qraft-review .agents/skills/qraft-review
+  cp -R node_modules/@qraft-dev/qa/skills/qraft-review .agents/skills/qraft-review
 ```
 
 For Claude Code, substitute `.claude/skills` for `.agents/skills` in that command. The existence
@@ -75,7 +75,7 @@ pnpm exec qraft guide
 
 This read-only command prints the exact guide bundled with your installed Qraft version, even
 outside an app directory. Give it to your agent as context, or ask the agent to read
-`node_modules/@qraft/qa/skills/qraft-review/SKILL.md` directly. This is ordinary prompt context,
+`node_modules/@qraft-dev/qa/skills/qraft-review/SKILL.md` directly. This is ordinary prompt context,
 not automatic skill discovery. `qraft doctor` and `qraft setup` remain read-only diagnostics.
 
 ## Optional project preferences

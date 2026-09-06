@@ -51,5 +51,4 @@ Explain the problem, resulting behavior and checks actually run. Include a small
 visual changes and the relevant preservation fixture for Markdown changes. Keep generated output,
 local reviews, credentials and test reports out of Git. Report unverified behavior plainly.
 
-The repository is currently private and the package unpublished. Repository visibility, licensing,
-and registry releases require the owner's explicit decision; a pull request does not publish Qraft.
+Registry releases require the owner's explicit decision; a pull request does not publish Qraft.
