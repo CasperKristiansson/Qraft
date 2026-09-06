@@ -33,6 +33,9 @@ Qraft source revision: `e2051e11c665d7a2c1acb033b0ceb057cf32336b`.
 Captured `dist/index.js` SHA-256:
 `6e91702d03a888f0caa8f0585933affe17910f155c126417fef9f43cc1815d88`.
 The two presentation exports were approved by the owner before inclusion in the README.
+The README centers both images at 80% width. Their outer presentation backgrounds have an
+80-pixel corner radius with transparency, so rounding works in GitHub's light and dark themes
+without custom CSS. This later presentation change preserves the screenshot and window frame.
 
 ## Mobile example
 

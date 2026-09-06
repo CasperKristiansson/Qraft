@@ -9,7 +9,9 @@ Works with **Vite** and **Next.js App Router**. Development only. No account, cl
 
 [Try it](#try-the-workflow) · [Install](docs/getting-started.md) · [Create a checklist](docs/creating-checklists.md) · [Agent skill](docs/agent-skill.md)
 
-![Qraft’s checklist beside a fictional headphone storefront, with two completed checks and a task with feedback](docs/assets/checklist.png)
+<p align="center">
+  <img src="docs/assets/checklist.png" alt="Qraft’s checklist beside a fictional headphone storefront, with two completed checks and a task with feedback" width="80%" />
+</p>
 
 ## From checklist to feedback
 
@@ -21,7 +23,9 @@ When something looks off, choose **Attach element** and point to the part of the
 Qraft highlights the element and captures identifying context, including its React component and
 source location when available. Your note draft stays intact while the drawer steps aside for selection.
 
-![Qraft’s element picker highlighting the product headline, with its component label, alignment guides and selection toolbar](docs/assets/element-picker.png)
+<p align="center">
+  <img src="docs/assets/element-picker.png" alt="Qraft’s element picker highlighting the product headline, with its component label, alignment guides and selection toolbar" width="80%" />
+</p>
 
 Your feedback goes back into the same Markdown file, ready for your coding agent to read. Completing
 a task records review progress; it does not mean every observation has been fixed. Notes stay with
