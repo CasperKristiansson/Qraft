@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.1 — 2026-09-06
+
+- Introduce the first review with a compact checklist illustration and clearer Markdown guidance.
+- Offer an expandable starter prompt for Codex, Claude Code, or ChatGPT and a GitHub checklist guide.
+- Clarify file selection with file icons, search recovery, and mobile-friendly scrolling.
+- Preserve manual prompt copying when clipboard access is unavailable.
+
 ## 0.3.0 — 2026-09-06
 
 First public release, published as `@qraft-dev/qa`.
