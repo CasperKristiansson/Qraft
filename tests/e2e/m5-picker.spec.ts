@@ -101,6 +101,8 @@ test("M5 picker ignores itself, cancels cleanly, and retains structural context 
   page,
 }) => {
   await reset(page, "/?picker=1");
+  // Native button sizing must not make the fallback target overlap another fixture.
+  await page.addStyleTag({ content: "#context-fallback-target { font-size: 18px; }" });
   const before = await readDocument(page);
   await attach(page);
   const cancel = page.getByRole("button", { name: "Cancel element picker" });

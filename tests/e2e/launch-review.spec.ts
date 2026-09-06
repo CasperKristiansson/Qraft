@@ -143,10 +143,8 @@ test("two browser tabs keep independent unsent drafts", async ({ page, context }
 
 test("clearing a saved review requires an explicit action", async ({ page }) => {
   await reset(page);
-  await drawer(page).getByRole("button", { name: "Review settings", exact: true }).click();
-  await drawer(page)
-    .getByRole("button", { name: "Clear saved review session…", exact: true })
-    .click();
+  await drawer(page).getByRole("button", { name: "Settings", exact: true }).click();
+  await drawer(page).getByRole("button", { name: "Clear saved session…", exact: true }).click();
   await expect(drawer(page).getByRole("group", { name: "Confirm clearing session" })).toBeVisible();
   await drawer(page).getByRole("button", { name: "Discard unsaved session", exact: true }).click();
   await expect(taskButton(page, "Change quantity")).toBeVisible();

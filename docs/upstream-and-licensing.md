@@ -98,9 +98,31 @@ Do not silently float to a newer React Grab version during unrelated work.
 
 ## Project distribution status
 
-Qraft is currently private and internal. No project-wide public distribution license has been selected. Agents must not add a public license, npm publish configuration, or public registry release without an explicit owner decision.
+The owner selected the [MIT license](../LICENSE) on 2026-09-06 for Qraft's code, documentation,
+and bundled skill. The package declares `MIT` and includes the license and third-party notices.
+Dependencies retain their own licenses; Qraft's license does not replace those obligations.
 
-The absence of a Qraft public license does not remove third-party notice obligations for incorporated dependencies or copied MIT-licensed material.
+The repository remains private and the package unpublished. Changing repository visibility,
+adding npm publish configuration, or publishing a registry release requires separate explicit
+owner authorization.
+
+## Agent workflow and repository tooling references
+
+The owner approved an original portable checklist skill and explicit installation guidance on
+2026-09-06. No third-party skill text or implementation is copied. These references are allowlisted
+only for the described documentation and tooling roles:
+
+| Source                                                             | Inspected revision or date                                           | Role and resulting Qraft files                                                                                          |
+| ------------------------------------------------------------------ | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| [Agent Skills specification](https://agentskills.io/specification) | 2026-09-06                                                           | Portable frontmatter and self-contained guidance in `skills/qraft-review/SKILL.md`                                      |
+| [Codex skills](https://learn.chatgpt.com/docs/build-skills)        | 2026-09-06                                                           | Project discovery documentation in `docs/agent-skill.md`; no runtime integration                                        |
+| [Claude Code skills](https://code.claude.com/docs/en/skills)       | 2026-09-06                                                           | Project directory and explicit invocation documentation in `docs/agent-skill.md`                                        |
+| [vercel-labs/skills](https://github.com/vercel-labs/skills)        | `435076e78988e1e6ec40d00b0b1d76bdbbc5419a`, `README.md`, MIT         | Optional local-directory installation command and snapshot semantics in `docs/agent-skill.md`; not a package dependency |
+| [actions/checkout](https://github.com/actions/checkout)            | `3d3c42e5aac5ba805825da76410c181273ba90b1`, v7.0.1, `README.md`, MIT | Pinned source-checkout action in `.github/workflows/ci.yml`                                                             |
+| [actions/setup-node](https://github.com/actions/setup-node)        | `820762786026740c76f36085b0efc47a31fe5020`, v7.0.0, `README.md`, MIT | Pinned Node setup action in `.github/workflows/ci.yml`                                                                  |
+
+The actions execute only in repository CI and are not bundled in the npm artifact. The skill uses
+no host-specific tool declarations, hooks, MCP service, external application calls or custom installer.
 
 ## Pre-release check
 

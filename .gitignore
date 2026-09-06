@@ -18,6 +18,7 @@ artifacts/browser-evidence/
 
 # Local QA working state
 QA.local.md
+review.local.md
 *.qraft.tmp
 *.qraft.lock
 

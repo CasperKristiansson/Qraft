@@ -10,7 +10,7 @@ test("M1 shadow drawer overlays the host and supports keyboard close", async ({ 
   await page.getByRole("button", { name: /Open Qraft/u }).click();
   const drawer = page.locator("[data-qraft-root]").locator("[role=dialog]");
   await expect(drawer).toBeVisible();
-  await expect(drawer.getByText("Checkout QA")).toBeVisible();
+  await expect(drawer.getByRole("button", { name: "Login", exact: true })).toBeVisible();
   await expect(drawer.getByRole("heading", { name: "Qraft" })).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(drawer).toBeHidden();

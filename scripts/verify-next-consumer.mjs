@@ -1,4 +1,5 @@
 import { verifyRemoval } from "./verify-removal.mjs";
+import { verifyPackagedGuide } from "./verify-packaged-guide.mjs";
 import { spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { cp, mkdir, mkdtemp, readFile, readdir, writeFile } from "node:fs/promises";
@@ -82,6 +83,7 @@ await writeFile(
 run(["install"]);
 run(["exec", "qraft", "doctor"]);
 run(["exec", "qraft", "setup"]);
+const guide = await verifyPackagedGuide(root);
 const results = [];
 async function exercise(mode, port) {
   const child = spawn(
@@ -196,6 +198,7 @@ const evidence = {
   sourceFingerprint: source.fingerprint,
   results,
   removal,
+  guide,
 };
 await mkdir("artifacts/release", { recursive: true });
 await writeFile(

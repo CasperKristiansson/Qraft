@@ -1,0 +1,15 @@
+name: Workflow improvement
+description: Describe a review problem Qraft could make easier.
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to review?
+      description: Describe the friction in your current workflow and how you work around it.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would help?
+      description: A small concrete example is useful. A proposed implementation is optional.

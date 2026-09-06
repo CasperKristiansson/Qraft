@@ -1,6 +1,6 @@
 # Product requirements
 
-Qraft is an internal, local development review tool for Vite React and Next.js App Router apps. A tester selects a Markdown checklist, checks the running app, and leaves notes for a coding agent in that same file.
+Qraft is a local development review tool for Vite React and Next.js App Router apps. A tester selects a Markdown checklist, checks the running app, and leaves notes for a coding agent in that same file. The repository is currently private while preparing for public distribution.
 
 ## Owner-approved workflow — 2026-09-05
 
@@ -13,13 +13,13 @@ Qraft is an internal, local development review tool for Vite React and Next.js A
 
 ## Required behavior
 
-- Pin keeps the drawer open while operating the host app, with nonmodal focus behavior. Remember pin preference per project. Settings can hide Qraft until reload and explicitly clear the saved review session.
+- Pin keeps the drawer open while operating the host app, with nonmodal focus behavior. Remember pin preference per project. A dedicated Settings view groups layout, saved session and visibility controls. It can hide Qraft until reload and explicitly clear the saved review session without changing Markdown.
 - Show sections and tasks directly, without search, filters, a document title or handoff controls. Retain collapsed sections, list scroll and selected task across reloads in the same browser tab.
 - Versioned browser session storage isolates drafts by tab/project/file. Keep unsaved composer and edit drafts across reloads, HMR and dev-server restarts. Report unavailable/full storage. Ambiguous legacy targets and externally changed note bodies retain copyable recovery drafts rather than guessing. Closing a browser tab can end its saved session; no cross-tab draft synchronization is promised.
 - At narrow widths a full-width note sheet can collapse to a current-task strip so the host remains operable. The strip has explicit complete, next, expand and hide actions.
 
 - A compact vertical edge tab contains a six-dot grip, QA, and completed/total count, rotated 90 degrees clockwise. Dragging moves it vertically along the right edge; the position survives reload and is clamped to the viewport. Keyboard arrows/Home/End provide equivalent repositioning.
-- The drawer overlays the host without moving layout or locking body scroll. Checklist progress stays near the top; detail replaces the header identity with a large back button and omits progress.
+- The drawer defaults to an overlay without moving layout or locking body scroll. A saved Push page content setting reserves the drawer width on screens at least 1024 px wide and keeps it open during host interaction; smaller screens use the overlay. Checklist progress stays near the top; detail replaces the header identity with a large back button and omits progress.
 - Each task row has separate status and detail controls. Task details reuse that circular status control beside the title instead of separate state buttons. Single activation cycles open → completed → skipped → open. A pointer double-click skips directly. Skipped tasks use a strike-through and explicit text.
 - Progress counts completed tasks over all tasks; skipped count is shown separately. Skipped is never counted as passed.
 - Each task shows its total note count. Notes have no open/resolved state.
@@ -31,6 +31,13 @@ Qraft is an internal, local development review tool for Vite React and Next.js A
 - File selection lists server-discovered project Markdown files. Browser requests use opaque file IDs, never arbitrary filesystem paths or complete replacement documents. A trusted plugin file option can restrict the chooser to one file, including a missing file; it is not auto-selected.
 
 ## Scope and limits
+
+The bundled qraft-review skill helps an external coding agent plan initial, regression, focused and
+retest checklists. It follows explicit user scope, puts essential instructions inside visible tasks,
+and preserves existing statuses, notes and metadata. A completed check records review progress,
+not proof that its feedback is fixed. The skill does not execute reviews, change Qraft's grammar,
+or mark notes resolved. Optional project preferences and explicit installation are documented in
+[agent setup](agent-skill.md); the methodology is maintained only in the skill itself.
 
 Vite and Next.js App Router (Node runtime); React 19; one private root package; local development only; desktop and responsive browser review down to 360 CSS px. Physical-phone access over a network is outside the local-only boundary. No hosted service, accounts, database, MCP, AI, remote integrations, screenshots/video, general Markdown editor, task deletion/reordering, detached window, extension or automatic agent execution. Notes are handoff context, not a second issue tracker.
 

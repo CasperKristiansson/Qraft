@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Setup and troubleshooting
+    url: https://github.com/CasperKristiansson/Qraft/blob/main/docs/troubleshooting.md
+    about: Check local integration, file selection, picker and recovery guidance.
+  - name: Security policy
+    url: https://github.com/CasperKristiansson/Qraft/blob/main/SECURITY.md
+    about: Report possible vulnerabilities privately.

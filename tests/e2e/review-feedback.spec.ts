@@ -18,6 +18,10 @@ test("checklist actions stay reachable with hundreds of tasks at every supported
     await route.fulfill({ response, json: document });
   });
   await reset(page);
+  // Wider host text metrics expose overflow on macOS as well as Linux.
+  await page.addStyleTag({
+    content: ".shop { font-family: Arial, sans-serif; font-size: 18px; }",
+  });
   const d = drawer(page);
   const content = d.locator(".qraft-content");
   const add = d.getByRole("button", { name: "Add section", exact: true });
@@ -44,7 +48,7 @@ test("checklist actions stay reachable with hundreds of tasks at every supported
     );
     expect(footer.y + footer.height).toBeCloseTo(size.height - bottomBorder, 0);
     expect(initial.y).toBeGreaterThanOrEqual(footer.y);
-    for (const name of ["Change file", "Keep Qraft open", "Review settings"]) {
+    for (const name of ["Change file", "Keep Qraft open", "Settings"]) {
       const action = (await d.getByRole("button", { name, exact: true }).boundingBox())!;
       expect(action.y).toBeGreaterThan(initial.y);
       expect(action.y + action.height).toBeLessThanOrEqual(size.height);
@@ -68,6 +72,39 @@ test("checklist actions stay reachable with hundreds of tasks at every supported
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(size.width);
     expect(await page.evaluate(() => window.scrollY)).toBe(0);
   }
+});
+
+test("the grip opens on click or keyboard activation but tolerates pointer jitter", async ({
+  page,
+}) => {
+  await reset(page);
+  const close = async () => {
+    await drawer(page).getByRole("button", { name: "Close Qraft", exact: true }).click();
+    await expect(drawer(page)).toHaveCount(0);
+  };
+  const grip = page.getByRole("button", { name: "Move Qraft tab", exact: true });
+  await close();
+  await grip.click();
+  await expect(drawer(page)).toBeVisible();
+  // Reopening during the exit must not be dismissed as an outside interaction.
+  await drawer(page).getByRole("button", { name: "Close Qraft", exact: true }).click();
+  await grip.click();
+  await expect(drawer(page)).toHaveAttribute("data-state", "open");
+  await close();
+  await grip.focus();
+  await grip.press("Enter");
+  await expect(drawer(page)).toBeVisible();
+  await close();
+  await grip.focus();
+  await grip.press("Space");
+  await expect(drawer(page)).toBeVisible();
+  await close();
+  const box = (await grip.boundingBox())!;
+  await page.mouse.move(box.x + 10, box.y + 10);
+  await page.mouse.down();
+  await page.mouse.move(box.x + 10, box.y + 12);
+  await page.mouse.up();
+  await expect(drawer(page)).toBeVisible();
 });
 
 test("compact vertical tab drags and remembers position without opening", async ({ page }) => {

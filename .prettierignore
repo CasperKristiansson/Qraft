@@ -7,3 +7,5 @@ pnpm-lock.yaml
 tests/fixtures/
 examples/**/QA*.md
 QA.md
+examples/vite-react/first-review.md
+review.local.md

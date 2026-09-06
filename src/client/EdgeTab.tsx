@@ -5,7 +5,17 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 const key = "qraft:tab-position";
 const clamp = (value: number) => Math.max(0, Math.min(1, value));
 
-export function EdgeTab({ open, passed, total }: { open: boolean; passed: number; total: number }) {
+export function EdgeTab({
+  open,
+  passed,
+  total,
+  onOpen,
+}: {
+  open: boolean;
+  passed: number;
+  total: number;
+  onOpen: () => void;
+}) {
   const [position, setPosition] = useState(() => {
     try {
       const raw = localStorage.getItem(key);
@@ -19,6 +29,7 @@ export function EdgeTab({ open, passed, total }: { open: boolean; passed: number
   const [tabHeight, setTabHeight] = useState(72);
   const tab = useRef<HTMLDivElement>(null);
   const drag = useRef<{ start: number; position: number } | null>(null);
+  const dragged = useRef(false);
   const travel = Math.max(1, height - tabHeight - 16);
   const save = (value: number) => {
     const next = clamp(value);
@@ -57,17 +68,24 @@ export function EdgeTab({ open, passed, total }: { open: boolean; passed: number
         className="qraft-grip"
         type="button"
         aria-label="Move Qraft tab"
-        title="Drag up or down. Arrow keys move; Home/End move to the edges."
+        title="Click to open. Drag up or down. Arrow keys move; Home/End move to the edges."
+        onClick={(event) => {
+          if (event.detail === 0 || !dragged.current) onOpen();
+          dragged.current = false;
+        }}
         onPointerDown={(event) => {
           if (event.button !== 0) return;
           event.preventDefault();
           event.currentTarget.focus();
+          dragged.current = false;
           drag.current = { start: event.clientY, position };
           event.currentTarget.setPointerCapture(event.pointerId);
         }}
         onPointerMove={(event) => {
-          if (drag.current)
-            save(drag.current.position + (event.clientY - drag.current.start) / travel);
+          if (!drag.current) return;
+          const distance = event.clientY - drag.current.start;
+          if (Math.abs(distance) >= 5) dragged.current = true;
+          if (dragged.current) save(drag.current.position + distance / travel);
         }}
         onPointerUp={(event) => {
           drag.current = null;
@@ -75,9 +93,11 @@ export function EdgeTab({ open, passed, total }: { open: boolean; passed: number
             event.currentTarget.releasePointerCapture(event.pointerId);
         }}
         onPointerCancel={() => {
+          dragged.current = true;
           drag.current = null;
         }}
         onLostPointerCapture={() => {
+          if (drag.current) dragged.current = true;
           drag.current = null;
         }}
         onKeyDown={(event) => {

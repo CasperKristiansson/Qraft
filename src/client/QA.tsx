@@ -1,3 +1,4 @@
+import { SettingsView } from "./SettingsView";
 import { FileChooser } from "./FileChooser";
 import * as Dialog from "@radix-ui/react-dialog";
 import { FocusScope } from "@radix-ui/react-focus-scope";
@@ -11,6 +12,7 @@ import { HttpQAStorage } from "./http-storage";
 import type { QAFileCatalog, QAStorage } from "./storage";
 import { ElementPicker, type PickerSelection } from "./picker/ElementPicker";
 import { EdgeTab } from "./EdgeTab";
+import { usePageSpace } from "./use-page-space";
 import { useShadowMount } from "./use-shadow-mount";
 import { ChecklistView } from "./ChecklistView";
 import { TaskDetail } from "./TaskDetail";
@@ -59,6 +61,7 @@ export function QA({
   const setNotes = (apply: (notes: Record<string, NoteDraft>) => Record<string, NoteDraft>) =>
     updateSession((current) => ({ ...current, notes: apply(current.notes) }));
   const [pinned, setPinned] = useState(false);
+  const [pushPage, setPushPage] = useState(false);
   const [compact, setCompact] = useState(false);
   const [hidden, setHidden] = useState(false);
   const [settings, setSettings] = useState(false);
@@ -82,12 +85,19 @@ export function QA({
     () => providedStorage ?? (fileId ? defaultStorage.forFile(fileId) : null),
     [providedStorage, defaultStorage, fileId],
   );
-  const { document, pending, feedback, execute } = useDocument(
+  const [statusBusy, setStatusBusy] = useState(false);
+  const {
+    document,
+    pending: saving,
+    feedback,
+    execute,
+  } = useDocument(
     storage,
     (before, after, command) =>
       updateSession((current) => reconcileSession(current, before, after, command)),
     setConnected,
   );
+  const pending = saving || statusBusy;
   const progress = document ? getProgress(document) : { passed: 0, total: 0, skipped: 0 };
   const tasks = document?.sections.flatMap((section) => section.tasks) ?? [];
   const selected = document?.sections
@@ -114,6 +124,7 @@ export function QA({
     });
   const fileLabel = catalog?.files.find((file) => file.id === fileId)?.label ?? "Markdown";
   const showChooser = !providedStorage && (!fileId || choosing);
+  const pagePushed = usePageSpace(mount, pushPage && (open || picking) && !compact && !hidden);
   const modal = narrow && !pinned;
   const draftBlocked = Boolean(
     document &&
@@ -140,24 +151,30 @@ export function QA({
     if (!catalog) return;
     try {
       setPinned(localStorage.getItem(`qraft:pinned:${catalog.projectId}`) === "true");
+      setPushPage(localStorage.getItem(`qraft:push-page:${catalog.projectId}`) === "true");
     } catch {
       setPreferenceWarning(
-        "Pin preference will last for this page only because browser storage is unavailable.",
+        "Review preferences will last for this page only because browser storage is unavailable.",
       );
     }
   }, [catalog?.projectId]);
 
   useLayoutEffect(() => {
+    // A quick reopen can reuse content retained for the exit animation.
+    if (open) heading.current?.focus();
+  }, [open]);
+
+  useLayoutEffect(() => {
     if (!navigationFocus.current) return;
     navigationFocus.current = false;
-    if (selectedTaskId && content.current) content.current.scrollTop = 0;
+    if ((selectedTaskId || settings) && content.current) content.current.scrollTop = 0;
     heading.current?.focus();
   });
 
   useLayoutEffect(() => {
-    if (!selectedTaskId && !showChooser && document && content.current)
+    if (!selectedTaskId && !showChooser && !settings && document && content.current)
       content.current.scrollTop = session.scroll;
-  }, [selectedTaskId, showChooser, document === null]);
+  }, [selectedTaskId, showChooser, settings, document === null]);
 
   useEffect(() => {
     if (compact && document && !selected) {
@@ -209,7 +226,7 @@ export function QA({
   }, [form]);
 
   const status = (task: QATask, value: TaskStatus) =>
-    void execute(
+    execute(
       { type: "setTaskStatus", taskId: task.id, status: value },
       `Task ${labels[value].toLowerCase()}.`,
     );
@@ -330,9 +347,21 @@ export function QA({
         localStorage.setItem(`qraft:pinned:${catalog.projectId}`, String(next));
       } catch {
         setPreferenceWarning(
-          "Pin preference will last for this page only because browser storage is unavailable.",
+          "Review preferences will last for this page only because browser storage is unavailable.",
         );
       }
+    }
+  };
+  const togglePushPage = () => {
+    const next = !pushPage;
+    setPushPage(next);
+    if (!catalog) return;
+    try {
+      localStorage.setItem(`qraft:push-page:${catalog.projectId}`, String(next));
+    } catch {
+      setPreferenceWarning(
+        "Review preferences will last for this page only because browser storage is unavailable.",
+      );
     }
   };
   const navigation = selected ? (
@@ -410,7 +439,12 @@ export function QA({
         }}
         modal={false}
       >
-        <EdgeTab open={open || compact} passed={progress.passed} total={progress.total} />
+        <EdgeTab
+          open={open || compact}
+          passed={progress.passed}
+          total={progress.total}
+          onOpen={() => setOpen(true)}
+        />
         {compact && selected ? (
           <CompactReview
             task={selected.task}
@@ -430,10 +464,15 @@ export function QA({
           <FocusScope asChild trapped={modal} loop={modal}>
             <Dialog.Content
               className="qraft-drawer"
+              data-saving={pending || undefined}
               aria-labelledby={headingId}
               aria-modal={modal || undefined}
               onInteractOutside={(event) => {
-                if (narrow || pinned) event.preventDefault();
+                // Radix defers outside-pointer delivery until click. At that point
+                // composedPath is empty, but the event still targets our shadow host.
+                const fromQraft =
+                  event.detail.originalEvent.target === (mount.getRootNode() as ShadowRoot).host;
+                if (narrow || pinned || pagePushed || fromQraft) event.preventDefault();
               }}
               onKeyDown={(event) => {
                 const typing =
@@ -477,7 +516,25 @@ export function QA({
               }}
             >
               <header className={`qraft-header ${selectedTaskId ? "detail" : ""}`}>
-                {selectedTaskId ? (
+                {settings ? (
+                  <>
+                    <button
+                      className="qraft-icon-button"
+                      aria-label="Back to checklist"
+                      title="Back to checklist"
+                      onClick={() => {
+                        navigationFocus.current = true;
+                        setSettings(false);
+                        setClearing(false);
+                      }}
+                    >
+                      <ArrowLeft size={21} />
+                    </button>
+                    <Dialog.Title ref={heading} id={headingId} tabIndex={-1}>
+                      Settings
+                    </Dialog.Title>
+                  </>
+                ) : selectedTaskId ? (
                   <>
                     <button
                       className="qraft-header-back"
@@ -516,7 +573,7 @@ export function QA({
                     <ChevronDown size={18} />
                   </button>
                 ) : null}
-                {!selectedTaskId && !showChooser ? (
+                {!selectedTaskId && !showChooser && !settings ? (
                   <div className="qraft-progress-row">
                     <strong>
                       {progress.passed} / {progress.total}
@@ -535,7 +592,9 @@ export function QA({
                         }}
                       />
                     </div>
-                    {progress.skipped ? <small>{progress.skipped} skipped</small> : null}
+                    <small style={{ visibility: progress.skipped ? "visible" : "hidden" }}>
+                      {progress.skipped} skipped
+                    </small>
                   </div>
                 ) : null}
                 <Dialog.Close className="qraft-icon-button" aria-label="Close Qraft">
@@ -546,7 +605,7 @@ export function QA({
                 className={`qraft-content ${!selectedTaskId && !showChooser && !settings ? "checklist" : ""}`}
                 ref={content}
                 onScroll={() => {
-                  if (!selectedTaskId && !showChooser && content.current) {
+                  if (!selectedTaskId && !showChooser && !settings && content.current) {
                     const scroll = content.current.scrollTop;
                     if (scroll !== session.scroll)
                       updateSession((current) => ({ ...current, scroll }));
@@ -558,42 +617,22 @@ export function QA({
                     {sessionWarning || preferenceWarning}
                   </p>
                 ) : null}
-                {settings && !selectedTaskId ? (
-                  <section className="qraft-settings" aria-label="Review settings">
-                    <strong>Review settings</strong>
-                    <p>
-                      Pin the drawer to keep it open. Drafts and your place survive reloads in this
-                      browser tab.
-                    </p>
-                    <button disabled={pending} onClick={() => setHidden(true)}>
-                      Hide Qraft until reload
-                    </button>
-                    {!showChooser ? (
-                      <>
-                        <button disabled={pending} onClick={() => setClearing(true)}>
-                          Clear saved review session…
-                        </button>
-                        {clearing ? (
-                          <div role="group" aria-label="Confirm clearing session">
-                            <p>Discard this file’s unsaved drafts and saved view state?</p>
-                            <button onClick={() => setClearing(false)}>Cancel</button>
-                            <button
-                              disabled={pending}
-                              onClick={() => {
-                                clearSession();
-                                setClearing(false);
-                                setSettings(false);
-                              }}
-                            >
-                              Discard unsaved session
-                            </button>
-                          </div>
-                        ) : null}
-                      </>
-                    ) : null}
-                  </section>
-                ) : null}
-                {showChooser ? (
+                {settings ? (
+                  <SettingsView
+                    pushPage={pushPage}
+                    pending={pending}
+                    clearing={clearing}
+                    togglePushPage={togglePushPage}
+                    hide={() => setHidden(true)}
+                    setClearing={setClearing}
+                    clear={() => {
+                      clearSession();
+                      setClearing(false);
+                      setSettings(false);
+                      navigationFocus.current = true;
+                    }}
+                  />
+                ) : showChooser ? (
                   <FileChooser
                     id={headingId}
                     catalog={catalog}
@@ -651,6 +690,7 @@ export function QA({
                         editDrafts={editDrafts}
                         sourceError={sourceError}
                         status={status}
+                        onStatusBusy={setStatusBusy}
                         onChange={updateNote}
                         onSubmit={submitNote}
                         onAttach={() => {
@@ -679,6 +719,7 @@ export function QA({
                         titleForm={titleForm}
                         beginForm={beginForm}
                         status={status}
+                        onStatusBusy={setStatusBusy}
                         navigate={navigate}
                       />
                     )}
@@ -686,7 +727,7 @@ export function QA({
                 )}
               </div>
               {!showChooser && selected ? navigation : null}
-              {!showChooser && !selectedTaskId && document ? (
+              {!showChooser && !selectedTaskId && !settings && document ? (
                 <footer className="qraft-footer">
                   {form?.kind === "section" ? (
                     <>
@@ -725,9 +766,12 @@ export function QA({
                     </button>
                     <button
                       className="qraft-icon-button"
-                      aria-label="Review settings"
-                      aria-expanded={settings}
-                      onClick={() => setSettings((value) => !value)}
+                      aria-label="Settings"
+                      disabled={pending}
+                      onClick={() => {
+                        navigationFocus.current = true;
+                        setSettings(true);
+                      }}
                     >
                       <Settings size={17} />
                     </button>

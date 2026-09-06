@@ -91,7 +91,8 @@ describe("cooperative writer and file bounds", () => {
     await expect(
       store.execute({ type: "createSection", title: "Blocked" }, sha256(bytes)),
     ).rejects.toThrow("exceeds 2 MiB");
-    expect(await readFile(file)).toEqual(bytes);
+    const actual = await readFile(file);
+    expect(actual.equals(bytes)).toBe(true);
     expect(await readdir(directory)).toEqual(["QA.md"]);
   });
 

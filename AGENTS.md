@@ -53,7 +53,7 @@ If implementation requires changing an agreed contract, update its owning docume
 - The React UI depends on `QAStorage`, not directly on Markdown or Vite.
 - The Vite entry composes middleware, event delivery, watcher integration, and `MarkdownDocumentStore`; business rules remain outside the adapter.
 - Render all QA content as text. Never inject Markdown as raw HTML.
-- Mount UI styles inside a Shadow DOM and never change host-app layout or global styles.
+- Mount UI styles inside a Shadow DOM. Default overlay mode must not change host layout. The owner-requested Push page content setting may reserve page space as specified in docs/design.md; restore owned host styles on exit.
 - Avoid new dependencies when a small implementation or an existing platform/Vite capability is sufficient.
 
 ## Markdown safety rules
@@ -117,4 +117,4 @@ Every user-visible change also requires a hands-on `@Browser` pass. Playwright p
 - Never discard or rewrite user-authored changes without explicit permission.
 - Do not use destructive Git commands.
 - Keep secrets, local QA working files, dependency folders, test reports, and build output out of Git.
-- Do not add a public package license or publish configuration until the owner explicitly chooses a distribution model.
+- Qraft uses the owner-approved MIT license. Keep its license and third-party notices in the package. Publishing and repository visibility changes still require explicit owner authorization.

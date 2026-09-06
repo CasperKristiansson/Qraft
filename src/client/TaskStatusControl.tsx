@@ -1,5 +1,5 @@
 import { Check, Circle, Minus } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { QATask, TaskStatus } from "../domain/model";
 import { labels, nextStatus } from "./review-state";
 
@@ -7,44 +7,82 @@ export function TaskStatusControl({
   task,
   pending,
   change,
+  onBusy,
 }: {
   task: QATask;
   pending: boolean;
-  change: (value: TaskStatus) => void;
+  onBusy: (value: boolean) => void;
+  change: (value: TaskStatus) => Promise<unknown>;
 }) {
+  const [preview, setPreview] = useState<TaskStatus | null>(null);
+  const [saving, setSaving] = useState(false);
+  const displayed = preview ?? task.status;
+  const ownsGesture = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const clear = () => {
     if (timer.current) clearTimeout(timer.current);
     timer.current = null;
   };
-  useEffect(() => clear, []);
+  useEffect(
+    () => () => {
+      clear();
+      if (ownsGesture.current) onBusy(false);
+    },
+    [onBusy],
+  );
+  const previewStatus = (value: TaskStatus) => {
+    ownsGesture.current = true;
+    onBusy(true);
+    setPreview(value);
+  };
+  const commit = async (value: TaskStatus) => {
+    setSaving(true);
+    try {
+      await change(value);
+    } finally {
+      // Confirmed props remain authoritative, including conflict/failure recovery.
+      ownsGesture.current = false;
+      onBusy(false);
+      setPreview(null);
+      setSaving(false);
+    }
+  };
+  const unavailable = (pending && preview === null) || saving || Boolean(task.readOnly);
+
   return (
     <button
       type="button"
-      className={`qraft-status ${task.status}`}
-      aria-label={`${task.title}: ${labels[task.status]}. Change status`}
+      className={`qraft-status ${displayed}`}
+      aria-label={`${task.title}: ${labels[displayed]}. Change status`}
       title="Click to cycle status; double-click to skip"
-      disabled={pending || task.readOnly}
+      disabled={task.readOnly}
+      aria-disabled={unavailable || undefined}
+      aria-busy={preview !== null || undefined}
       onClick={(event) => {
+        if (unavailable) return;
+        clear();
+        const value = event.detail === 2 ? "skipped" : nextStatus[displayed];
+        previewStatus(value);
         if (event.detail === 0) {
-          clear();
-          change(nextStatus[task.status]);
+          void commit(value);
         } else {
-          clear();
+          // Show feedback now; coalesce pointer clicks into one safe Markdown write.
           timer.current = setTimeout(() => {
             timer.current = null;
-            change(nextStatus[task.status]);
+            void commit(value);
           }, 300);
         }
       }}
       onDoubleClick={() => {
+        if (unavailable) return;
         clear();
-        change("skipped");
+        previewStatus("skipped");
+        void commit("skipped");
       }}
     >
-      {task.status === "completed" ? (
+      {displayed === "completed" ? (
         <Check size={13} />
-      ) : task.status === "skipped" ? (
+      ) : displayed === "skipped" ? (
         <Minus size={13} />
       ) : (
         <Circle size={13} />

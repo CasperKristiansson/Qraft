@@ -1,8 +1,15 @@
 # Qraft documentation
 
-Qraft is a private development tool for Vite React and Next.js App Router applications.
-Start with the root [README](../README.md) for installation and the everyday workflow.
-The old implementation roadmap and visual mockup have been retired; their history is in Git.
+Qraft puts a local Markdown QA checklist inside Vite React and Next.js App Router applications.
+
+## Use Qraft
+
+- [Get started](getting-started.md): supported environments, Vite/Next.js integration, teammate installs and removal.
+- [Create a checklist](creating-checklists.md): write a file or ask a coding agent for a useful review.
+- [Install the agent skill](agent-skill.md): explicit installation, optional project context and updates.
+- [Troubleshoot](troubleshooting.md): files, saves, sessions, picker context and responsive limits.
+
+The [README](../README.md) introduces the workflow and local first-review example.
 
 ## Canonical contracts
 
@@ -27,8 +34,9 @@ Run `pnpm format` to format owned code and documentation. Markdown preservation 
 checklists, dependency locks and generated output are excluded. `pnpm check` enforces formatting,
 source boundaries, unused-code checks, strict types, unit/integration behavior and the build.
 See acceptance for the complete package and browser gates. Local receipts live in ignored
-`artifacts/release`; screenshots live in ignored `artifacts/browser-evidence`.
+`artifacts/release`; test screenshots live in ignored `artifacts/browser-evidence`. Approved README
+media and its capture notes live in [docs/assets](assets/README.md).
 
-The package remains private. No public license, registry publication or deployment is implied by
-passing local checks. Keep internal archives immutable and commit them with the consuming
-project's dependency entry, lockfile and integration.
+The package remains private and unpublished. Passing local checks does not authorize a release.
+See [release preparation](releasing.md) for the separate owner-controlled visibility and publication
+steps, and [contributing](../CONTRIBUTING.md) for the normal development workflow.
