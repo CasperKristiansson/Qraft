@@ -158,10 +158,16 @@ test("a task-title draft survives an externally moved legacy section without a m
   await expect(taskButton(page, "Legacy task")).toBeVisible();
   await drawer(page).getByRole("button", { name: "Add task", exact: true }).click();
   await drawer(page).getByLabel("Title", { exact: true }).fill("Preserved task title");
+  await drawer(page)
+    .getByLabel("Description (optional)", { exact: true })
+    .fill("Keep the task prerequisites too.");
   const external = "# External heading\n" + (await readFile(local, "utf8"));
   await writeFile(local, external);
   await expect(drawer(page).getByLabel("Preserved task title", { exact: true })).toHaveValue(
     "Preserved task title",
+  );
+  await expect(drawer(page).getByLabel("Preserved task description", { exact: true })).toHaveValue(
+    "Keep the task prerequisites too.",
   );
   await page.reload();
   await open(page);
@@ -169,6 +175,9 @@ test("a task-title draft survives an externally moved legacy section without a m
     "Preserved task title",
   );
   expect(await readFile(local, "utf8")).toBe(external);
+  await expect(drawer(page).getByLabel("Preserved task description", { exact: true })).toHaveValue(
+    "Keep the task prerequisites too.",
+  );
 });
 
 test("navigation leaves the first note editable and picker cancellation retains it", async ({

@@ -12,6 +12,21 @@ const text = z
   );
 const id = z.string().min(1).max(200);
 
+export const taskDescriptionSchema = z
+  .string()
+  .transform((value) =>
+    value
+      .replace(/\r\n?/gu, "\n")
+      .split("\n")
+      .map((line) => line.trim())
+      .join("\n")
+      .trim(),
+  )
+  .refine(
+    (value) => Array.from(value).length <= 2_000 && !/[\x00-\x09\x0b-\x1f\x7f]/u.test(value),
+    "Use up to 2,000 characters of plain text without control characters",
+  );
+
 export const elementContextSchema = z.strictObject({
   tag: z.string().max(80),
   attributes: z
@@ -60,7 +75,12 @@ export const noteObservationSchema = z.strictObject({
 
 export const qaCommandSchema = z.discriminatedUnion("type", [
   z.strictObject({ type: z.literal("createSection"), title: text }),
-  z.strictObject({ type: z.literal("createTask"), sectionId: id, title: text }),
+  z.strictObject({
+    type: z.literal("createTask"),
+    sectionId: id,
+    title: text,
+    description: taskDescriptionSchema.optional(),
+  }),
   z.strictObject({ type: z.literal("setTaskChecked"), taskId: id, checked: z.boolean() }),
   z.strictObject({
     type: z.literal("addNote"),

@@ -22,7 +22,7 @@ The browser receives domain documents, project-relative labels and opaque file I
 
 The maintained definitions are [model.ts](../src/domain/model.ts) and [commands.ts](../src/domain/commands.ts), rather than duplicated interfaces in documentation. Revision is SHA-256 of exact file bytes. Commands create sections/tasks, set a task's three-state status, add notes with optional observation/element context, and edit a note body. `setTaskChecked` remains a compatibility command; `checked` projects completed status. There is no replace-document operation.
 
-Task statuses and notes are independent. Duplicate or malformed IDs are read-only mutation targets. Recognized instructions are read-only. Unsectioned top-level checklists use a synthetic section in memory without creating a heading on disk. The grammar and all write semantics belong to [Markdown storage](markdown-storage.md).
+Task statuses and notes are independent. Duplicate or malformed IDs are read-only mutation targets. Task creation accepts an optional description; the existing `QATask.instructions` field carries it in the read model for compatibility. The UI labels it Description and keeps it separate from notes. Existing descriptions remain read-only in the drawer. Unsectioned top-level checklists use a synthetic section in memory without creating a heading on disk. The grammar and all write semantics belong to [Markdown storage](markdown-storage.md).
 
 ## Capture and privacy bounds
 

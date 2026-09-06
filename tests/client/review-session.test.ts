@@ -53,12 +53,22 @@ describe("review session recovery", () => {
     const state = {
       ...emptySession(),
       titleDraft: "New task",
+      descriptionDraft: "Check the seeded account.\nThe change should survive reload.",
       form: { kind: "task" as const, sectionId: before.sections[0]!.id, revision: before.revision },
     };
     const after = parseMarkdown("# Inserted externally\n## Main\n- [ ] First\n").document;
     expect(isRecoverableForm(state, before)).toBe(true);
     expect(isRecoverableForm(state, after)).toBe(false);
     expect(reconcileSession(state, after, after).form).toEqual(state.form);
+    expect(parseSession(JSON.stringify(state))?.descriptionDraft).toBe(state.descriptionDraft);
+    expect(reconcileSession(state, after, after).descriptionDraft).toBe(state.descriptionDraft);
+  });
+
+  it("restores earlier sessions without a description field without losing their drafts", () => {
+    const { descriptionDraft: _description, ...legacy } = emptySession();
+    const restored = parseSession(JSON.stringify({ ...legacy, titleDraft: "Existing draft" }));
+    expect(restored?.titleDraft).toBe("Existing draft");
+    expect(restored?.descriptionDraft).toBe("");
   });
 
   it("validates saved sessions and retains malformed stored data until explicit clear", () => {

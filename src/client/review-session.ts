@@ -36,6 +36,7 @@ const sessionSchema = z.strictObject({
     ])
     .nullable(),
   titleDraft: z.string().max(4_000),
+  descriptionDraft: z.string().max(4_000).default(""),
 });
 
 export type ReviewSession = z.infer<typeof sessionSchema>;
@@ -51,6 +52,7 @@ export function emptySession(): ReviewSession {
     edits: {},
     form: null,
     titleDraft: "",
+    descriptionDraft: "",
   };
 }
 

@@ -372,7 +372,8 @@ export function parseMarkdown(source: string): ParsedMarkdown {
     }
     if (task && readingInstructions) {
       if (/^  \S/u.test(line.content) && !/^  (?:[-*+#>`]|\d+[.)] )/u.test(line.content)) {
-        task.instructions = `${task.instructions ?? ""}${line.content.slice(2)}\n`;
+        const text = line.content.slice(2).replace(/\\([\\<>\-*+#`~.)])/gu, "$1");
+        task.instructions = `${task.instructions ?? ""}${text}\n`;
       } else if (line.content.trim() === "") {
         if (task.instructions) task.instructions += "\n";
       } else {

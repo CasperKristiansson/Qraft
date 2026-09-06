@@ -22,6 +22,7 @@ Required coverage:
 - Calculate completed and skipped progress independently.
 - Verify all three task states and independent notes.
 - Prove status changes do not mutate notes or legacy child checkboxes.
+- Create tasks with optional multiline descriptions. Prove full-file LF/CRLF, BOM and final-newline preservation; escape structure-like text so it cannot become notes or additional tasks. Descriptions stay separate from notes through later status/note changes. Restore both creation drafts after reload and retain them on conflicts or ambiguous section recovery.
 
 Every Markdown mutation test compares the entire before/after file byte-for-byte. Parsed-model assertions alone are insufficient.
 

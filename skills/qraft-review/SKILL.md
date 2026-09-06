@@ -79,11 +79,12 @@ when the user explicitly requests that alternative.
 Each task covers a coherent action or state transition and an observable result. Prefer
 "Change quantity and verify the total" over "Test cart" or separate tasks for every click.
 Split tasks when their outcomes can fail independently and need separate feedback. Use concise,
-actionable titles and short instructions with prerequisites, an expected result, and a relevant
-stop condition. Avoid exhaustive click scripts unless requested.
+actionable titles. Add an optional, concise description only when the title needs concrete
+prerequisites, an expected result, or a relevant stop condition. Go straight to what the person
+needs to check; omit background commentary and exhaustive click scripts unless requested.
 
 H2 headings become sections. Top-level checkboxes become tasks. Two-space-indented plain text
-immediately below a task becomes its read-only instructions. **Keep essential prerequisites and
+immediately below a task becomes its read-only Description section. **Keep essential prerequisites and
 expected results there:** introductory prose and other background Markdown are not displayed in
 the drawer. Do not put required instructions in nested lists, blockquotes, tables, or fences.
 
@@ -121,7 +122,10 @@ solely to fill a template.
   its notes were fixed, or dependent checks are safe to continue.
 - Notes use two-space-indented `- Note: text` bullets. Notes can retain component, source, route,
   selector, context, and observation metadata. Do not invent that metadata or strip it for clarity.
-- Instructions precede notes. Nested checkboxes are legacy content, not new subtasks or findings.
+- Descriptions precede notes. Never put task instructions or expected results in a `- Note:` bullet:
+  notes are the person's observed feedback, not a place to expand the task title. Leave new tasks
+  without notes until there is actual review feedback. Nested checkboxes are legacy content, not
+  new subtasks or findings.
 - Hidden `<!-- qraft:id=... -->` comments belong to existing entities. Preserve them exactly.
   Let Qraft add IDs when it first mutates a new task; do not manufacture them in a fresh checklist.
 - Rendered headings, tasks, instructions, and notes are plain text. Do not rely on rich Markdown

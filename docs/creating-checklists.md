@@ -36,8 +36,14 @@ It prepares the checklist; you still perform the review.
 
 Replace those expectations with your product's intended behavior. H2 headings group tasks.
 Top-level checkboxes create tasks, even without sections. Two-space-indented plain text directly
-under a task appears in details. Put essential prerequisites and expected results there; background
-prose outside the task will not appear in the drawer. Keep instructions before any notes.
+under a task appears in its **Description** section. Keep the title short; use the optional
+description for concrete prerequisites, what to check and the expected result. Omit it when the
+title is sufficient. Background prose outside the task will not appear in the drawer.
+
+Descriptions explain the check; **notes record feedback from doing it**. Do not create a note to
+hold task instructions. Keep descriptions before any notes. In the drawer, **Add task** includes
+an optional description field. To revise an existing description, edit its indented text in the
+Markdown file; Qraft picks up the change automatically.
 
 Use `[ ]` for new checks. `[x]` records a completed review and `[-]` a deliberately skipped check.
 Completion does not assert that every observation has been fixed. Leave notes in place when

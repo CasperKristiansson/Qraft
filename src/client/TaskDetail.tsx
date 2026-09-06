@@ -57,7 +57,12 @@ export function TaskDetail({
         />
         <h2>{task.title}</h2>
       </div>
-      {task.instructions ? <p className="qraft-instructions">{task.instructions}</p> : null}
+      {task.instructions ? (
+        <section className="qraft-detail-section" aria-label="Description">
+          <h3>Description</h3>
+          <p className="qraft-instructions">{task.instructions}</p>
+        </section>
+      ) : null}
       <section className="qraft-detail-section">
         <h3>
           <StickyNote size={13} /> Notes · {task.notes.length}

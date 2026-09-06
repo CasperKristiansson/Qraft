@@ -69,7 +69,9 @@ export function ReviewRecovery({
       .filter(([id, draft]) => !isRecoverableEdit(id, draft, document))
       .map(([id, draft]) => ({ task, id, draft })),
   );
-  const orphanTitle = Boolean(session.titleDraft && !isRecoverableForm(session, document));
+  const orphanTitle = Boolean(
+    (session.titleDraft || session.descriptionDraft) && !isRecoverableForm(session, document),
+  );
   if (!orphanNotes.length && !orphanEdits.length && !orphanTitle) return null;
 
   return (
@@ -82,8 +84,24 @@ export function ReviewRecovery({
       {orphanTitle ? (
         <div className="qraft-orphan">
           <textarea aria-label="Preserved task title" readOnly value={session.titleDraft} />
-          <button onClick={() => update((current) => ({ ...current, form: null, titleDraft: "" }))}>
-            Discard task title draft
+          {session.descriptionDraft ? (
+            <textarea
+              aria-label="Preserved task description"
+              readOnly
+              value={session.descriptionDraft}
+            />
+          ) : null}
+          <button
+            onClick={() =>
+              update((current) => ({
+                ...current,
+                form: null,
+                titleDraft: "",
+                descriptionDraft: "",
+              }))
+            }
+          >
+            Discard task draft
           </button>
         </div>
       ) : null}

@@ -67,7 +67,8 @@ To use Qraft in your own app, follow the [Vite or Next.js setup](docs/getting-st
 - [-] Review an unsupported payment method
 ```
 
-Sections are optional. Instructions appear in task details; notes can include element and source
+Sections and descriptions are optional. Indented text appears as the task's Description; notes hold
+review feedback and can include element and source
 context. Qraft preserves surrounding Markdown and adds hidden IDs only as needed when editing.
 See the [Markdown contract](docs/markdown-storage.md) for exact syntax and preservation guarantees.
 

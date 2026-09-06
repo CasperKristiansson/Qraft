@@ -5,6 +5,7 @@
 Qraft is currently private and has no public npm release.
 
 - Review a user-selected Markdown checklist inside Vite React or Next.js App Router applications.
+- Add optional task descriptions for concrete review instructions, separate from feedback notes.
 - Complete, skip and reopen tasks; write editable notes with optional element and source context.
 - Keep review sessions across reloads, pin the drawer, or reserve page space on wider screens.
 - Preserve surrounding Markdown and surface revision conflicts during local file synchronization.

@@ -1,5 +1,5 @@
 import { isAbsolute, relative, resolve } from "node:path";
-import type { QACommand } from "../domain/commands";
+import { taskDescriptionSchema, type QACommand } from "../domain/commands";
 import type { ElementReference, NoteObservation, QASection, QATask } from "../domain/model";
 import { QraftError, normalizeEntityText } from "../domain/validation";
 import { createEntityId, type IdFactory } from "./ids";
@@ -42,6 +42,26 @@ function stabilize(
 
 function escapeEntityText(value: string): string {
   return normalizeEntityText(value).replaceAll("<", "\\<").replaceAll(">", "\\>");
+}
+
+function descriptionLines(value: string, newline: string): string {
+  const parsed = taskDescriptionSchema.safeParse(value);
+  if (!parsed.success)
+    throw new QraftError("validation", "Use up to 2,000 characters for the task description.");
+  if (!parsed.data) return "";
+
+  return parsed.data
+    .split("\n")
+    .map((line) => {
+      const escaped = line
+        .replaceAll("\\", "\\\\")
+        .replace(/[<>]/gu, "\\$&")
+        .replace(/^([-*+#`~])|^(\d+)([.)])(?= )/u, (_, marker, number, punctuation) =>
+          marker ? `\\${marker}` : `${number}\\${punctuation}`,
+        );
+      return `${newline}${escaped ? `  ${escaped}` : ""}`;
+    })
+    .join("");
 }
 
 function codeFence(value: string): string {
@@ -213,7 +233,9 @@ export function patchMarkdown(
     const { entity, span } = getSection(parsed, command.sectionId);
     stabilize(span, "section", idFactory, edits);
     const id = idFactory("task");
-    const line = `- [ ] ${escapeEntityText(command.title)}${entityComment(id)}`;
+    const line =
+      `- [ ] ${escapeEntityText(command.title)}${entityComment(id)}` +
+      descriptionLines(command.description ?? "", parsed.newline);
     const offset = entity.tasks.length === 0 ? span.end : ownedInsertionOffset(parsed, span);
     edits.push({ start: offset, end: offset, text: topLevelLineInsertion(parsed, offset, line) });
   }

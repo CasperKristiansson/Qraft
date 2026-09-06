@@ -5,7 +5,7 @@ import { FocusScope } from "@radix-ui/react-focus-scope";
 import { ArrowLeft, ChevronDown, FolderOpen, Menu, Pin, Plus, Settings, X } from "lucide-react";
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import type { QACommand } from "../domain/commands";
+import { taskDescriptionSchema, type QACommand } from "../domain/commands";
 import type { QANote, QATask, TaskStatus } from "../domain/model";
 import { getProgress } from "../domain/model";
 import { HttpQAStorage } from "./http-storage";
@@ -51,13 +51,15 @@ export function QA({
     warning: sessionWarning,
     clearSession,
   } = useReviewSession(sessionKey, providedStorage);
-  const { selectedTaskId, form, titleDraft: draft, notes, edits } = session;
+  const { selectedTaskId, form, titleDraft: draft, descriptionDraft, notes, edits } = session;
   const setSelectedTaskId = (value: string | null) =>
     updateSession((current) => ({ ...current, selectedTaskId: value }));
   const setForm = (value: FormState | null) =>
     updateSession((current) => ({ ...current, form: value }));
   const setDraft = (value: string) =>
     updateSession((current) => ({ ...current, titleDraft: value }));
+  const setDescriptionDraft = (value: string) =>
+    updateSession((current) => ({ ...current, descriptionDraft: value }));
   const setNotes = (apply: (notes: Record<string, NoteDraft>) => Record<string, NoteDraft>) =>
     updateSession((current) => ({ ...current, notes: apply(current.notes) }));
   const [pinned, setPinned] = useState(false);
@@ -233,6 +235,7 @@ export function QA({
   const cancelForm = () => {
     setForm(null);
     setDraft("");
+    setDescriptionDraft("");
     requestAnimationFrame(() =>
       (
         (mount?.getRootNode() as ShadowRoot | undefined)?.getElementById(
@@ -251,13 +254,19 @@ export function QA({
           : next,
     }));
     setDraft("");
+    setDescriptionDraft("");
   };
   const submitForm = async () => {
     if (!form || !document || !isRecoverableForm(session, document) || !validDraft(draft)) return;
     const command: QACommand =
       form.kind === "section"
         ? { type: "createSection", title: draft }
-        : { type: "createTask", sectionId: form.sectionId, title: draft };
+        : {
+            type: "createTask",
+            sectionId: form.sectionId,
+            title: draft,
+            description: descriptionDraft,
+          };
     if (await execute(command, `${form.kind === "section" ? "Section" : "Task"} saved.`))
       cancelForm();
   };
@@ -323,6 +332,7 @@ export function QA({
     setSelectedTaskId(null);
     setForm(null);
     setDraft("");
+    setDescriptionDraft("");
   };
   const navigate = (id: string | undefined) => {
     if (!id || pending) return;
@@ -400,6 +410,23 @@ export function QA({
         maxLength={4_000}
         onChange={(event) => setDraft(event.target.value)}
       />
+      {form?.kind === "task" ? (
+        <>
+          <label htmlFor={`${headingId}-description`}>Description (optional)</label>
+          <textarea
+            id={`${headingId}-description`}
+            value={descriptionDraft}
+            readOnly={pending}
+            maxLength={4_000}
+            rows={3}
+            placeholder="What to check and what should happen."
+            onChange={(event) => setDescriptionDraft(event.target.value)}
+          />
+          {!taskDescriptionSchema.safeParse(descriptionDraft).success ? (
+            <p role="alert">Use up to 2,000 characters of plain text.</p>
+          ) : null}
+        </>
+      ) : null}
       <div className="qraft-form-actions">
         <button type="button" onClick={cancelForm} disabled={pending}>
           Cancel
@@ -409,6 +436,7 @@ export function QA({
           disabled={
             pending ||
             !validDraft(draft) ||
+            (form?.kind === "task" && !taskDescriptionSchema.safeParse(descriptionDraft).success) ||
             Boolean(document && !isRecoverableForm(session, document))
           }
         >

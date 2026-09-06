@@ -11,7 +11,8 @@ This document owns the persisted grammar, parsing rules, identity model, and saf
 
 - [x] Login <!-- qraft:id=task_58f14d75 -->
 - [ ] Expired session <!-- qraft:id=task_4c4f649b -->
-  - Note: Check both idle and absolute expiry. <!-- qraft:id=note_d75fa92d -->
+      Check both idle and absolute expiry. The app should return to sign-in without losing the draft.
+  - Note: The draft disappears after signing in again. <!-- qraft:id=note_d75fa92d -->
 
 ## Cart <!-- qraft:id=section_d98729e1 -->
 
@@ -42,7 +43,7 @@ Example IDs are shortened for readability. The writer generates a type prefix fo
 - Top-level markers `[ ]`, `[x]`, `[X]`, and `[-]` mean open, completed, completed, and skipped. A touched marker uses space, lowercase x, or hyphen.
 - A Qraft ID comment appears on the entity's first line and matches `<!-- qraft:id=... -->`.
 - `Observation` is an optional four-space metadata bullet containing inline-code JSON with route pathname and CSS viewport width/height. It belongs to the note independently of an element attachment. Existing notes remain valid without it. Body edits preserve it byte-for-byte.
-- Consecutive two-space-indented non-list text immediately after a task is displayed as read-only instructions. Blank lines within that block are allowed. Headings, fences and child bullets end instruction capture. Unsupported checkbox nesting produces a diagnostic. All other unknown Markdown remains absent from the domain read model and is retained byte-for-byte.
+- Consecutive two-space-indented non-list text immediately after a task is its optional description, displayed read-only in details. Blank lines within that block are allowed. Headings, fences and child bullets end description capture. Backslash-escaped backslashes, angle brackets and leading list/heading/fence punctuation display as literal text. Unsupported checkbox nesting produces a diagnostic. All other unknown Markdown remains absent from the domain read model and is retained byte-for-byte.
 
 Qraft is not a general Markdown editor. The parser should be line-oriented and return recognized entities plus their exact source spans and diagnostics.
 
@@ -83,6 +84,7 @@ Qraft-created sections always have IDs. Creating a task in a legacy section assi
 - Escape text that could create a list marker, heading, Qraft comment, or raw HTML boundary.
 - Reject NUL and ASCII control characters other than normalized whitespace.
 - Render values as text in the browser.
+- Task descriptions preserve internal line breaks and blank lines, normalize CRLF/CR to LF before writing with the file's newline convention, trim each line and the block, and allow an empty value. Limit to 2,000 Unicode code points; reject other ASCII control characters. Escape backslashes, angle brackets and leading list/heading/fence markers so description text cannot create notes, IDs or task structure. Existing description bytes are never rewritten by status or note mutations.
 - Serialize metadata with an inline-code fence one backtick longer than the longest backtick run in the value.
 - Normalize source path separators to `/`.
 - Resolve source paths against the project root and omit paths outside it.
@@ -107,7 +109,7 @@ Required mutation shapes:
 - Legacy ID assignment: append only one ID comment to the entity's first line.
 - Add note: insert at the end of the task's owned block, before the next top-level task/H2.
 - Edit note: replace only its body span, preserving prefix, trailing whitespace, existing ID, attachment metadata, and all unknown content. Insert a lazy ID if needed; legacy child checkbox prefixes remain untouched.
-- Add task: insert at the end of the section's recognized content, before the next H2.
+- Add task: insert at the end of the section's recognized content, before the next H2. An optional description follows its title as two-space-indented plain-text lines, before any notes. An empty description adds no lines.
 - Add section: append a blank-line-normalized H2 block.
 - First write to a missing file: create only the content required by the command.
 
