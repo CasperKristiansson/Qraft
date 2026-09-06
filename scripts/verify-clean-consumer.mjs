@@ -29,10 +29,13 @@ function run(command, args, cwd = repository) {
 
 const packageVersion = JSON.parse(await readFile("package.json", "utf8")).version;
 const packageSpec = `@qraft-dev/qa@${packageVersion}`;
+// Download only this exact Qraft release immediately after publication. npm pack
+// does not install dependencies; the consumer install retains its age policy.
 if (registry)
   run("npm", [
     "pack",
     packageSpec,
+    "--min-release-age=0",
     "--registry=https://registry.npmjs.org/",
     "--pack-destination",
     consumer,
