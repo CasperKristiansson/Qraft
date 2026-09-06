@@ -103,8 +103,15 @@ aside p {
 }
 @media (max-width: 767px) {
   .shop-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     margin-top: 24px;
+  }
+  .product {
+    grid-template-columns: 80px minmax(0, 1fr);
+  }
+  .quantity {
+    grid-column: 2;
+    justify-self: start;
   }
   nav span {
     display: none;
@@ -138,7 +145,7 @@ aside p {
 .picker-targets {
   position: fixed;
   left: 16px;
-  top: 82px;
+  top: 128px;
   z-index: 10;
   display: grid;
   gap: 8px;

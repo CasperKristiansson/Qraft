@@ -18,6 +18,10 @@ test("checklist actions stay reachable with hundreds of tasks at every supported
     await route.fulfill({ response, json: document });
   });
   await reset(page);
+  // Wider host text metrics expose overflow on macOS as well as Linux.
+  await page.addStyleTag({
+    content: ".shop { font-family: Arial, sans-serif; font-size: 18px; }",
+  });
   const d = drawer(page);
   const content = d.locator(".qraft-content");
   const add = d.getByRole("button", { name: "Add section", exact: true });
