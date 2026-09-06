@@ -1,4 +1,5 @@
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, FileText, RefreshCw } from "lucide-react";
+import { ChecklistWelcome } from "./ChecklistWelcome";
 import type { QAFileCatalog } from "./storage";
 
 interface FileChooserProps {
@@ -25,14 +26,20 @@ export function FileChooser({
   onRefresh,
   onCancel,
 }: FileChooserProps) {
+  const files = catalog?.files.filter((file) =>
+    file.label.toLowerCase().includes(search.toLowerCase()),
+  );
+
   return (
     <section className="qraft-file-chooser">
-      <h2>Choose a checklist</h2>
-      <p>Select a Markdown file from this project. Your choice is remembered in this browser.</p>
+      {!fileId ? <ChecklistWelcome id={id} /> : null}
+      <h2 className="qraft-choose-heading">Choose a checklist</h2>
+      <p>Pick the file with your review tasks. Qraft remembers your choice in this browser.</p>
       <label htmlFor={`${id}-search`}>Find a Markdown file</label>
       <input
         id={`${id}-search`}
         value={search}
+        placeholder="Search project files…"
         maxLength={200}
         onChange={(event) => setSearch(event.target.value)}
       />
@@ -42,24 +49,25 @@ export function FileChooser({
         </p>
       ) : null}
       {!catalog && !catalogError ? <p role="status">Loading files…</p> : null}
-      {catalog?.files
-        .filter((file) => file.label.toLowerCase().includes(search.toLowerCase()))
-        .map((file) => (
-          <button
-            className="qraft-file"
-            key={file.id}
-            disabled={pending}
-            onClick={() => onChoose(file.id)}
-          >
-            {file.label}
-            <ChevronRight size={16} />
-          </button>
-        ))}
+      {files?.map((file) => (
+        <button
+          className="qraft-file"
+          key={file.id}
+          disabled={pending}
+          onClick={() => onChoose(file.id)}
+        >
+          <FileText size={18} aria-hidden="true" />
+          <span>{file.label}</span>
+          <ChevronRight size={16} aria-hidden="true" />
+        </button>
+      ))}
       {catalog?.files.length === 0 ? (
         <p>
-          No Markdown files yet. Ask your coding editor to create a checklist with ## section
-          headings and - [ ] tasks, then refresh the file list.
+          No Markdown files yet. Save your checklist in this project, then refresh to find it here.
         </p>
+      ) : null}
+      {catalog && catalog.files.length > 0 && files?.length === 0 ? (
+        <p role="status">No files match your search. Try another name or clear the search.</p>
       ) : null}
       {catalog?.truncated ? (
         <p>
@@ -67,6 +75,7 @@ export function FileChooser({
         </p>
       ) : null}
       <button className="qraft-secondary" onClick={() => onRefresh()}>
+        <RefreshCw size={14} aria-hidden="true" />
         Refresh files
       </button>
       {fileId ? (

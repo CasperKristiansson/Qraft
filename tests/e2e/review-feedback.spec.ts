@@ -151,6 +151,7 @@ test("first use requires choosing a file and reload remembers only that project 
   await open(page);
   const d = drawer(page);
   await expect(d.getByRole("heading", { name: "Choose a checklist", exact: true })).toBeVisible();
+  await expect(d.getByRole("heading", { name: "Start your first review" })).toBeVisible();
   const before = await page.request.get("/__qraft/document").then((r) => r.json());
   await d.getByRole("button", { name: "QA.local.md", exact: true }).click();
   await expect(taskButton(page, "Change quantity")).toBeVisible();
@@ -162,6 +163,7 @@ test("first use requires choosing a file and reload remembers only that project 
   );
   await d.getByRole("button", { name: /Change file/u }).click();
   await expect(d.getByRole("heading", { name: "Choose a checklist", exact: true })).toBeVisible();
+  await expect(d.getByRole("heading", { name: "Start your first review" })).toHaveCount(0);
   await d.getByRole("button", { name: "Cancel file change", exact: true }).click();
   await expect(taskButton(page, "Change quantity")).toBeVisible();
 });

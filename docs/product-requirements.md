@@ -27,7 +27,7 @@ Qraft is a local development review tool for Vite React and Next.js App Router a
 - Always preserve unknown Markdown and legacy finding bytes. Legacy nested checkbox findings render as notes, without exposing their checkbox as a workflow state.
 - Existing top-level checklists work with or without H2 sections. Tasks have a short title and an optional plain-text description, shown separately from feedback notes in details. Add task offers both fields; existing descriptions are edited in the Markdown file. Unsupported nesting is explained rather than silently treated as reviewable tasks.
 - Every new note records its capture pathname and CSS viewport dimensions, whether or not it has an element attachment. Query strings, hashes and input values remain excluded.
-- Empty state explains how to ask a coding agent to create sections and task checkboxes, offers file selection, and allows adding sections after a file is selected.
+- Before a file is selected, explain the review workflow, offer a starter prompt for an external agent or chat, and link to the GitHub checklist guide. The prompt is copied only on request, remains available for manual copying, and never transmits project content. File selection remains explicit; allow adding sections after a file is selected. See [design](design.md) for first-use presentation.
 - File selection lists server-discovered project Markdown files. Browser requests use opaque file IDs, never arbitrary filesystem paths or complete replacement documents. A trusted plugin file option can restrict the chooser to one file, including a missing file; it is not auto-selected.
 
 ## Scope and limits

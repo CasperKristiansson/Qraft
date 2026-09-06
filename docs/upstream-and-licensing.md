@@ -98,6 +98,21 @@ Do not silently float to a newer React Grab version during unrelated work.
 
 ## Project distribution status
 
+The first-use illustration at `src/client/assets/checklist.png` was generated with the built-in
+image-generation tool on 2026-09-06 at the owner's request. It is an original generated asset,
+not copied from an upstream project or icon family. Its transparent output was resized to 192 px
+for a 72 CSS px presentation and is bundled locally; it requires no remote image request.
+
+Generation prompt: “Use case: stylized-concept. Asset type: small onboarding illustration for Qraft,
+a minimal white React QA drawer with purple #6d4bd2 accents. Create one elegant small 3D paper
+checklist icon: a softly rounded ivory sheet with three embossed rows, small purple checkmarks,
+a subtly folded top corner, and one tiny purple pencil leaning at its lower edge. Tactile matte
+paper and ceramic-like accents, restrained premium editorial look, gentle soft studio lighting,
+very subtle natural shadow. Centered single object filling about 75% of a square composition,
+genuinely transparent background. No words, no letters, no logos, no sparkles, no gradients in the
+background, no surrounding UI. Must read clearly at 72 CSS pixels. Save a compact square image
+suitable for a website asset.”
+
 The owner selected the [MIT license](../LICENSE) on 2026-09-06 for Qraft's code, documentation,
 and bundled skill. The package declares `MIT` and includes the license and third-party notices.
 Dependencies retain their own licenses; Qraft's license does not replace those obligations.

@@ -16,7 +16,7 @@ The written interaction and styling contracts below reflect the owner-approved i
 - Approximately 10 px control radii, 40 px ordinary controls, 16 px larger panel radii, thin cool-gray borders, shallow control shadows, and deeper shadow only for floating overlays.
 - Compact Inter-like system typography. Do not bundle a font in the internal package unless browser comparison demonstrates that the platform stack materially misses the approved direction.
 - List-first task presentation with separators; do not turn every task into an independent card.
-- No gradients, glassmorphism, neon/glow effects, confetti, decorative illustration, or large purple surface fills.
+- No gradients, glassmorphism, neon/glow effects, confetti, or large purple surface fills. The owner-requested first-use screen includes one small generated checklist illustration; ordinary review views remain undecorated.
 
 Inspect changed user-visible surfaces in the browser at the viewports required by acceptance.
 
@@ -45,6 +45,8 @@ Always show a labeled note textarea with Submit and Attach element. Enter submit
 ### File choice and empty state
 
 First use opens a file chooser with project-relative display labels, search, and Refresh files. Remember the selected server-issued ID per project; revalidate it against the catalog on reload. Change file appears as a small text button with a decorative folder icon in the sticky checklist footer, below Add section alongside Keep open and the settings icon; the selected filename is available in its tooltip. File selection affects only that browser's storage instance. Preserve drafts per selected file during the mounted session. No default filename is chosen or created. If no file exists, instruct the tester to ask their coding agent to create a Markdown checklist, then refresh. An explicitly configured missing file can be selected and created by Add section.
+
+When no file is selected, introduce the workflow with a compact checklist illustration and “Start your first review.” Explain that Codex, Claude Code, or ChatGPT can help prepare a checklist, which the user saves as a project `.md` file. An expandable starter prompt is selectable as text and copyable; report clipboard failure with manual-copy instructions. Refer agents to the bundled skill when they have project access, and request app context when they do not. Link to the checklist guide on GitHub in a new tab. Do not send project content to an AI service or automatically install a skill. Below that introduction, identify the list as project review files with decorative file icons, search and Refresh files. Distinguish no Markdown files from no search matches. The entire chooser scrolls on short/narrow screens. Changing an existing selected file shows the compact chooser without the first-use introduction.
 
 ### Errors and accessibility
 
