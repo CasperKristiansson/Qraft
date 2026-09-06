@@ -1,8 +1,9 @@
 import { verifyRemoval } from "./verify-removal.mjs";
+import { verifyPackagedGuide } from "./verify-packaged-guide.mjs";
 import { sourceFingerprint } from "./source-fingerprint.mjs";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdtemp, readFile, readdir, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -39,6 +40,8 @@ for (const expected of [
   "package/dist/vite.d.ts",
   "package/README.md",
   "package/THIRD_PARTY_NOTICES.md",
+  "package/skills/qraft-review/SKILL.md",
+  "package/docs/agent-skill.md",
 ]) {
   if (!archiveFiles.includes(expected)) throw new Error(`Packed package is missing ${expected}.`);
 }
@@ -145,7 +148,7 @@ function App() {
 
 createRoot(document.getElementById("root")!).render(<App />);
 `,
-  "src/style.css": `*{box-sizing:border-box}body{margin:0;background:#f6f7f9;color:#202431;font:16px Inter,system-ui,sans-serif}nav{height:64px;padding:0 5%;display:flex;align-items:center;gap:32px;background:#fff;border-bottom:1px solid #ddd}nav strong{margin-right:auto}.grid{max-width:930px;margin:52px auto;display:grid;grid-template-columns:2fr 1fr;gap:28px}.eyebrow{font-size:12px;letter-spacing:.14em;color:#677085}h1{font-size:32px}article,aside{background:#fff;border:1px solid #d9dee8;border-radius:14px;padding:20px;box-shadow:0 8px 18px #18243c0b}article{display:flex;align-items:center;gap:18px}article>b{display:grid;place-items:center;width:80px;height:80px;border-radius:12px;background:#eeeafd;color:#6d4bd2;font-size:30px}article p{margin:5px 0;color:#687080}.quantity{display:flex;align-items:center;margin-left:auto;border:1px solid #d9dee8;border-radius:10px;overflow:hidden}.quantity button{border:0;background:#fff;padding:12px 16px;font-size:18px}.quantity span{min-width:28px;text-align:center}aside p{display:flex;justify-content:space-between}.checkout{width:100%;padding:12px;border:0;border-radius:10px;background:#202431;color:#fff}.controls{position:fixed;left:12px;bottom:12px;display:flex;gap:6px;z-index:2}.controls button{font-size:11px}@media(max-width:800px){.grid{margin:40px 24px;grid-template-columns:1fr}.controls{max-width:340px;flex-wrap:wrap}}
+  "src/style.css": `*{box-sizing:border-box}body{margin:0;background:#f6f7f9;color:#202431;font:16px Inter,system-ui,sans-serif}nav{height:64px;padding:0 5%;display:flex;align-items:center;gap:32px;background:#fff;border-bottom:1px solid #ddd}nav strong{margin-right:auto}.grid{max-width:930px;margin:52px auto;display:grid;grid-template-columns:2fr 1fr;gap:28px}.eyebrow{font-size:12px;letter-spacing:.14em;color:#677085}h1{font-size:32px}article,aside{background:#fff;border:1px solid #d9dee8;border-radius:14px;padding:20px;box-shadow:0 8px 18px #18243c0b}article{display:flex;align-items:center;gap:18px}article>b{display:grid;place-items:center;width:80px;height:80px;border-radius:12px;background:#eeeafd;color:#6d4bd2;font-size:30px}article p{margin:5px 0;color:#687080}.quantity{display:flex;align-items:center;margin-left:auto;border:1px solid #d9dee8;border-radius:10px;overflow:hidden}.quantity button{border:0;background:#fff;padding:12px 16px;font-size:18px}.quantity span{min-width:28px;text-align:center}aside p{display:flex;justify-content:space-between}.checkout{width:100%;padding:12px;border:0;border-radius:10px;background:#202431;color:#fff}.controls{position:fixed;left:12px;bottom:12px;display:flex;gap:6px;z-index:2}.controls button{font-size:11px}@media(max-width:800px){.grid{margin:40px 24px;grid-template-columns:1fr}article{flex-wrap:wrap}.controls{max-width:340px;flex-wrap:wrap}}
 `,
 };
 
@@ -176,6 +179,7 @@ run(
 );
 run("corepack", ["pnpm", "exec", "qraft", "doctor"], consumer);
 run("corepack", ["pnpm", "exec", "qraft", "setup"], consumer);
+const guide = await verifyPackagedGuide(consumer);
 run("corepack", ["pnpm", "build"], consumer);
 
 const { preview } = await import(
@@ -232,8 +236,10 @@ const evidence = {
   archiveFiles: archiveFiles.length,
   previewChecks,
   removal,
+  guide,
 };
 await writeFile(join(consumer, "evidence.json"), JSON.stringify(evidence, null, 2) + "\n");
+await mkdir("artifacts/release", { recursive: true });
 await writeFile(
   `artifacts/release/consumer-${profile}.json`,
   JSON.stringify(evidence, null, 2) + "\n",

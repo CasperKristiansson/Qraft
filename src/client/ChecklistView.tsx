@@ -12,7 +12,8 @@ interface ChecklistViewProps {
   headingId: string;
   titleForm: ReactNode;
   beginForm: (form: NonNullable<ReviewSession["form"]>, trigger: HTMLButtonElement) => void;
-  status: (task: QATask, status: TaskStatus) => void;
+  onStatusBusy: (value: boolean) => void;
+  status: (task: QATask, status: TaskStatus) => Promise<unknown>;
   navigate: (id: string | undefined) => void;
 }
 
@@ -25,6 +26,7 @@ export function ChecklistView({
   titleForm,
   beginForm,
   status,
+  onStatusBusy,
   navigate,
 }: ChecklistViewProps) {
   const { form } = session;
@@ -70,6 +72,7 @@ export function ChecklistView({
                   key={task.readOnly ? `${task.id}-${index}` : task.id}
                   task={task}
                   pending={pending}
+                  onStatusBusy={onStatusBusy}
                   change={(value) => status(task, value)}
                   select={() => {
                     navigate(task.id);

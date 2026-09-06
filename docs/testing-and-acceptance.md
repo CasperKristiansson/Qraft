@@ -63,7 +63,7 @@ Run supported flows in Chromium, Firefox, and WebKit at desktop size unless a br
 
 Required coverage:
 
-- Open/close drawer without changing host bounding box or scroll position.
+- Open/close the default overlay without changing host bounding box or scroll position. Opt-in page space must match drawer width, survive reload, preserve picker layout, and restore original styles on disable/close/hide/unmount or narrow resize.
 - Render checklist and progress from a fixture.
 - Change status from checklist and detail; single/double-click and keyboard; ordinary status actions stay put, explicit Complete and next advances only after a successful save, and no completion card appears.
 - Add section, task, attached note, and edit note and verify the exact resulting file.
@@ -96,7 +96,7 @@ Agents must report the exact commands and results they ran. “Specified,” “
 An internal package candidate is complete only when all statements are true:
 
 1. Vite React and Next.js App Router apps can install and use the packed package through the documented public exports.
-2. The drawer overlays rather than resizes the host application.
+2. The default drawer overlays the host; optional wide-screen page space is reversible and preserves host state.
 3. An existing compatible `QA.md` renders without being rewritten on startup.
 4. Completing, reopening, or skipping a task changes only the intended checkbox marker plus a lazy ID when required.
 5. Adding a section, task, or attached note produces canonical readable Markdown with stable IDs.
@@ -158,6 +158,25 @@ Use focused checks after relevant edits. Run the complete gates once on the fina
 
 The current profile exercises Node 24.19.0, React/React DOM 19.2.8, Vite 8.2.2/plugin-react 6.1.1 and Next.js 16.3.3. The maintenance profile uses Node 22.23.2 with Vite 7.3.6/plugin-react 5.2.0 and Next.js 15.5.25, retaining matching React 19.2.8. Run consumer scripts with `--maintenance` under that Node executable (including its directory in PATH). Record actual runtime, framework versions and archive digest per profile. These exact trials support the declared ranges; they do not prove every patch or platform combination.
 
-Packed consumers must run `qraft doctor` and `qraft setup`, preserve host files during diagnostics, exercise development writes and production exclusion, and build after removing the Qraft integration/dependency in an isolated removal copy. No host framework upgrade is part of setup.
+Packed consumers must run `qraft doctor`, `qraft setup` and `qraft guide`, preserve host files during diagnostics, exercise development writes and production exclusion, and build after removing the Qraft integration/dependency in an isolated removal copy. No host framework upgrade is part of setup.
+
+## Checklist skill and first-review acceptance
+
+The packed guide must match the bundled SKILL.md byte-for-byte and run without a package.json in
+the working directory. Verify explicit copy installation into isolated Codex and Claude Code project
+layouts while preserving existing host instructions, QRAFT.md and review bytes. This proves file
+installation, not activation in those agents. Validate frontmatter and parse every checklist example
+with Qraft's real parser; all essential instructions must be visible in task details.
+
+Evaluate the guide against six scenarios: a large new app, an unknown regression baseline, a focused
+feature whose basics already work, retesting rich existing feedback, explicit user overrides, and an
+incomplete or unsafe environment. Record the type of evaluation. A manual walkthrough is not a fresh
+agent trial. Before claiming native agent behavior was tested, use separate fresh sessions for explicit
+invocation and natural discovery, and inspect their generated files and preservation diffs.
+
+The first-review example must start with five unchecked tasks and instructions, preserve all existing
+review bytes across restarts, and use a different local file from automated fixture resets. Exercise
+file selection, task instructions, an attached note, status changes, reload and narrow layout in the
+integrated browser. Demo feedback must never mutate a developer's real review.
 
 Hardening regression coverage includes competing OS processes, stale/replaced lock ownership, edits during staging, 2 MiB input/output bounds, invalid UTF-8 recovery with unchanged revision, bounded idle-file eviction, live stream limits, slow-reader cleanup, default Host/DNS-rebinding and Fetch Metadata rejection, trusted exact gateway origin, unavailable clipboard/session storage, and safe local request timeouts/HTML fallback diagnostics.

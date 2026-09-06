@@ -346,7 +346,7 @@ button:disabled {
   align-items: flex-start;
   gap: 10px;
 }
-.qraft-detail-heading.skipped h2 {
+.qraft-detail-heading:has(.qraft-status.skipped) h2 {
   text-decoration: line-through;
   color: var(--qraft-muted);
 }
@@ -685,12 +685,34 @@ button:disabled {
 }
 @media (prefers-reduced-motion: no-preference) {
   .qraft-drawer {
-    animation: qraft-enter 140ms ease-out;
+    --qraft-hidden-transform: translateX(100%);
+  }
+  .qraft-drawer[data-state="open"] {
+    animation: qraft-enter 180ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+  .qraft-drawer[data-state="closed"] {
+    animation: qraft-exit 140ms ease-in both;
+    pointer-events: none;
   }
   @keyframes qraft-enter {
     from {
-      transform: translateX(12px);
-      opacity: 0.75;
+      transform: var(--qraft-hidden-transform);
+    }
+    to {
+      transform: translate(0);
+    }
+  }
+  @keyframes qraft-exit {
+    from {
+      transform: translate(0);
+    }
+    to {
+      transform: var(--qraft-hidden-transform);
+    }
+  }
+  @media (max-width: 600px) {
+    .qraft-drawer {
+      --qraft-hidden-transform: translateY(100%);
     }
   }
 }
@@ -714,7 +736,7 @@ button:disabled {
 }
 .qraft-task-row {
   display: grid;
-  grid-template-columns: 32px 1fr;
+  grid-template-columns: 32px minmax(0, 1fr);
   align-items: center;
   border-bottom: 1px solid var(--qraft-soft-border);
 }
@@ -753,7 +775,7 @@ button:disabled {
   border: 0;
   padding-left: 5px;
 }
-.qraft-task-row.skipped .qraft-task-copy > span {
+.qraft-task-row:has(.qraft-status.skipped) .qraft-task-copy > span {
   text-decoration: line-through;
   color: var(--qraft-muted);
 }
@@ -1014,7 +1036,6 @@ button:disabled {
   border-color: var(--qraft-purple);
   background: var(--qraft-purple);
 }
-.qraft-settings,
 .qraft-recovery {
   display: grid;
   gap: 8px;
@@ -1136,4 +1157,76 @@ button:disabled {
 }
 .qraft-header .qraft-progress-row:has(small) {
   row-gap: 4px;
+}
+
+.qraft-setting-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.qraft-setting-toggle input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--qraft-purple);
+}
+
+/* Saving must not flash the whole drawer or move its controls. */
+.qraft-drawer[data-saving="true"] button:disabled,
+.qraft-status[aria-busy="true"]:disabled {
+  opacity: 1;
+}
+.qraft-progress-row strong {
+  font-variant-numeric: tabular-nums;
+}
+.qraft-settings {
+  display: grid;
+  gap: 24px;
+}
+.qraft-settings section {
+  display: grid;
+  gap: 10px;
+}
+.qraft-settings section + section {
+  border-top: 1px solid var(--qraft-soft-border);
+  padding-top: 20px;
+}
+.qraft-settings h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+.qraft-settings p {
+  color: var(--qraft-muted);
+  line-height: 1.5;
+}
+.qraft-settings button {
+  justify-self: start;
+  font-size: 12px;
+  padding: 8px 12px;
+}
+.qraft-settings-confirm {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--qraft-border);
+  border-radius: 8px;
+}
+.qraft-settings-confirm > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .qraft-status {
+    transition:
+      background-color 100ms ease,
+      border-color 100ms ease;
+  }
+  .qraft-progress span {
+    transition: width 120ms ease-out;
+  }
 }

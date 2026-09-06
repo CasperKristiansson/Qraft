@@ -75,7 +75,7 @@ export function NoteComposer({
           <Target size={15} /> Attach element
         </button>
         <button className="primary" disabled={pending || readOnly || !validDraft(draft.body)}>
-          {pending ? "Saving…" : "Submit"}
+          Submit
         </button>
       </div>
     </form>

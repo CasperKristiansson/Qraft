@@ -9,6 +9,7 @@ import "./example.css";
 function Example() {
   const [exampleStorage] = useState(() => new ExampleQAStorage());
   const [quantity, setQuantity] = useState(2);
+  const [qaVisible, setQAVisible] = useState(true);
   const parameters = new URLSearchParams(location.search);
   useEffect(() => {
     const fallback = document.getElementById("context-fallback-target");
@@ -60,7 +61,11 @@ function Example() {
       </main>
       {parameters.has("picker") ? <PickerTargets /> : null}
       {parameters.has("protocol") ? <ProtocolControls storage={exampleStorage} /> : null}
+      {parameters.has("layout") ? (
+        <button onClick={() => setQAVisible(false)}>Unmount Qraft</button>
+      ) : null}
       {import.meta.env.DEV &&
+        qaVisible &&
         (parameters.has("protocol") ? <QA storage={exampleStorage} /> : <QA />)}
     </StrictMode>
   );

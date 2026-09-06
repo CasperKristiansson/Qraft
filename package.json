@@ -1,8 +1,27 @@
 {
   "name": "@qraft/qa",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "private": true,
-  "description": "Development-only React QA drawer backed by local Markdown",
+  "description": "Review your React app with a Markdown QA checklist. Local feedback for you and your coding agent.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CasperKristiansson/Qraft.git"
+  },
+  "homepage": "https://github.com/CasperKristiansson/Qraft#readme",
+  "bugs": {
+    "url": "https://github.com/CasperKristiansson/Qraft/issues"
+  },
+  "keywords": [
+    "react",
+    "nextjs",
+    "vite",
+    "markdown",
+    "qa",
+    "manual-testing",
+    "visual-feedback",
+    "developer-tools",
+    "coding-agents"
+  ],
   "type": "module",
   "packageManager": "pnpm@11.25.0",
   "engines": {
@@ -24,10 +43,17 @@
   },
   "files": [
     "dist",
+    "skills",
+    "docs",
     "README.md",
+    "AGENTS.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md",
+    "CHANGELOG.md",
     "THIRD_PARTY_NOTICES.md"
   ],
   "scripts": {
+    "demo": "vite --config examples/vite-react/review.config.ts",
     "dev": "vite --config examples/vite-react/vite.config.ts --host 127.0.0.1 --port 5173",
     "build": "vite build --config vite.config.ts && tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",

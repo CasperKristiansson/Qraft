@@ -17,7 +17,8 @@ interface TaskDetailProps {
   composer: RefObject<HTMLTextAreaElement | null>;
   editDrafts: ReviewSession["edits"][string];
   sourceError: { noteId: string; text: string } | null;
-  status: (task: QATask, status: TaskStatus) => void;
+  onStatusBusy: (value: boolean) => void;
+  status: (task: QATask, status: TaskStatus) => Promise<unknown>;
   onChange: (patch: Partial<NoteDraft>) => void;
   onSubmit: () => Promise<void>;
   onAttach: () => void;
@@ -37,6 +38,7 @@ export function TaskDetail({
   editDrafts,
   sourceError,
   status,
+  onStatusBusy,
   onChange,
   onSubmit,
   onAttach,
@@ -47,7 +49,12 @@ export function TaskDetail({
   return (
     <article className="qraft-detail">
       <div className={`qraft-detail-heading ${task.status}`}>
-        <TaskStatusControl task={task} pending={pending} change={(value) => status(task, value)} />
+        <TaskStatusControl
+          task={task}
+          pending={pending}
+          change={(value) => status(task, value)}
+          onBusy={onStatusBusy}
+        />
         <h2>{task.title}</h2>
       </div>
       {task.instructions ? <p className="qraft-instructions">{task.instructions}</p> : null}

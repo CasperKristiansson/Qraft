@@ -46,7 +46,7 @@ test("M6 reduced motion, contrast, live status, focus containment, and narrow la
 
   await drawer.getByRole("button", { name: "Close Qraft", exact: true }).focus();
   await page.keyboard.press("Shift+Tab");
-  await expect(drawer.getByRole("button", { name: "Review settings" })).toBeFocused();
+  await expect(drawer.getByRole("button", { name: "Settings" })).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(drawer.getByRole("button", { name: "Close Qraft", exact: true })).toBeFocused();
   expect(await page.evaluate(() => getComputedStyle(document.body).overflow)).toBe("visible");

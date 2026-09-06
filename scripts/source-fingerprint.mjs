@@ -16,6 +16,7 @@ const excluded = new Set([
   "coverage",
   ".pnpm-store",
   "QA.local.md",
+  "review.local.md",
   ".DS_Store",
 ]);
 export async function sourceFingerprint(root = process.cwd()) {

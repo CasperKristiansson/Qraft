@@ -6,16 +6,18 @@ export function TaskRow({
   task,
   pending,
   change,
+  onStatusBusy,
   select,
 }: {
   task: QATask;
   pending: boolean;
-  change: (value: TaskStatus) => void;
+  onStatusBusy: (value: boolean) => void;
+  change: (value: TaskStatus) => Promise<unknown>;
   select: () => void;
 }) {
   return (
     <div className={`qraft-task-row ${task.status}`}>
-      <TaskStatusControl task={task} pending={pending} change={change} />
+      <TaskStatusControl task={task} pending={pending} change={change} onBusy={onStatusBusy} />
       <button
         type="button"
         className="qraft-task"

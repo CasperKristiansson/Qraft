@@ -1,0 +1,27 @@
+name: Bug report
+description: Something in the local review workflow is not working.
+title: "Bug: "
+body:
+  - type: markdown
+    attributes:
+      value: Please use a small, sanitized reproduction. Report vulnerabilities through SECURITY.md instead of this form.
+  - type: textarea
+    id: behavior
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps or a small reproduction
+      description: Include a minimal Markdown example if relevant. Remove private notes and customer data.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Qraft, React, Vite or Next.js, Node, browser, operating system and viewport when relevant.
+    validations:
+      required: true

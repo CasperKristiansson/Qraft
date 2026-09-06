@@ -1,163 +1,96 @@
 # Qraft
 
-Qraft is a development-only React QA drawer backed by one local Markdown checklist. A tester and a coding agent share `QA.md`: browser actions become minimal Markdown patches, while external file edits appear in the drawer without a page reload.
+**Review your app without leaving it.**
 
-Qraft supports Vite React and Next.js App Router (Node runtime). It has no accounts, cloud service, database, public server, or production middleware.
+Turn a Markdown QA checklist into an in-app review drawer. Check your React app, attach feedback
+to elements, and keep the results in a local file your coding agent can read.
 
-## Install an internal build
+Works with **Vite** and **Next.js App Router**. Development only. No account, cloud service, or API key.
 
-Qraft is private and has not been published. Build or obtain the approved internal tarball, then install it with supported peers:
+[Try it](#try-the-workflow) · [Install](docs/getting-started.md) · [Create a checklist](docs/creating-checklists.md) · [Agent skill](docs/agent-skill.md)
+
+## From checklist to feedback
+
+1. Ask your coding agent for a focused QA checklist, or write one yourself.
+2. Open your app and select that Markdown file in Qraft.
+3. Review each task. Mark it complete, skip it, or add notes with an attached element.
+4. Ask your coding agent to read the same file and work through your observations.
+
+Qraft keeps the human in the review loop. A completed task records review progress; it can still
+have feedback that needs attention. Notes stay with the task and have no separate resolved state.
+
+## Try the workflow
+
+Clone this repository, use a [supported Node version](docs/getting-started.md#supported-environments),
+and start the small local cart:
 
 ```sh
-pnpm add -D ./vendor/qraft-qa-0.2.1.tgz
+git clone https://github.com/CasperKristiansson/Qraft.git
+cd Qraft
+corepack pnpm install --frozen-lockfile
+corepack pnpm demo
 ```
 
-For an existing project, check its React, framework and Node versions before installing; do not
-upgrade the application's peers merely to add Qraft. Vite and Next.js are optional peers, so a
-consumer needs only its own framework. Supported Node lines are 22.23+ and 24.19+. Run `pnpm exec qraft doctor` for read-only diagnostics or `pnpm exec qraft setup` for integration and removal steps.
+Open `http://127.0.0.1:5173`, click **QA**, and choose **review.local.md**. Five checks walk you
+through changing quantity, attaching feedback, keyboard review, a narrow viewport, and reading the
+result in your editor. The toy cart's fixed summary gives you something concrete to report.
+Restarting the demo preserves your notes. Repository access is currently limited to collaborators.
 
-### Next.js App Router
+To use Qraft in your own app, follow the [Vite or Next.js setup](docs/getting-started.md).
+**Qraft is still private and unpublished**; installation currently uses a verified package archive.
 
-Create `app/api/qraft/[...path]/route.ts`:
+## Start with ordinary Markdown
 
-```ts
-import { createQraftRoute } from "@qraft/qa/next";
-
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
-const qraft = createQraftRoute({ endpoint: "/api/qraft" });
-export const GET = qraft.GET;
-export const POST = qraft.POST;
-```
-
-In the root layout (let Next.js bundle Qraft normally; do not add the client package to `serverExternalPackages`):
-
-```tsx
-// Inside the existing async root layout, before returning JSX:
-const QA = process.env.NODE_ENV === "development" ? (await import("@qraft/qa")).QA : null;
-
-// Inside the body, beside the application:
-{
-  QA ? <QA endpoint="/api/qraft" editor="manual" /> : null;
-}
-```
-
-The conditional import keeps the picker out of production client chunks. If a production artifact policy also excludes all local server tooling, conditionally import the route factory behind the same development check and export handlers that return 404 when it is absent.
-
-If a trusted local gateway rewrites the Host header, configure `origin` on `createQraftRoute` with the exact browser origin (for example `http://localhost:3060`). Qraft never trusts forwarded headers to authorize writes.
-
-When Next.js has a `basePath`, include it only in the QA client endpoint (for example `/email/api/qraft`). Next.js strips it from the route handler request, so the server endpoint stays `/api/qraft`.
-
-The package declares its client boundary. The route independently returns 404 outside development,
-before accessing files or creating watchers. Keep authentication/proxy middleware from redirecting
-this local development route; any exception must itself be development-only. The trusted `root`
-option defaults to the Next.js working directory. `file` optionally restricts the chooser to a
-project-relative Markdown path. This integration supports App Router on Node, not Edge, Pages Router
-or static export. Next.js source paths are displayed for manual editor navigation.
-
-### Vite
-
-Add the development plugin to `vite.config.ts`:
-
-```ts
-import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
-import { qraft } from "@qraft/qa/vite";
-
-export default defineConfig({
-  plugins: [react(), qraft()],
-});
-```
-
-Mount the drawer behind Vite's development guard:
-
-```tsx
-import { QA } from "@qraft/qa";
-
-export function App() {
-  return (
-    <>
-      <Application />
-      {import.meta.env.DEV && <QA />}
-    </>
-  );
-}
-```
-
-The drawer first asks you to choose a Markdown checklist inside the Vite project. It remembers the choice per project in your browser. Use **Change file** to choose another. There is no default filename. An optional trusted `qraft({ file: "./reviews/checkout.md" })` restricts the chooser to that file, including a missing file which the first Add section action can create. The browser sends only a server-issued file ID, never a filesystem path. The optional `endpoint` still defaults to `/__qraft`.
-
-## Review workflow
-
-Drag the small six-dot grip up or down the right edge; its position survives reload. Keyboard arrows and Home/End move it too. Click QA to open the checklist. Change status directly in a task row: not completed → completed → skipped → not completed. Double-click the status to skip. Open the title for notes and the same circular status control beside the smaller detail title.
-
-While picking an element, use ↑/↓ or Parent/Child to choose its container, and Enter or click to attach. Parent navigation holds the target until Resume picking. The element trail shows your selection; Guides toggles faint edge lines. The outline follows moving elements and shows their dimensions.
-
-Notes are observations for your coding agent, without their own completion state. The composer is always available: Enter submits, Shift+Enter inserts a line break. Attach an element while retaining your draft, add multiple notes, and edit earlier notes. Task completion never depends on notes. Ordinary status actions stay put; the separate Complete and next action advances after a confirmed save. Skipped tasks remain in the total and are counted separately from completed tasks.
-
-## Markdown dialect
-
+<!-- prettier-ignore -->
 ```md
 # Checkout review
 
 ## Cart
 
-- [ ] Change quantity
-  - Note: Check keyboard controls too.
-  - Note: The increment button needs more spacing.
-    - Component: `QuantitySelector`
-    - Source: `src/cart/QuantitySelector.tsx:87:5`
-    - Route: `/checkout`
-    - Selector: `.quantity-selector`
-    - Context: `{"tag":"button","attributes":{"data-testid":"increment"},"text":"+","ancestors":["div.quantity"]}`
-- [x] Remove product
-- [-] Check an unsupported payment method
+- [ ] Change quantity and verify the total
+  Increase and decrease quantity. The line and order totals should follow the quantity.
+  - Note: The order total does not update when I increase quantity.
+- [x] Remove a product
+- [-] Review an unsupported payment method
 ```
 
-H2 headings define optional sections; ordinary unsectioned top-level checklists work too. Indented task instructions appear read-only in details. Top-level markers are open `[ ]`, completed `[x]`, and skipped `[-]`. Two-space `Note:` bullets are editable notes. Legacy nested checkbox findings render as notes, with their original markers and bytes preserved. Qraft adds hidden stable IDs only when creating or first mutating an entity. Opening or selecting a file never rewrites it. See [the complete preservation contract](docs/markdown-storage.md).
+Sections are optional. Instructions appear in task details; notes can include element and source
+context. Qraft preserves surrounding Markdown and adds hidden IDs only as needed when editing.
+See the [Markdown contract](docs/markdown-storage.md) for exact syntax and preservation guarantees.
 
-If no file exists, ask your coding editor to create a Markdown checklist with sections and tasks, then use Refresh files. Discovery ignores hidden folders, dependency/build/output folders and symlinks. It is bounded to 2,000 files and 10,000 entries; configure a specific file if a large project exceeds that bound. File and tab persistence require browser local storage; otherwise selection works for the current session. Drafts, selected task, section collapse and scroll survive reload/HMR in tab-isolated session storage. Closing the tab can end that session. Storage failures are visible; settings offer explicit clearing. Pin keeps review open while operating the app, and narrow details collapse to a task strip.
+## Let your agent plan the review
 
-## Safe local use
+Qraft includes **qraft-review**, a portable skill for initial reviews, change-focused regression
+checks, focused feature reviews, and retesting earlier feedback. It keeps checks at a useful level,
+orders prerequisites first, and preserves existing notes when continuing a review.
 
-- Run Qraft only on a trusted local development machine.
-- Do not bind a Qraft-enabled development server to an untrusted network. The local endpoints intentionally have no authentication.
-- Keep `<QA />` behind `import.meta.env.DEV`; the `qraft()` plugin itself uses Vite's serve-only boundary and registers nothing in builds or preview servers.
-- Keep the QA file inside the configured project root. Browser requests contain typed commands, never paths, editor commands, shell commands, or replacement Markdown.
-- Commit or back up important checklist changes using your normal project workflow. Qraft detects stale revisions and writes atomically, but it is not a version-control system.
-
-## Known limitations
-
-- Supported consumer lines are Vite 7.3.6+/8.2.2+ and Next.js 15.5.25+/16.3.3+, with matching React/React DOM 19.2.8+. Acceptance records the exact tested profiles. Responsive browser review supports widths down to 360 CSS pixels; physical-phone network access is outside the local-only scope.
-- Files are limited to 2 MiB. Qraft serializes its own processes with a sibling lock and checks revisions immediately before final replacement. Arbitrary external editors do not participate in that lock; their final check-to-rename race remains possible. After a crashed writer, `qraft doctor` explains recovery; it never steals locks.
-- Element source context depends on React Grab and source-map availability. Attachments also retain bounded tag, identifying attributes, selected visible text, ancestor context, and up to five relevant component/source locations; no form values, full HTML, styles, or screenshots are captured. Selectors and source locations are best-effort identifiers and may change as the application changes. Plain notes remain available when context is partial or unavailable.
-- Picker traversal supports the main document, open Shadow DOM, and same-origin iframes. Closed shadow roots and cross-origin frames are inaccessible.
-- Editor opening depends on the local Vite/editor integration and can fail; Qraft keeps the stored path visible for manual use.
-- IDs and selector strings are implementation metadata, not a public automation API.
-
-## Repository development
-
-Use the pinned Node and pnpm versions, then run:
-
-```sh
-corepack pnpm install
-corepack pnpm check
-corepack pnpm test:browser
-corepack pnpm audit:release
-corepack pnpm verify:consumer
-corepack pnpm verify:next
+```text
+Use qraft-review to create a QA checklist for the checkout changes.
+The rest of the app already works. Include the current uncommitted changes,
+keep this focused, and save it in reviews/checkout.md.
 ```
 
-`check` covers formatting, lint, typecheck, unit/integration tests, and the package build. `test:browser` exercises Chromium, Firefox, and WebKit. `audit:release` checks the exact dependency pins and supported peer ranges, installed transitive licenses, notices, exports, and excluded material. `verify:consumer` packs Qraft, installs that tarball into a clean temporary Vite React app, checks public exports and the setup executable, and builds and checks the production consumer preview. Artifact scripts retain local evidence under ignored `artifacts/release/`. Run `build` before either artifact check. `scripts/source-fingerprint.mjs` records candidate bytes and file modes, excluding generated/local files.
+[Install the skill explicitly](docs/agent-skill.md), or run `pnpm exec qraft guide` and give its
+output to your coding agent. An optional `QRAFT.md` can hold project preferences. Qraft does not
+call an LLM or modify your agent configuration when installed.
 
-## Internal distribution and updates
+## Built for a local review loop
 
-Build with `corepack pnpm build`, then run `corepack pnpm pack`. Copy the resulting archive into
-`vendor/` in the consuming private repository and install it with that project's package manager.
-Commit the archive, manifest, lockfile and integration so teammates can pull and install normally.
-Give every update a new version or immutable archive filename; do not overwrite an existing archive.
-Shared checklist changes travel through Git, not live synchronization across machines.
+- **Review at your pace.** Complete, skip, or reopen tasks; move directly to the next check.
+- **Keep feedback specific.** Add and edit notes, with optional element, route, viewport and source context.
+- **Make room for the app.** Pin the drawer, push page content on wider screens, or use the compact task strip on narrow screens.
+- **Keep ownership of the file.** External edits update the drawer; stale saves surface a conflict instead of silently replacing a newer revision.
 
-Qraft remains private and has no public distribution license or registry release. The package
-contains built JavaScript, declarations and third-party notices. Its dependencies are installed
-normally by the package manager. See [documentation](docs/README.md) for current contracts and
-[acceptance](docs/testing-and-acceptance.md) for the release checks and evidence requirements.
+Run on a trusted local development machine. Keep the documented development guard around the
+client; the adapters refuse production traffic. Element/source identification is best effort,
+and physical-phone access over a network is outside the local-only scope. See
+[limitations and recovery](docs/troubleshooting.md).
+
+## Help and contributions
+
+[Documentation](docs/README.md) · [Troubleshooting](docs/troubleshooting.md) · [Report a bug](https://github.com/CasperKristiansson/Qraft/issues/new/choose) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
+
+A small reproduction and a description of the expected behavior are useful contributions.
+[Third-party notices](THIRD_PARTY_NOTICES.md) cover Qraft's dependencies.
+
+If Qraft makes your review loop easier, a star helps other developers find it.
