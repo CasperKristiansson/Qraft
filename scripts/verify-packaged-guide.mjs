@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 export async function verifyPackagedGuide(consumer) {
-  const packaged = join(consumer, "node_modules/@qraft/qa");
+  const packaged = join(consumer, "node_modules/@qraft-dev/qa");
   const metadata = JSON.parse(await readFile(join(packaged, "package.json"), "utf8"));
   assert.equal(metadata.license, "MIT");
   assert.equal(

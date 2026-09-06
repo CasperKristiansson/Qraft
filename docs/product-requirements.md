@@ -1,6 +1,6 @@
 # Product requirements
 
-Qraft is a local development review tool for Vite React and Next.js App Router apps. A tester selects a Markdown checklist, checks the running app, and leaves notes for a coding agent in that same file. The repository is currently private while preparing for public distribution.
+Qraft is a local development review tool for Vite React and Next.js App Router apps. A tester selects a Markdown checklist, checks the running app, and leaves notes for a coding agent in that same file.
 
 ## Owner-approved workflow — 2026-09-05
 
@@ -39,6 +39,6 @@ not proof that its feedback is fixed. The skill does not execute reviews, change
 or mark notes resolved. Optional project preferences and explicit installation are documented in
 [agent setup](agent-skill.md); the methodology is maintained only in the skill itself.
 
-Vite and Next.js App Router (Node runtime); React 19; one private root package; local development only; desktop and responsive browser review down to 360 CSS px. Physical-phone access over a network is outside the local-only boundary. No hosted service, accounts, database, MCP, AI, remote integrations, screenshots/video, general Markdown editor, task deletion/reordering, detached window, extension or automatic agent execution. Notes are handoff context, not a second issue tracker.
+Vite and Next.js App Router (Node runtime); React 19; one root npm package; local development only; desktop and responsive browser review down to 360 CSS px. Physical-phone access over a network is outside the local-only boundary. No hosted service, accounts, database, MCP, AI, remote integrations, screenshots/video, general Markdown editor, task deletion/reordering, detached window, extension or automatic agent execution. Notes are handoff context, not a second issue tracker.
 
 Canonical ownership: [design](design.md), [architecture](architecture.md), [Markdown](markdown-storage.md), [protocol](dev-server-protocol.md), and [acceptance](testing-and-acceptance.md). The owner feedback above supersedes the original findings workflow and the original visual mockup.

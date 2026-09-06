@@ -102,9 +102,8 @@ The owner selected the [MIT license](../LICENSE) on 2026-09-06 for Qraft's code,
 and bundled skill. The package declares `MIT` and includes the license and third-party notices.
 Dependencies retain their own licenses; Qraft's license does not replace those obligations.
 
-The repository remains private and the package unpublished. Changing repository visibility,
-adding npm publish configuration, or publishing a registry release requires separate explicit
-owner authorization.
+The owner authorized public GitHub and npm distribution on 2026-09-06. The npm name is
+`@qraft-dev/qa`; future registry releases still require explicit owner authorization.
 
 ## Agent workflow and repository tooling references
 
@@ -151,3 +150,13 @@ Next.js brings unmodified framework dependencies that are installed by the consu
 Re-inspected the installed `write-file-atomic@8.0.0` public implementation `lib/index.js` (the pinned npm/write-file-atomic commit above). Its API has no post-fsync/pre-rename revision hook. Qraft therefore uses that package to stage bytes, followed by its own conditional final rename in `src/markdown/replace-file.ts`; `store.ts` performs the revision/path check after staging. No upstream implementation was copied. The exclusive cooperative lock and read-only diagnostics are original Node-API code.
 
 Consumer peer ranges now permit the tested maintenance/current framework lines listed in architecture. Development and direct runtime packages stay exactly pinned; Next.js is an explicit development pin so broadening its optional peer does not float the repository lockfile. Compatibility fixtures additionally install Vite 7.3.6, plugin-react 5.2.0 and Next.js 15.5.25 through the same allowlisted official packages. They are isolated consumer dependencies, not added runtime dependencies or copied framework code.
+
+## Public distribution review — 2026-09-06
+
+The public archive contains Qraft-owned modules, source maps, documentation and skill text, with
+MIT and third-party notices. The build externalizes all runtime packages, including React Grab
+primitives. Consumers obtain those unmodified dependencies from npm; Qraft does not redistribute
+their archives or optional framework binaries. The exact archive-notice exceptions above therefore
+remain installed-dependency observations, not missing notices for bundled third-party code.
+Recheck this boundary if bundling changes. The final release audit records the installed license
+inventory, and clean consumers verify the actual packed exports and notice files.

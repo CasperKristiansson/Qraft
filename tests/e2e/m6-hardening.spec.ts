@@ -74,8 +74,11 @@ test("M6 filesystem failure is recoverable and preserves the unsaved draft", asy
   await page.request.post("/__qraft-example/restore-writes");
   await drawer.getByRole("button", { name: "Submit", exact: true }).click();
   await expect(
-    drawer.getByText("Keep this draft after a failed write.", { exact: true }),
+    drawer
+      .getByRole("listitem")
+      .getByText("Keep this draft after a failed write.", { exact: true }),
   ).toBeVisible();
+  await expect(drawer.getByLabel("Write a note")).toHaveValue("");
 });
 
 test("legacy task retains selection after its first note and status change", async ({ page }) => {

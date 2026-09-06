@@ -7,8 +7,7 @@ documented development guards and review the [local safeguards](docs/dev-server-
 ## Report a vulnerability privately
 
 Use GitHub's [private vulnerability report](https://github.com/CasperKristiansson/Qraft/security/advisories/new)
-when available. While this repository is private, collaborators can contact the maintainer through
-their existing private project channel. If private reporting is unavailable, request a private
+to send sensitive details to the maintainer. If private reporting is unavailable, request a private
 contact channel through the [maintainer's profile](https://github.com/CasperKristiansson) before
 sharing sensitive details. Do not put exploit details, credentials, private review files or customer
 data in a public issue.

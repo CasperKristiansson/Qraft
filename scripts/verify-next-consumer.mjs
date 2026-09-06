@@ -7,6 +7,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { sourceFingerprint } from "./source-fingerprint.mjs";
 
+const registry = process.argv.includes("--registry");
 const maintenance = process.argv.includes("--maintenance");
 const profile = maintenance ? "maintenance" : "current";
 const source = await sourceFingerprint();
@@ -21,7 +22,16 @@ function run(args, cwd = root) {
   process.stderr.write(result.stderr);
   if (result.status !== 0) throw new Error(`pnpm ${args.join(" ")} failed`);
 }
-run(["pack", "--pack-destination", root], process.cwd());
+const packageVersion = JSON.parse(await readFile("package.json", "utf8")).version;
+const packageSpec = `@qraft-dev/qa@${packageVersion}`;
+if (registry) {
+  const result = spawnSync(
+    "npm",
+    ["pack", packageSpec, "--registry=https://registry.npmjs.org/", "--pack-destination", root],
+    { encoding: "utf8" },
+  );
+  if (result.status !== 0) throw new Error(result.stderr);
+} else run(["pack", "--pack-destination", root], process.cwd());
 const archive = join(
   root,
   (await readdir(root)).find((name) => name.endsWith(".tgz")),
@@ -40,7 +50,7 @@ await writeFile(
       type: "module",
       packageManager: "pnpm@11.25.0",
       dependencies: {
-        "@qraft/qa": `file:${archive}`,
+        "@qraft-dev/qa": registry ? packageVersion : `file:${archive}`,
         next: maintenance ? "15.5.25" : "16.3.3",
         react: "19.2.8",
         "react-dom": "19.2.8",
@@ -59,6 +69,7 @@ await writeFile(
 await writeFile(
   join(root, "pnpm-workspace.yaml"),
   `packages: ["."]\nautoInstallPeers: false\nminimumReleaseAgeExclude: ${JSON.stringify([
+    packageSpec,
     "lucide-react@1.41.0",
     "zod@4.5.4",
     "@types/react-dom@19.2.7",
@@ -188,6 +199,7 @@ await exercise("start", 4195);
 const removal = await verifyRemoval(root, "next", run);
 const evidence = {
   root,
+  distribution: registry ? "npm" : "archive",
   profile,
   runtime: process.version,
   next: maintenance ? "15.5.25" : "16.3.3",
@@ -202,7 +214,7 @@ const evidence = {
 };
 await mkdir("artifacts/release", { recursive: true });
 await writeFile(
-  `artifacts/release/next-consumer-${profile}.json`,
+  `artifacts/release/next-consumer-${profile}${registry ? "-registry" : ""}.json`,
   JSON.stringify(evidence, null, 2) + "\n",
 );
 console.log(JSON.stringify(evidence, null, 2));

@@ -29,7 +29,7 @@ export async function inspectProject(directory: string): Promise<SetupReport> {
   const dependencies = { ...manifest.dependencies, ...manifest.devDependencies };
   const require = createRequire(join(root, "package.json"));
   const versions: Record<string, string> = {};
-  for (const name of ["@qraft/qa", "react", "react-dom", "next", "vite"]) {
+  for (const name of ["@qraft-dev/qa", "react", "react-dom", "next", "vite"]) {
     try {
       let metadata: string | null = null;
       for (const directory of require.resolve.paths(name) ?? []) {
@@ -57,10 +57,10 @@ export async function inspectProject(directory: string): Promise<SetupReport> {
   else if (entries.includes("package-lock.json")) report.manager = "npm";
   else if (entries.includes("yarn.lock")) report.manager = "yarn";
   add(
-    Boolean(versions["@qraft/qa"]),
-    versions["@qraft/qa"]
-      ? `Qraft ${versions["@qraft/qa"]} is installed.`
-      : "Qraft is not installed in this app. Add the package archive before integrating it.",
+    Boolean(versions["@qraft-dev/qa"]),
+    versions["@qraft-dev/qa"]
+      ? `Qraft ${versions["@qraft-dev/qa"]} is installed.`
+      : "Qraft is not installed in this app. Install @qraft-dev/qa as a development dependency before integrating it.",
   );
   const node = process.versions.node.split(".").map(Number);
   add(
@@ -106,7 +106,7 @@ export async function inspectProject(directory: string): Promise<SetupReport> {
     const config = entries.find((name) => /^vite\.config\.[cm]?[jt]s$/u.test(name));
     const text = config ? await smallText(join(root, config)) : null;
     add(
-      Boolean(text?.includes("@qraft/qa/vite")),
+      Boolean(text?.includes("@qraft-dev/qa/vite")),
       "Add qraft() to the Vite plugins in the app's Vite configuration.",
     );
   } else
@@ -172,8 +172,8 @@ export function setupInstructions(report: SetupReport): string {
   const common =
     "No files changed. Keep Qraft as a development dependency. Choose the Markdown file in the browser; Qraft never selects a filename implicitly.";
   if (report.framework === "vite")
-    return `${common}\n\nIn vite.config.ts:\nimport { qraft } from '@qraft/qa/vite';\n// Add qraft() to the existing plugins array.\n\nIn your React root:\nimport { QA } from '@qraft/qa';\n// Render alongside the app:\n{import.meta.env.DEV ? <QA /> : null}\n\nRemoval: remove this render/import and plugin/import, then remove the Qraft dependency. Keep your Markdown review file.\n`;
+    return `${common}\n\nIn vite.config.ts:\nimport { qraft } from '@qraft-dev/qa/vite';\n// Add qraft() to the existing plugins array.\n\nIn your React root:\nimport { QA } from '@qraft-dev/qa';\n// Render alongside the app:\n{import.meta.env.DEV ? <QA /> : null}\n\nRemoval: remove this render/import and plugin/import, then remove the Qraft dependency. Keep your Markdown review file.\n`;
   if (report.framework === "next")
-    return `${common}\n\nCreate ${report.appDirectory ?? "app"}/api/qraft/[...qraft]/route.ts:\nimport { createQraftRoute } from '@qraft/qa/next';\nexport const runtime = 'nodejs';\nexport const dynamic = 'force-dynamic';\nconst route = createQraftRoute({ root: process.cwd(), endpoint: '/api/qraft' });\nexport const { GET, POST } = route;\n\nCreate a small client component:\n'use client';\nimport dynamic from 'next/dynamic';\nconst QA = process.env.NODE_ENV === 'development'\n  ? dynamic(() => import('@qraft/qa').then(m => m.QA), { ssr: false })\n  : () => null;\nexport function Review() { return <QA endpoint='/api/qraft' editor='manual' />; }\n\nRender <Review /> in the root layout. For a Next.js basePath, prefix only the browser endpoint; Next strips it from route requests, so the route endpoint stays /api/qraft. In a monorepo, explicitly set root to the directory containing the review files.\n\nRemoval: remove the Review component/render and Qraft route, then remove the dependency. Keep your Markdown review file.\n`;
+    return `${common}\n\nCreate ${report.appDirectory ?? "app"}/api/qraft/[...qraft]/route.ts:\nimport { createQraftRoute } from '@qraft-dev/qa/next';\nexport const runtime = 'nodejs';\nexport const dynamic = 'force-dynamic';\nconst route = createQraftRoute({ root: process.cwd(), endpoint: '/api/qraft' });\nexport const { GET, POST } = route;\n\nCreate a small client component:\n'use client';\nimport dynamic from 'next/dynamic';\nconst QA = process.env.NODE_ENV === 'development'\n  ? dynamic(() => import('@qraft-dev/qa').then(m => m.QA), { ssr: false })\n  : () => null;\nexport function Review() { return <QA endpoint='/api/qraft' editor='manual' />; }\n\nRender <Review /> in the root layout. For a Next.js basePath, prefix only the browser endpoint; Next strips it from route requests, so the route endpoint stays /api/qraft. In a monorepo, explicitly set root to the directory containing the review files.\n\nRemoval: remove the Review component/render and Qraft route, then remove the dependency. Keep your Markdown review file.\n`;
   return `${common}\nRun setup from a supported app workspace, not the monorepo aggregator.\n`;
 }

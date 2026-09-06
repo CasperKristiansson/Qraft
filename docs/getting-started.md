@@ -1,10 +1,9 @@
 # Install Qraft in your app
 
-Qraft currently uses private package archives; a public npm release is not available yet. Install
-with your project's existing package manager. Do not upgrade its framework just to add Qraft.
+Install Qraft from npm with your project's existing package manager. Do not upgrade its framework just to add Qraft.
 
 ```sh
-pnpm add -D ./vendor/qraft-qa-0.3.0.tgz
+pnpm add -D @qraft-dev/qa
 pnpm exec qraft doctor
 pnpm exec qraft setup
 ```
@@ -32,7 +31,7 @@ Pages Router, Edge runtime and static export are outside the supported integrati
 Create `app/api/qraft/[...path]/route.ts`:
 
 ```ts
-import { createQraftRoute } from "@qraft/qa/next";
+import { createQraftRoute } from "@qraft-dev/qa/next";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -45,7 +44,7 @@ In the root layout (let Next.js bundle Qraft normally; do not add the client pac
 
 ```tsx
 // Inside the existing async root layout, before returning JSX:
-const QA = process.env.NODE_ENV === "development" ? (await import("@qraft/qa")).QA : null;
+const QA = process.env.NODE_ENV === "development" ? (await import("@qraft-dev/qa")).QA : null;
 
 // Inside the body, beside the application:
 {
@@ -73,7 +72,7 @@ Add the development plugin to `vite.config.ts`:
 ```ts
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
-import { qraft } from "@qraft/qa/vite";
+import { qraft } from "@qraft-dev/qa/vite";
 
 export default defineConfig({
   plugins: [react(), qraft()],
@@ -83,7 +82,7 @@ export default defineConfig({
 Mount the drawer behind Vite's development guard:
 
 ```tsx
-import { QA } from "@qraft/qa";
+import { QA } from "@qraft-dev/qa";
 
 export function App() {
   return (
@@ -104,7 +103,13 @@ server, then open the QA tab and select that file. The chooser remembers your se
 in browser local storage. Use **Change file** at the bottom of the checklist to select another.
 Qraft never chooses a filename implicitly, even when the server restricts the chooser to one file.
 
-## Share an internal build with teammates
+## Share with teammates
+
+Commit the dependency entry, lockfile and development integration. Teammates can pull and run the
+project's normal install command. Use your package manager to update Qraft; no archive is needed.
+Checklist changes travel through your project's normal Git workflow, not live sync between machines.
+
+## Test an unpublished build
 
 From a verified Qraft checkout, run `corepack pnpm build`, then `corepack pnpm pack`. Copy the archive
 into `vendor/` in the consuming private repository and install it there. Commit the archive,
@@ -119,7 +124,7 @@ It has no install hook. Installing it never edits `AGENTS.md`, `CLAUDE.md`, or a
 
 Remove the QA import and development mount. For Vite, remove `qraft()` and its config import.
 For Next.js, remove the dedicated Qraft route and any development-only middleware exception you
-added for it. Remove `@qraft/qa` with your package manager. Keep your Markdown review and notes.
+added for it. Remove `@qraft-dev/qa` with your package manager. Keep your Markdown review and notes.
 If you explicitly installed the skill, remove only its installed folder and routing pointer when
 no longer needed; uninstalling the package does not erase project instructions or review files.
 
