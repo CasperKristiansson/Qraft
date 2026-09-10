@@ -15,7 +15,7 @@ Future releases require explicit owner authorization.
    reporting. Keep public access in publishConfig; do not add installation hooks.
 4. Follow [testing and acceptance](testing-and-acceptance.md) in a clean source copy containing the
    final candidate, with a frozen install. Run check, test:browser, audit:release, verify:consumer
-   and verify:next. Run both consumer scripts with --maintenance under the documented Node 22
+   verify:next and verify:shared. Run both consumer scripts with --maintenance under the documented Node 22
    runtime. Preserve source fingerprints, package digests, logs and browser evidence locally.
 5. Merge the reviewed candidate after CI passes. Verify that the tested source matches the merge
    and publish the exact tested archive, not a new unverified working-directory build.
@@ -48,3 +48,5 @@ Keep generated archives, fingerprints and test evidence in ignored artifacts/rel
 README assets remain tracked documentation. A successful publish is immutable for that name and
 version; fixes use a new version. If any step fails, record the exact registry and Git state before
 continuing. Do not claim a release is usable until fresh registry installations pass.
+
+Shared-backend releases also run `corepack pnpm verify:shared --registry` after publishing the exact tested archive. Record hosted-CI billing limitations separately from local check results when the owner explicitly authorizes that release path.

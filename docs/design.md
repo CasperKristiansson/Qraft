@@ -22,7 +22,7 @@ Inspect changed user-visible surfaces in the browser at the viewports required b
 
 ## Current interaction contract — owner feedback 2026-09-05
 
-Retain neutral typography, restrained purple accents, list-first hierarchy, and local-only behavior.
+Retain neutral typography, restrained purple accents and list-first hierarchy. Local mode remains the default; shared mode is explicit.
 
 ### Closed tab
 
@@ -75,3 +75,12 @@ Use the existing published React Grab primitives. Capture bounded identifying at
 The picker tracks the rendered target while the page animates or scrolls, including scrolling inside same-origin frames. Pointer selection locks before asynchronous context resolution; hover cannot supersede a click. A short selected state precedes return to the note, with no extra confirmation. Context lookup times out to identifying context after three seconds. Escape cancels even during lookup. Host pointer/mouse activation is suppressed during selection.
 
 Keyboard focus previews a host control without requiring pointer movement. Arrow Up selects a parent and Arrow Down returns toward the original target; Enter attaches. Parent/child controls and a bounded clickable element trail provide the same actions. Parent navigation holds the target until Resume picking, so moving to the toolbar cannot change the refined selection. A compact label shows element/component and dimensions. Optional faint edge guides are off by default. Keep the toolbar within the viewport, preserve reduced-motion behavior and announce held/attaching states.
+
+## Shared checklist menu
+
+Reuse the file chooser, search, loading/error/empty states and Change file action. Shared mode
+introduces the menu with “Choose a shared checklist. Saved progress and notes are visible to your
+team.” It omits the local first-use illustration and agent prompt. An empty shared menu directs the
+tester to ask the review owner to add files. Opening Change file refreshes the catalog. Existing
+checklist/detail, draft recovery and responsive behavior remain the same. Deployed element/source
+identification is best effort; manual source navigation is used and plain notes remain available.

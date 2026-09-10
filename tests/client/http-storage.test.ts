@@ -148,3 +148,36 @@ it("bounds stalled requests and reports an uncertain outcome before retry", asyn
     AbortSignal.timeout = original;
   }
 });
+
+it("polls shared documents without SSE and cleans up the timer", () => {
+  vi.useFakeTimers();
+  vi.stubGlobal("EventSource", FakeEventSource);
+  const changed = vi.fn();
+  const storage = new HttpQAStorage("/api/qa", undefined, { pollIntervalMs: 1_000 });
+  const stop = storage.forFile("a".repeat(64)).subscribe(changed);
+  vi.advanceTimersByTime(3_000);
+  expect(changed).toHaveBeenCalledTimes(3);
+  expect(FakeEventSource.instances).toHaveLength(0);
+  stop();
+  vi.advanceTimersByTime(5_000);
+  expect(changed).toHaveBeenCalledTimes(3);
+});
+
+it("uses fresh host CSRF headers on selected files and sends a command only once", async () => {
+  let token = "first";
+  const fetcher = vi.fn(async () => Response.json({ revision: "a".repeat(64), sections: [] }));
+  vi.stubGlobal("fetch", fetcher);
+  const storage = new HttpQAStorage("/api/qa", undefined, {
+    headers: () => ({ "x-csrf": token }),
+    pollIntervalMs: 3_000,
+  }).forFile("b".repeat(64));
+  await storage.getDocument();
+  token = "second";
+  await storage.execute({ type: "createSection", title: "Test" }, "a".repeat(64));
+  expect(fetcher).toHaveBeenCalledTimes(2);
+  const call = (fetcher.mock.calls as unknown as [string, RequestInit][])[1]!;
+  expect(call[0]).toBe(`/api/qa/files/${"b".repeat(64)}/commands`);
+  expect(new Headers(call[1].headers).get("x-csrf")).toBe("second");
+  expect(call[1].credentials).toBe("same-origin");
+  expect(call[1].redirect).toBe("error");
+});

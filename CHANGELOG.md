@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.0
+
+- Add an explicit host-authorized shared Markdown backend and private deployed review mode.
+- Select shared checklist files, synchronize saved notes and status through polling, and isolate browser drafts by authenticated session.
+- Preserve local development-only adapters, revision conflicts, exact Markdown patches and restart recovery.
+- Add an optional S3 store and Lambda HTTP v2 bridge with conditional writes across independent instances.
+- Verify the packed production drawer through the AWS SDK and a local S3 protocol fixture; document private bucket and host authentication setup.
+
 ## 0.3.1 — 2026-09-06
 
 - Introduce the first review with a compact checklist illustration and clearer Markdown guidance.

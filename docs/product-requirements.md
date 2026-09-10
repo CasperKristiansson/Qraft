@@ -1,6 +1,6 @@
 # Product requirements
 
-Qraft is a local development review tool for Vite React and Next.js App Router apps. A tester selects a Markdown checklist, checks the running app, and leaves notes for a coding agent in that same file.
+Qraft is a Markdown-backed review tool with local development and explicit private team modes for Vite React and Next.js App Router apps. A tester selects a Markdown checklist, checks the running app, and leaves notes for a coding agent in that same file.
 
 ## Owner-approved workflow — 2026-09-05
 
@@ -39,6 +39,23 @@ not proof that its feedback is fixed. The skill does not execute reviews, change
 or mark notes resolved. Optional project preferences and explicit installation are documented in
 [agent setup](agent-skill.md); the methodology is maintained only in the skill itself.
 
-Vite and Next.js App Router (Node runtime); React 19; one root npm package; local development only; desktop and responsive browser review down to 360 CSS px. Physical-phone access over a network is outside the local-only boundary. No hosted service, accounts, database, MCP, AI, remote integrations, screenshots/video, general Markdown editor, task deletion/reordering, detached window, extension or automatic agent execution. Notes are handoff context, not a second issue tracker.
+Vite and Next.js App Router (Node runtime); React 19; one root npm package; local development by default, with an explicit host-owned shared backend; desktop and responsive browser review down to 360 CSS px. Physical-phone access over a network is outside the local-only boundary. No Qraft-operated hosted service, built-in accounts, database, MCP, AI, screenshots/video, general Markdown editor, task deletion/reordering, detached window, extension or automatic agent execution. Notes are handoff context, not a second issue tracker.
 
 Canonical ownership: [design](design.md), [architecture](architecture.md), [Markdown](markdown-storage.md), [protocol](dev-server-protocol.md), and [acceptance](testing-and-acceptance.md). The owner feedback above supersedes the original findings workflow and the original visual mockup.
+
+## Shared reviews — owner request 2026-09-10
+
+An application may explicitly mount Qraft in a private deployed QA build and supply a backend
+endpoint. The main menu lists that campaign's Markdown checklists. Testers select a file, review
+its tasks, save statuses and notes, and return to the menu to choose another batch. Shared mode
+omits the local checklist-creation introduction. Existing task semantics and Markdown remain
+unchanged: completion means reviewed, and notes are independent feedback.
+
+The host owns tester authentication, current authorization, rollout and persistent storage.
+Every request checks access before touching files. A trusted S3 bucket/prefix (or persistent directory) and stable
+campaign ID bound access; browser input never selects storage scope or another campaign.
+Only saved changes are shared; unsaved text remains scoped to the browser tab, authenticated
+session and file. The host unmounts Qraft on logout and changes its non-secret session key on
+account/session transitions. Short polling and focus refresh show other testers' saved changes;
+conflicts retain drafts for explicit review and retry. No automatic mutation replay, batch leases,
+reviewer attribution, new verdict taxonomy or issue-tracker workflow is introduced in this slice.

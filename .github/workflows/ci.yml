@@ -34,3 +34,4 @@ jobs:
       - run: corepack pnpm test:browser
       - run: corepack pnpm verify:consumer
       - run: corepack pnpm verify:next
+      - run: corepack pnpm verify:shared

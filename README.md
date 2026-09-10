@@ -7,9 +7,9 @@
 </p>
 
 Turn a Markdown QA checklist into an in-app review drawer. Check your React app, attach feedback
-to elements, and keep the results in a local file your coding agent can read.
+to elements, and keep the results in a Markdown file your coding agent can read.
 
-Works with **Vite** and **Next.js App Router**. Development only. No account, cloud service, or API key.
+Works with **Vite** and **Next.js App Router**. Local development by default, with an optional host-owned backend for private team reviews. No Qraft account or database required.
 
 [Try it](#try-the-workflow) · [Install](docs/getting-started.md) · [Create a checklist](docs/creating-checklists.md) · [Agent skill](docs/agent-skill.md)
 
@@ -114,3 +114,19 @@ A small reproduction and a description of the expected behavior are useful contr
 Qraft is [MIT licensed](LICENSE). [Third-party notices](THIRD_PARTY_NOTICES.md) cover its dependencies.
 
 If Qraft makes your review loop easier, a star helps other developers find it.
+
+## Shared team reviews
+
+Connect the drawer to your application's authenticated, same-origin QA endpoint:
+
+```tsx
+<QA backend={{ endpoint: "/api/qa", sessionKey: reviewSession.generation }} />
+```
+
+Only mount this for authorized testers. `sessionKey` is a non-secret value that changes on
+logout/account switch, not a cookie or bearer token. The menu lists shared Markdown checklists;
+progress and notes synchronize across testers. An explicit server-only `@qraft-dev/qa/backend`
+entry requires your authorization callback on every request. The `@qraft-dev/qa/s3` adapter
+keeps Markdown in a private S3 bucket, with a Lambda HTTP adapter and conditional writes. Local Vite/Next
+adapters remain development-only. See [shared backend setup](docs/shared-backend.md) for the
+complete integration, persistence requirements and AWS hosting boundary.

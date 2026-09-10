@@ -1,10 +1,11 @@
 # Qraft documentation
 
-Qraft puts a local Markdown QA checklist inside Vite React and Next.js App Router applications.
+Qraft puts Markdown QA checklists inside Vite React and Next.js App Router applications, locally or through an explicitly configured private shared backend.
 
 ## Use Qraft
 
 - [Get started](getting-started.md): supported environments, Vite/Next.js integration, teammate installs and removal.
+- [Shared backend](shared-backend.md): private team reviews, host authorization, persistent files and AWS hosting.
 - [Create a checklist](creating-checklists.md): write a file or ask a coding agent for a useful review.
 - [Install the agent skill](agent-skill.md): explicit installation, optional project context and updates.
 - [Troubleshoot](troubleshooting.md): files, saves, sessions, picker context and responsive limits.

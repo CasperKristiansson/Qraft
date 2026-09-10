@@ -26,13 +26,43 @@ import { ReviewNavigation, ReviewRecovery, CompactReview } from "./ReviewTools";
 type FormState = { kind: "section" } | { kind: "task"; sectionId: string };
 const emptyDraft: NoteDraft = { body: "", element: null };
 
+export interface QABackend {
+  endpoint: string;
+  /** Non-secret identity for this authenticated session. Change on logout/account switch. */
+  sessionKey: string;
+  pollIntervalMs?: number;
+  headers?: () => HeadersInit;
+}
+
 export interface QAProps {
+  backend?: QABackend;
   storage?: QAStorage;
   editor?: "vite" | "manual";
   endpoint?: string;
 }
 
-export function QA({
+export function QA(props: QAProps = {}) {
+  if (props.backend && props.storage) throw new Error("Choose backend or storage, not both.");
+  if (
+    props.backend &&
+    (!props.backend.sessionKey ||
+      !/^\/[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+)*$/u.test(props.backend.endpoint))
+  )
+    throw new Error(
+      "A shared review needs a same-origin endpoint path and non-secret session key.",
+    );
+  return (
+    <QADrawer
+      key={
+        props.backend ? JSON.stringify([props.backend.endpoint, props.backend.sessionKey]) : "local"
+      }
+      {...props}
+    />
+  );
+}
+
+function QADrawer({
+  backend,
   storage: providedStorage,
   editor = "vite",
   endpoint = "/__qraft",
@@ -44,7 +74,9 @@ export function QA({
   const [catalog, setCatalog] = useState<QAFileCatalog | null>(null);
   const [fileId, setFileId] = useState<string | null>(null);
   const sessionKey =
-    !providedStorage && catalog && fileId ? `qraft:review:v1:${catalog.projectId}:${fileId}` : null;
+    !providedStorage && catalog && fileId
+      ? `qraft:review:v1:${backend ? `${JSON.stringify([backend.endpoint, backend.sessionKey])}:` : ""}${catalog.projectId}:${fileId}`
+      : null;
   const {
     session,
     updateSession,
@@ -82,7 +114,22 @@ export function QA({
   const composer = useRef<HTMLTextAreaElement>(null);
   const content = useRef<HTMLDivElement>(null);
   const formTrigger = useRef<HTMLButtonElement | null>(null);
-  const defaultStorage = useMemo(() => new HttpQAStorage(endpoint, setConnected), [endpoint]);
+  const backendHeaders = useRef(backend?.headers);
+  backendHeaders.current = backend?.headers;
+  const defaultStorage = useMemo(
+    () =>
+      new HttpQAStorage(
+        backend?.endpoint ?? endpoint,
+        setConnected,
+        backend
+          ? {
+              pollIntervalMs: backend.pollIntervalMs ?? 3_000,
+              headers: () => backendHeaders.current?.() ?? {},
+            }
+          : {},
+      ),
+    [endpoint, backend?.endpoint, backend?.pollIntervalMs],
+  );
   const storage = useMemo(
     () => providedStorage ?? (fileId ? defaultStorage.forFile(fileId) : null),
     [providedStorage, defaultStorage, fileId],
@@ -311,7 +358,8 @@ export function QA({
     if (!note.element?.source) return;
     setSourceError(null);
     try {
-      if (editor === "manual") throw new Error("Open the stored source path in your editor.");
+      if (backend || editor === "manual")
+        throw new Error("Open the stored source path in your editor.");
       const query = new URLSearchParams({ file: note.element.source });
       if (note.element.line) query.set("line", String(note.element.line));
       if (note.element.column) query.set("column", String(note.element.column));
@@ -663,6 +711,7 @@ export function QA({
                 ) : showChooser ? (
                   <FileChooser
                     id={headingId}
+                    shared={Boolean(backend)}
                     catalog={catalog}
                     catalogError={catalogError}
                     search={search}
@@ -777,7 +826,10 @@ export function QA({
                       <button
                         className="qraft-change-file"
                         disabled={pending}
-                        onClick={() => setChoosing(true)}
+                        onClick={() => {
+                          setChoosing(true);
+                          setCatalogVersion((value) => value + 1);
+                        }}
                         title={`Selected file: ${fileLabel}`}
                       >
                         <FolderOpen size={15} aria-hidden="true" /> Change file

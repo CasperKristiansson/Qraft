@@ -19,12 +19,26 @@ export class QAStorageError extends Error {
   }
 }
 
+export interface HttpQAStorageOptions {
+  /** Use short polling for hosted services that do not offer SSE. Minimum 1 second. */
+  pollIntervalMs?: number;
+  /** Fresh host-owned request headers, such as a CSRF token. Never embed service secrets. */
+  headers?: () => HeadersInit;
+}
+
 export class HttpQAStorage implements QAStorage {
   private revision: string | null = null;
   constructor(
     private readonly endpoint = "/__qraft",
     private readonly onConnectionState?: (connected: boolean) => void,
-  ) {}
+    private readonly options: HttpQAStorageOptions = {},
+  ) {
+    if (
+      options.pollIntervalMs !== undefined &&
+      (!Number.isFinite(options.pollIntervalMs) || options.pollIntervalMs < 1_000)
+    )
+      throw new Error("Use a polling interval of at least 1,000 milliseconds.");
+  }
 
   async getFiles(signal?: AbortSignal): Promise<QAFileCatalog> {
     const response = await this.#request("files", {
@@ -37,7 +51,7 @@ export class HttpQAStorage implements QAStorage {
 
   forFile(id: string): HttpQAStorage {
     if (!/^[a-f0-9]{64}$/u.test(id)) throw new Error("Invalid file selection.");
-    return new HttpQAStorage(`${this.endpoint}/files/${id}`, this.onConnectionState);
+    return new HttpQAStorage(`${this.endpoint}/files/${id}`, this.onConnectionState, this.options);
   }
 
   async getDocument(signal?: AbortSignal): Promise<QADocument> {
@@ -64,6 +78,15 @@ export class HttpQAStorage implements QAStorage {
   }
 
   subscribe(onChange: () => void): () => void {
+    if (this.options.pollIntervalMs !== undefined) {
+      const timer = setInterval(onChange, this.options.pollIntervalMs);
+      const focus = () => onChange();
+      globalThis.addEventListener?.("focus", focus);
+      return () => {
+        clearInterval(timer);
+        globalThis.removeEventListener?.("focus", focus);
+      };
+    }
     let source: EventSource | null = null;
     let timer: ReturnType<typeof setTimeout> | null = null;
     let stopped = false;
@@ -112,14 +135,18 @@ export class HttpQAStorage implements QAStorage {
     const deadline = AbortSignal.timeout(15_000);
     const signal = init.signal ? AbortSignal.any([init.signal, deadline]) : deadline;
     try {
+      const headers = new Headers(this.options.headers?.());
+      new Headers(init.headers).forEach((value, name) => headers.set(name, value));
       const response = await fetch(`${this.endpoint}/${path}`, {
         ...init,
+        headers,
+        credentials: "same-origin",
         signal,
         redirect: "error",
       });
       if (response.ok && !response.headers.get("content-type")?.includes("application/json")) {
         throw new QAStorageError(
-          "The local Qraft route did not return JSON. Run qraft doctor and check the endpoint, base path and development-only proxy configuration.",
+          "The Qraft route did not return JSON. Check the endpoint and sign-in configuration; for local development, run qraft doctor.",
           "unexpected_response",
           false,
         );
@@ -128,7 +155,7 @@ export class HttpQAStorage implements QAStorage {
     } catch (error) {
       if (deadline.aborted)
         throw new QAStorageError(
-          "The local Qraft request timed out. Check that the development server is running, then review the latest file before retrying.",
+          "The Qraft request timed out. Check the connection, then review the latest file before retrying; the save may have completed.",
           "request_timeout",
           true,
         );
@@ -145,7 +172,8 @@ export class HttpQAStorage implements QAStorage {
     }
     return new QAStorageError(
       body.error?.message ?? "Qraft could not complete the request.",
-      body.error?.code ?? "request_failed",
+      body.error?.code ??
+        ([401, 403].includes(response.status) ? "access_denied" : "request_failed"),
       body.error?.retryable ?? response.status >= 500,
       body.document,
     );

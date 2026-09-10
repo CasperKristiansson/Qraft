@@ -30,8 +30,9 @@ export class FileCatalog {
   constructor(
     readonly root: string,
     readonly configuredFile?: string,
+    projectId?: string,
   ) {
-    this.projectId = hash(root);
+    this.projectId = hash(projectId ?? root);
   }
 
   async #choice(path: string): Promise<FileChoice> {

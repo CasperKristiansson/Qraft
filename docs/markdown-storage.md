@@ -170,3 +170,15 @@ Reads and resulting writes are bounded to 2 MiB of valid UTF-8. Oversized or inv
 After a crashed process, run `qraft doctor` from the app directory. Stop all Qraft servers for that project and verify no writer is active before manually removing the identified lock. PID existence is a diagnostic hint, not permission to steal ownership. External editors do not participate in this lock; the second revision check still guards known edits immediately before rename, but arbitrary editor writes in the final check/rename interval cannot be made transactional. Notification failures after a successful rename do not turn a confirmed write into a failure.
 
 Replacement stages fsynced bytes in a unique sibling `.qraft-stage-<uuid>` through the pinned atomic writer, then checks the current path/revision and performs the final rename. File mode and existing ownership are passed to staging; ordinary failures remove staging files. A process crash can leave staging/lock files, which are ignored by Git and never treated as checklists. Stop writers before manually cleaning identified leftovers.
+
+## Shared storage
+
+The filesystem backend reuses this store on a dedicated persistent directory with one active
+service process; existing editor-race and crash-lock recovery limits apply. S3 mode uses the same
+parser and minimal patches but replaces the filesystem transaction with a SHA-256 revision check
+and conditional PutObject using the read ETag. The ETag is a storage precondition, not the document
+revision. Competing writes return a conflict and latest document. SDK retries are disabled;
+uncertain outcomes require reading current state before explicit retry. No durable replay ledger
+is promised. Valid UTF-8, BOM, newline style and unknown bytes are preserved within the 2 MiB bound.
+File permissions, sibling locks and rename recovery are filesystem-only concepts. S3 object
+versions are the host's recovery mechanism; all active owner writes should also be conditional.
