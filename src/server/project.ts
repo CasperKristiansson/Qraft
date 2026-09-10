@@ -10,6 +10,8 @@ import { isAllowedWebOrigin, parseOrigin } from "./origin";
 
 export interface ProjectOptions {
   root: string;
+  projectId?: string;
+  requestAllowed?: (request: Request) => boolean;
   file?: string;
   endpoint?: string;
   origin?: string;
@@ -54,8 +56,10 @@ export async function createProject(options: ProjectOptions) {
     }
     await validateFilePath(root, file);
   }
-  const catalog = new FileCatalog(root, file);
+  const catalog = new FileCatalog(root, file, options.projectId);
   const entries = new Map<string, Entry>();
+  const requestAllowed =
+    options.requestAllowed ?? ((request: Request) => isAllowedWebOrigin(request, options.origin));
 
   function mount(prefix: string, path: string): Entry {
     const existing = entries.get(prefix);
@@ -91,6 +95,7 @@ export async function createProject(options: ProjectOptions) {
         endpoint: prefix,
         store,
         events,
+        requestAllowed,
         ...(options.origin ? { origin: options.origin } : {}),
       }),
       dispose() {
@@ -114,7 +119,7 @@ export async function createProject(options: ProjectOptions) {
         !["document", "commands", "events"].some((suffix) => path === `${endpoint}/${suffix}`)
       )
         return;
-      if (!isAllowedWebOrigin(request, options.origin))
+      if (!requestAllowed(request))
         return safeError(
           403,
           "origin_not_allowed",
@@ -134,7 +139,7 @@ export async function createProject(options: ProjectOptions) {
         );
       }
     }
-    if (!isAllowedWebOrigin(request, options.origin)) {
+    if (!requestAllowed(request)) {
       return safeError(
         403,
         "origin_not_allowed",
@@ -165,6 +170,7 @@ export async function createProject(options: ProjectOptions) {
       .slice(`${endpoint}/files/`.length)
       .match(/^([a-f0-9]{64})\/(document|commands|events)$/u);
     const id = match?.[1];
+    if (id && !catalog.paths.has(id)) await catalog.list();
     const selected = id ? catalog.paths.get(id) : undefined;
     if (!selected || !id)
       return safeError(

@@ -18,6 +18,7 @@ const expected = {
     "react-dom": "^19.2.8",
     vite: "^7.3.6 || ^8.2.2",
     next: "^15.5.25 || ^16.3.3",
+    "@aws-sdk/client-s3": "^3.984.0",
   },
   devDependencies: {
     "@playwright/test": "1.62.1",
@@ -32,6 +33,7 @@ const expected = {
     vite: "8.2.2",
     vitest: "5.0.0",
     next: "16.3.3",
+    "@aws-sdk/client-s3": "3.984.0",
   },
 };
 
@@ -67,9 +69,11 @@ if (
     ".": { types: "./dist/index.d.ts", import: "./dist/index.js" },
     "./vite": { types: "./dist/vite.d.ts", import: "./dist/vite.js" },
     "./next": { types: "./dist/next.d.ts", import: "./dist/next.js" },
+    "./backend": { types: "./dist/backend.d.ts", import: "./dist/backend.js" },
+    "./s3": { types: "./dist/s3.d.ts", import: "./dist/s3.js" },
   })
 )
-  failures.push("package exports exceed the client, Vite and Next.js entrypoints");
+  failures.push("package exports differ from the approved client, adapters and shared backend");
 
 if (JSON.stringify(packageJson.bin) !== JSON.stringify({ qraft: "./dist/cli.js" }))
   failures.push("unexpected command entry");
@@ -79,7 +83,14 @@ if (!(await readFile("dist/cli.js", "utf8")).startsWith("#!/usr/bin/env node"))
 if (
   packageJson.types !== "./dist/index.d.ts" ||
   JSON.stringify(packageJson.typesVersions) !==
-    JSON.stringify({ "*": { vite: ["dist/vite.d.ts"], next: ["dist/next.d.ts"] } })
+    JSON.stringify({
+      "*": {
+        vite: ["dist/vite.d.ts"],
+        next: ["dist/next.d.ts"],
+        backend: ["dist/backend.d.ts"],
+        s3: ["dist/s3.d.ts"],
+      },
+    })
 )
   failures.push("declaration resolver compatibility changed");
 
@@ -95,6 +106,7 @@ const licenses = {
   vite: "MIT",
   next: "MIT",
   prettier: "MIT",
+  "@aws-sdk/client-s3": "Apache-2.0",
 };
 const notices = await readFile("THIRD_PARTY_NOTICES.md", "utf8");
 for (const [name, license] of Object.entries(licenses)) {
@@ -128,7 +140,7 @@ for (const path of ["package.json", "pnpm-lock.yaml"]) {
 }
 
 const clientBundle = await readFile("dist/index.js", "utf8");
-for (const forbidden of ["node:", "write-file-atomic", "./markdown/", "./server/"]) {
+for (const forbidden of ["node:", "write-file-atomic", "./markdown/", "./server/", "@aws-sdk/"]) {
   if (clientBundle.includes(forbidden)) failures.push(`browser entry contains ${forbidden}`);
 }
 
@@ -179,6 +191,9 @@ for (const slot of await readdir("node_modules/.pnpm", { withFileTypes: true }))
         "@next/env@16.3.3",
         "@next/swc-darwin-arm64@16.3.3",
         "client-only@0.0.1",
+        "@aws-sdk/credential-provider-http@3.972.72",
+        "@aws-sdk/credential-provider-login@3.972.77",
+        "@aws-sdk/nested-clients@3.997.44",
       ]);
       if (!licenseFiles.length && !metadataOnly.has(key))
         failures.push(`${key} has no reviewed license evidence`);

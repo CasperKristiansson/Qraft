@@ -1,7 +1,7 @@
 {
   "name": "@qraft-dev/qa",
-  "version": "0.3.1",
-  "description": "Review your React app with a Markdown QA checklist. Local feedback for you and your coding agent.",
+  "version": "0.4.0",
+  "description": "Review your React app with a Markdown QA checklist. Local or shared feedback for your team and coding agent.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/CasperKristiansson/Qraft.git"
@@ -38,6 +38,14 @@
     "./next": {
       "types": "./dist/next.d.ts",
       "import": "./dist/next.js"
+    },
+    "./backend": {
+      "types": "./dist/backend.d.ts",
+      "import": "./dist/backend.js"
+    },
+    "./s3": {
+      "types": "./dist/s3.d.ts",
+      "import": "./dist/s3.js"
     }
   },
   "files": [
@@ -66,13 +74,15 @@
     "lint": "node scripts/lint.mjs",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "format": "prettier --write .",
-    "verify:next": "node scripts/verify-next-consumer.mjs"
+    "verify:next": "node scripts/verify-next-consumer.mjs",
+    "verify:shared": "node scripts/verify-shared-consumer.mjs"
   },
   "peerDependencies": {
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "vite": "^7.3.6 || ^8.2.2",
-    "next": "^15.5.25 || ^16.3.3"
+    "next": "^15.5.25 || ^16.3.3",
+    "@aws-sdk/client-s3": "^3.984.0"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "1.1.23",
@@ -94,13 +104,17 @@
     "typescript": "7.0.2",
     "vite": "8.2.2",
     "vitest": "5.0.0",
-    "next": "16.3.3"
+    "next": "16.3.3",
+    "@aws-sdk/client-s3": "3.984.0"
   },
   "peerDependenciesMeta": {
     "vite": {
       "optional": true
     },
     "next": {
+      "optional": true
+    },
+    "@aws-sdk/client-s3": {
       "optional": true
     }
   },
@@ -115,6 +129,12 @@
       ],
       "next": [
         "dist/next.d.ts"
+      ],
+      "backend": [
+        "dist/backend.d.ts"
+      ],
+      "s3": [
+        "dist/s3.d.ts"
       ]
     }
   },

@@ -1,6 +1,6 @@
-export { QA, type QAProps } from "./client/QA";
-export { HttpQAStorage, QAStorageError } from "./client/http-storage";
-export type { QAStorage } from "./client/storage";
+export { QA, type QAProps, type QABackend } from "./client/QA";
+export { HttpQAStorage, QAStorageError, type HttpQAStorageOptions } from "./client/http-storage";
+export type { QAStorage, QAFileCatalog } from "./client/storage";
 export type {
   ElementReference,
   QADiagnostic,

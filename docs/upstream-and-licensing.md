@@ -175,3 +175,20 @@ their archives or optional framework binaries. The exact archive-notice exceptio
 remain installed-dependency observations, not missing notices for bundled third-party code.
 Recheck this boundary if bundling changes. The final release audit records the installed license
 inventory, and clean consumers verify the actual packed exports and notice files.
+
+## Shared S3 backend — 2026-09-10
+
+Owner-requested addition: `@aws-sdk/client-s3@3.984.0`, Apache-2.0, from
+[aws/aws-sdk-js-v3](https://github.com/aws/aws-sdk-js-v3). Inspected the installed artifact's
+`package.json`, `LICENSE`, public S3Client and ListObjectsV2/GetObject/PutObject command declarations.
+Qraft uses public SDK calls in `src/server/s3-storage.ts`; no SDK implementation is copied.
+The optional peer is installed by the backend consumer, externalized from Qraft, and never imported
+by the browser. The exact lockfile and installed-license inventory cover its transitive packages.
+AWS's official conditional-write and Lambda event specifications are linked from the shared guide.
+
+The installed transitive archives `@aws-sdk/credential-provider-http@3.972.72`,
+`@aws-sdk/credential-provider-login@3.972.77` and `@aws-sdk/nested-clients@3.997.44` declare
+Apache-2.0 but omit standalone license files. Their public manifests identify the same SDK
+repository; the S3 client's distributed LICENSE supplies the Apache text, also included in
+Qraft's notices. These exact metadata-only omissions are recorded in the audit. The packages
+remain unmodified consumer dependencies and are not redistributed inside Qraft's archive.

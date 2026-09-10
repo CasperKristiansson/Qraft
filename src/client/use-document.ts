@@ -33,11 +33,19 @@ export function useDocument(
     setConnected(true);
     setFeedback({ tone: "neutral", text: "Loading checklist…" });
     if (!storage) return () => controller.abort();
+    let reading = false;
+    let refreshQueued = false;
     const refresh = async () => {
+      if (reading) {
+        refreshQueued = true;
+        return;
+      }
+      reading = true;
       const sequence = ++refreshSequence.current;
       try {
         const next = await storage.getDocument(controller.signal);
         if (controller.signal.aborted || sequence !== refreshSequence.current) return;
+        setConnected(true);
         setDocument(next);
         setFeedback((current) =>
           current.text === "Loading checklist…" || current.source === "read"
@@ -45,12 +53,21 @@ export function useDocument(
             : current,
         );
       } catch (error) {
-        if (!controller.signal.aborted && sequence === refreshSequence.current)
+        if (!controller.signal.aborted && sequence === refreshSequence.current) {
+          setConnected(false);
+          if (error instanceof QAStorageError && error.code === "access_denied") setDocument(null);
           setFeedback({
             tone: "error",
             source: "read",
             text: error instanceof Error ? error.message : "Could not load the checklist.",
           });
+        }
+      } finally {
+        reading = false;
+        if (refreshQueued && !controller.signal.aborted) {
+          refreshQueued = false;
+          void refresh();
+        }
       }
     };
     void refresh();
@@ -74,7 +91,8 @@ export function useDocument(
       setFeedback({ tone: "neutral", text: success });
       return next;
     } catch (error) {
-      if (error instanceof QAStorageError && error.document) setDocument(error.document);
+      if (error instanceof QAStorageError && error.code === "access_denied") setDocument(null);
+      else if (error instanceof QAStorageError && error.document) setDocument(error.document);
       setFeedback({
         tone:
           error instanceof QAStorageError &&

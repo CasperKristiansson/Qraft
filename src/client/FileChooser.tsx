@@ -4,6 +4,7 @@ import type { QAFileCatalog } from "./storage";
 
 interface FileChooserProps {
   id: string;
+  shared?: boolean;
   catalog: QAFileCatalog | null;
   catalogError: string;
   search: string;
@@ -16,6 +17,7 @@ interface FileChooserProps {
 }
 export function FileChooser({
   id,
+  shared = false,
   catalog,
   catalogError,
   search,
@@ -32,9 +34,13 @@ export function FileChooser({
 
   return (
     <section className="qraft-file-chooser">
-      {!fileId ? <ChecklistWelcome id={id} /> : null}
+      {!fileId && !shared ? <ChecklistWelcome id={id} /> : null}
       <h2 className="qraft-choose-heading">Choose a checklist</h2>
-      <p>Pick the file with your review tasks. Qraft remembers your choice in this browser.</p>
+      <p>
+        {shared
+          ? "Choose a shared checklist. Saved progress and notes are visible to your team."
+          : "Pick the file with your review tasks. Qraft remembers your choice in this browser."}
+      </p>
       <label htmlFor={`${id}-search`}>Find a Markdown file</label>
       <input
         id={`${id}-search`}
@@ -63,7 +69,9 @@ export function FileChooser({
       ))}
       {catalog?.files.length === 0 ? (
         <p>
-          No Markdown files yet. Save your checklist in this project, then refresh to find it here.
+          {shared
+            ? "No shared checklists yet. Ask the review owner to add the Markdown files, then refresh."
+            : "No Markdown files yet. Save your checklist in this project, then refresh to find it here."}
         </p>
       ) : null}
       {catalog && catalog.files.length > 0 && files?.length === 0 ? (

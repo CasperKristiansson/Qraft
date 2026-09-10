@@ -10,6 +10,7 @@ const external = [
   "react/jsx-runtime",
   "vite",
   /^@radix-ui\//,
+  /^@aws-sdk\//,
   "lucide-react",
   "react-grab",
   /^react-grab\//,
@@ -21,6 +22,8 @@ export default defineConfig({
   build: {
     lib: {
       entry: {
+        s3: resolve(import.meta.dirname, "src/s3.ts"),
+        backend: resolve(import.meta.dirname, "src/backend.ts"),
         cli: resolve(import.meta.dirname, "src/cli.ts"),
         index: resolve(import.meta.dirname, "src/index.ts"),
         next: resolve(import.meta.dirname, "src/next.ts"),

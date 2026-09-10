@@ -53,7 +53,7 @@ Required coverage:
 
 - Type declarations and JavaScript build cleanly.
 - `.` exposes only supported client API.
-- `./vite` exposes only supported plugin API; `./next` exposes only the server route factory.
+- `./vite` exposes only supported plugin API; `./next` exposes only the local route factory; `./backend` exposes the explicit authorized backend, Node and Lambda bridges; `./s3` exposes the optional server-only store.
 - Server/filesystem modules are not reachable from the browser entry.
 - A clean example consumer resolves peer dependencies and starts.
 - A production consumer build succeeds with the documented development guard.
@@ -108,7 +108,7 @@ An internal package candidate is complete only when all statements are true:
 10. Attachments contain only the bounded identifying context in architecture; no input values, full HTML, screenshots, or unrestricted page capture.
 11. `Open source` uses the stored normalized path and fails safely.
 12. Unknown Markdown outside Qraft-owned lines survives every mutation byte-for-byte.
-13. Vite builds/preview and Next.js production builds/servers expose no active Qraft filesystem endpoint.
+13. Vite builds/preview and Next.js production builds/servers expose no implicit Qraft filesystem endpoint; a shared backend is separately and explicitly configured.
 14. Format/lint, typecheck, unit/integration, package build, and three-browser Playwright checks pass from a clean checkout.
 15. The repository contains the required React Grab notice and contains no Agentation source, assets, bundles, or copied styling.
 16. Changed integrated surfaces have current browser evidence and satisfy the written design contract.
@@ -184,3 +184,23 @@ file selection, task instructions, an attached note, status changes, reload and 
 integrated browser. Demo feedback must never mutate a developer's real review.
 
 Hardening regression coverage includes competing OS processes, stale/replaced lock ownership, edits during staging, 2 MiB input/output bounds, invalid UTF-8 recovery with unchanged revision, bounded idle-file eviction, live stream limits, slow-reader cleanup, default Host/DNS-rebinding and Fetch Metadata rejection, trusted exact gateway origin, unavailable clipboard/session storage, and safe local request timeouts/HTML fallback diagnostics.
+
+## Shared-backend acceptance
+
+Run `verify:shared` in addition to the existing complete candidate gates. It builds and installs the
+packed package in a clean consumer, serves a production browser bundle with the explicit backend,
+and tests two independent browser sessions against Markdown in a local S3 protocol fixture. Cover
+file selection/switching, cross-browser note/status visibility, draft retention, endpoint and session
+isolation, revocation, restart recovery and source-boundary exclusion. Record current integrated
+Browser evidence for the shared menu, task detail and narrow viewport. Run `verify:shared --registry`
+after publication and compare the registry archive digest with the candidate.
+
+Focused server tests prove authorization-before-storage, exact origin enforcement, no shared SSE,
+revision conflicts, exact-byte preservation, replay and restart behavior, safe failures and no path
+or symlink escape. Transport tests prove polling cleanup and fresh headers on selected files. No
+AWS deployment behavior is claimed by local packed-consumer tests.
+
+Shared S3 coverage includes exact-byte updates, independent-writer conditional conflicts, lost
+responses without write replay, prefix discovery and the Lambda v2 cookie/base64 bridge. The packed
+shared consumer uses the real SDK against a loopback S3 protocol fixture; it does not establish AWS
+deployment, IAM, host authentication or version recovery acceptance.

@@ -1,6 +1,6 @@
 # Dev-server protocol
 
-This document owns the same-origin browser-to-development-server interface and its local-development safeguards. The command types are owned by [Architecture](architecture.md), and mutation semantics by [Markdown storage](markdown-storage.md).
+This document owns the same-origin browser interface, local-development safeguards and explicit shared-backend variant. The command types are owned by [Architecture](architecture.md), and mutation semantics by [Markdown storage](markdown-storage.md).
 
 ## Transport choice
 
@@ -181,3 +181,26 @@ Next.js local gateway setups can configure one exact browser `origin` in the rou
 A document read or resulting write is limited to 2 MiB of UTF-8 bytes. Invalid UTF-8 and oversized reads return `400 invalid_document`; the UI retains drafts. A process owns at most 32 active file runtimes per project. Opening another file evicts an idle runtime and disposes its watcher; if every runtime has live streams, return `503 active_file_limit`. Each runtime accepts at most 32 streams and disconnects slow readers after a bounded output queue. Abort, cancellation and shutdown release timers and clients.
 
 `409 write_locked` means another Qraft process owns the sibling write lock; retry after it finishes. `500 write_failed` means the server could not confirm the save, so the UI asks the user to inspect the latest file before retrying. It must not claim the original is unchanged when a failure may have occurred after rename. Host/Origin checks are browser safeguards, not network authentication: never expose a Qraft-enabled development server to an untrusted network.
+
+## Explicit shared backend
+
+`createQraftBackend` uses the same files/document/commands JSON contract at a configured prefix,
+with mandatory per-request host authorization before catalog discovery or storage initialization.
+It intentionally exposes no events route. GET may omit Origin; a supplied Origin must exactly
+match the configured public application origin. POST requires that exact Origin. Cross-site Fetch
+Metadata is rejected. Forwarded headers and Origin never establish tester identity. All allowed
+requests, including command replay, must pass the callback anew. Callback denial returns safe
+403 `access_denied`; callback failure returns 503 `authorization_unavailable`. Unavailable storage
+returns a safe 503. No permissive CORS headers are added.
+
+Browser consumers use same-origin credentials, optional fresh host CSRF headers and periodic
+GETs. Host applications authorize against their own current session and review membership; they
+must not configure `authorize: () => true` in a deployed application. Dedicated roots or S3 prefixes prevent
+sharing arbitrary repository documentation. Configure one backend per trusted campaign scope;
+never derive its storage scope from query parameters, headers, or the client's selected file ID.
+
+Revision checks, request/document size limits, typed commands, safe response handling and minimal
+patches remain unchanged. Filesystem in-process replay receipts are bounded and do not survive restart;
+S3 requests are stateless and use conditional object writes without a durable receipt ledger;
+replaying the original base revision after a committed change then conflicts safely. A client must
+inspect the current file after an uncertain save and never automatically submit a new command ID.

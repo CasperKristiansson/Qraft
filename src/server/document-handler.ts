@@ -7,9 +7,10 @@ import { isAllowedWebOrigin } from "./origin";
 
 export interface MiddlewareOptions {
   endpoint: string;
-  store: MarkdownDocumentStore;
+  store: Pick<MarkdownDocumentStore, "read" | "execute">;
   events: DocumentEventHub;
   origin?: string;
+  requestAllowed?: (request: Request) => boolean;
   now?: () => number;
 }
 
@@ -95,7 +96,7 @@ export function createDocumentHandler(options: MiddlewareOptions) {
     if (path !== documentPath && path !== commandPath && path !== eventsPath) {
       return;
     }
-    if (!isAllowedWebOrigin(request, options.origin)) {
+    if (!(options.requestAllowed?.(request) ?? isAllowedWebOrigin(request, options.origin))) {
       return safeError(
         403,
         "origin_not_allowed",
